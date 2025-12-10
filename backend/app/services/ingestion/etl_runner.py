@@ -100,6 +100,43 @@ class ETLRunner:
                 direction=ind.direction,
                 lookback=ind.lookback_days_for_z,
             )
+        elif code == "SPY":
+            # For SPY, use distance from 50-day EMA as the indicator
+            # This captures trend strength and mean reversion better than raw price
+            import numpy as np
+            
+            if len(raw_series) < 50:
+                # Not enough data for EMA, fall back to standard normalization
+                normalized_series = normalize_series(
+                    raw_series,
+                    direction=ind.direction,
+                    lookback=ind.lookback_days_for_z,
+                )
+            else:
+                # Calculate 50-day EMA
+                ema_period = 50
+                prices = np.array(raw_series)
+                
+                # Calculate EMA using exponential weights
+                alpha = 2 / (ema_period + 1)
+                ema = np.zeros_like(prices)
+                ema[0] = prices[0]  # Start with first price
+                
+                for i in range(1, len(prices)):
+                    ema[i] = alpha * prices[i] + (1 - alpha) * ema[i-1]
+                
+                # Calculate percentage gap from EMA
+                # Positive gap = price above EMA (bullish), Negative = below EMA (bearish)
+                gap_pct = ((prices - ema) / ema) * 100
+                
+                # Normalize the gap percentages
+                # When gap is large positive (price way above EMA) = GREEN (strong trend)
+                # When gap is large negative (price way below EMA) = RED (weak/bearish)
+                normalized_series = normalize_series(
+                    gap_pct.tolist(),
+                    direction=ind.direction,
+                    lookback=ind.lookback_days_for_z,
+                )
         else:
             # Standard normalization on raw values
             normalized_series = normalize_series(

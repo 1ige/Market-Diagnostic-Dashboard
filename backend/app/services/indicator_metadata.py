@@ -38,18 +38,20 @@ INDICATOR_METADATA = {
     
     "SPY": {
         "name": "S&P 500 ETF (SPY)",
-        "description": "SPY tracks the S&P 500 index, representing the 500 largest U.S. companies. It serves as the primary benchmark for U.S. equity market performance and overall economic health.",
-        "relevance": "Declining stock prices reflect deteriorating corporate earnings expectations, weakening economic outlook, or flight to safety. Sustained downtrends often coincide with recessions.",
-        "scoring": "Direction: -1 (low = stress). Falling prices indicate stress. Z-score normalized with prices inverted so lower values produce lower stability scores.",
+        "description": "SPY tracks the S&P 500 index, representing the 500 largest U.S. companies. Scored based on distance from 50-day EMA to capture trend strength and mean reversion dynamics.",
+        "relevance": "The gap between price and its 50-day EMA reveals trend strength and exhaustion. Large deviations signal overextended conditions or breakdowns in trend structure.",
+        "scoring": "Direction: -1 (low = stress). Uses (Price - 50 EMA) / 50 EMA as percentage gap. Positive gap (price above EMA) = bullish = GREEN. Negative gap (below EMA) = bearish = RED. Z-score normalized on gap percentages.",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "High SPY = Bull Market/Strength (GOOD). Low SPY = Bear Market/Weakness (BAD).",
+        "interpretation": "Price above 50 EMA = Bullish Trend (GOOD). Price below 50 EMA = Bearish Trend/Weakness (BAD). Large deviations indicate overextension or breakdown.",
+        "use_ema_gap": True,
+        "ema_period": 50,
         "thresholds": {
             "green_below": 30,
             "yellow_below": 60
         },
-        "typical_range": "Bull market: steady gains with <10% pullbacks. Correction: 10-20% decline. Bear market: 20%+ decline. Crisis: 30%+ decline.",
-        "impact": "Very high impact. Equity market weakness affects investor confidence, retirement accounts, consumer spending (wealth effect), and corporate investment decisions. Sustained RED state signals serious market stress."
+        "typical_range": "Healthy bull: +2% to +8% above 50 EMA. Neutral: -2% to +2%. Bearish: -2% to -10%. Crisis: -10%+.",
+        "impact": "Very high impact. Distance from 50 EMA captures market structure better than raw price. Sustained negative gaps (RED) signal broken trends and increased correction risk. Reduces noise from absolute price levels."
     },
     
     "DXY": {
