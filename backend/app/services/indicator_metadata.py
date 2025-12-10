@@ -134,53 +134,22 @@ INDICATOR_METADATA = {
         "impact": "High impact on corporate financing and market sentiment. Widening spreads (RED) can trigger credit crunches and constrain business investment."
     },
     
-    "PCE": {
-        "name": "Personal Consumption Expenditures",
-        "description": "PCE measures total consumer spending on goods and services in the U.S. economy. It's the Federal Reserve's preferred inflation gauge and a key indicator of consumer demand and economic health.",
-        "relevance": "Rising PCE indicates strong consumer spending and economic activity. Declining PCE signals weakening demand, reduced consumer confidence, and potential recession.",
-        "scoring": "Direction: -1 (low = stress). Strong consumer spending = economic health. Declining spending = weakness. Z-score normalized with 252-day lookback.",
+    "CONSUMER_HEALTH": {
+        "name": "Consumer Health Index",
+        "description": "Derived indicator measuring consumer financial health by comparing spending and income growth against inflation. Combines PCE (Personal Consumption Expenditures), PI (Personal Income), and CPI (Consumer Price Index) to assess real consumer capacity.",
+        "relevance": "When spending and income growth outpace inflation, consumers have expanding real purchasing power and economic health is strong. When inflation outpaces spending/income growth, consumers face a squeeze with declining real purchasing power, signaling economic stress.",
+        "scoring": "Direction: -1 (negative = stress). Calculates: (PCE MoM% - CPI MoM%) + (PI MoM% - CPI MoM%). Positive spread = spending and income outpacing inflation (healthy). Negative spread = inflation eroding real consumer capacity (stress).",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "Rising PCE = Strong Consumer Demand (GOOD). Falling PCE = Weak Economy/Recession Risk (BAD).",
+        "interpretation": "Positive spread = Real consumer purchasing power expanding (GOOD). Negative spread = Inflation squeeze on consumers (BAD). Shows whether consumer fundamentals support economic growth or signal contraction.",
+        "derived_from": ["PCE", "PI", "CPI"],
+        "calculation": "Consumer Health = (PCE Growth - CPI Growth) + (PI Growth - CPI Growth)",
         "thresholds": {
             "green_below": 30,
             "yellow_below": 60
         },
-        "typical_range": "Healthy growth: 2-4% YoY. Moderate: 0-2%. Contraction: Negative growth signals recession.",
-        "impact": "Very high impact. Consumer spending accounts for ~70% of U.S. GDP. Declining PCE (RED state) is a strong recession indicator and directly impacts corporate earnings expectations."
-    },
-    
-    "PI": {
-        "name": "Personal Income",
-        "description": "Personal Income measures the total income received by individuals from all sources including wages, salaries, investment income, and government benefits. A key indicator of consumer purchasing power.",
-        "relevance": "Rising personal income supports consumer spending and economic growth. Stagnant or declining income constrains spending and signals economic stress.",
-        "scoring": "Direction: -1 (low = stress). Strong income growth = consumer health and spending capacity. Declining income = economic weakness and reduced demand.",
-        "direction": -1,
-        "positive_is_good": True,
-        "interpretation": "Rising Income = Strong Consumer Health (GOOD). Falling Income = Economic Weakness (BAD).",
-        "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
-        },
-        "typical_range": "Healthy: 3-5% YoY growth. Moderate: 1-3%. Warning: 0-1%. Recessionary: Negative growth.",
-        "impact": "High impact on consumer spending capacity and confidence. Declining personal income (RED state) precedes reduced consumer spending and economic contraction, affecting market sentiment and corporate revenue expectations."
-    },
-    
-    "CPI": {
-        "name": "Consumer Price Index (CPI)",
-        "description": "The Consumer Price Index measures changes in the price level of a basket of consumer goods and services. CPI is the most widely watched inflation indicator, tracking price changes faced by urban consumers.",
-        "relevance": "Rising CPI indicates inflation eroding purchasing power. Rapid CPI increases trigger Fed rate hikes, tighten financial conditions, and reduce real consumer income. High inflation destabilizes markets and economies.",
-        "scoring": "Direction: +1 (high = stress). Uses month-over-month percentage change. Accelerating inflation = stress/Fed tightening. Decelerating inflation = stability. Deflation also signals economic weakness.",
-        "direction": 1,
-        "positive_is_good": False,
-        "interpretation": "Rising CPI = Inflation Pressure/Fed Tightening (BAD). Stable/Declining CPI = Price Stability (GOOD).",
-        "use_rate_of_change": True,
-        "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
-        },
-        "typical_range": "Healthy: 1.5-2.5% YoY. Elevated: 3-5%. Crisis: 5%+. Fed target: 2% YoY. MoM changes: 0.1-0.3% normal, 0.4%+ concerning.",
-        "impact": "Very high impact. Accelerating CPI (RED state) forces Fed rate hikes, pressures profit margins, reduces consumer purchasing power, and increases recession risk. CPI directly influences Fed policy decisions and market expectations."
+        "typical_range": "Healthy: +1% to +3% spread. Neutral: -0.5% to +1%. Warning: -1% to -3%. Crisis: -3%+ (severe squeeze).",
+        "impact": "Very high impact. This composite metric reveals whether consumer fundamentals align with market indicators. Negative spreads (RED state) signal consumers losing purchasing power despite nominal growth, indicating recession risk and reduced corporate revenue expectations. Captures the real-world impact of inflation on consumer capacity."
     }
 }
 

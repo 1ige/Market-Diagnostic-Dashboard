@@ -77,40 +77,16 @@ indicators = [
         "weight": 1.3,
     },
     {
-        "code": "PCE",
-        "name": "Personal Consumption Expenditures",
-        "source": "FRED",
-        "source_symbol": "PCE",
+        "code": "CONSUMER_HEALTH",
+        "name": "Consumer Health Index",
+        "source": "DERIVED",
+        "source_symbol": "PCE-CPI-PI",  # Derived from PCE, CPI, and PI
         "category": "consumer",
-        "direction": -1,  # high = strong consumer spending = stability, low = weak spending = stress
+        "direction": -1,  # positive spread = healthy, negative = stress
         "lookback_days_for_z": 252,
         "threshold_green_max": 30,
         "threshold_yellow_max": 60,
-        "weight": 1.0,
-    },
-    {
-        "code": "PI",
-        "name": "Personal Income",
-        "source": "FRED",
-        "source_symbol": "PI",
-        "category": "consumer",
-        "direction": -1,  # high = strong income growth = stability, low = weak income = stress
-        "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
-        "weight": 1.0,
-    },
-    {
-        "code": "CPI",
-        "name": "Consumer Price Index",
-        "source": "FRED",
-        "source_symbol": "CPIAUCSL",
-        "category": "inflation",
-        "direction": 1,  # high inflation = stress, low/moderate = stability
-        "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
-        "weight": 1.2,
+        "weight": 1.5,
     },
 ]
 

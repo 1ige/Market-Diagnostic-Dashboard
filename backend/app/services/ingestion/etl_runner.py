@@ -65,7 +65,32 @@ class ETLRunner:
         # --- Fetch raw series ---
         source_upper = ind.source.upper() if ind.source else ""
         
-        if source_upper == "FRED":
+        if source_upper == "DERIVED":
+            # Handle derived indicators that combine multiple data sources
+            if code == "CONSUMER_HEALTH":
+                # Fetch PCE, CPI, and PI data
+                pce_series = await self.fred.fetch_series("PCE", start_date=start_date)
+                cpi_series = await self.fred.fetch_series("CPIAUCSL", start_date=start_date)
+                pi_series = await self.fred.fetch_series("PI", start_date=start_date)
+                
+                # All three are monthly, align by date
+                pce_dict = {x["date"]: x["value"] for x in pce_series if x["value"] is not None}
+                cpi_dict = {x["date"]: x["value"] for x in cpi_series if x["value"] is not None}
+                pi_dict = {x["date"]: x["value"] for x in pi_series if x["value"] is not None}
+                
+                # Find common dates
+                common_dates = sorted(set(pce_dict.keys()) & set(cpi_dict.keys()) & set(pi_dict.keys()))
+                
+                # Build aligned series with derived value placeholder
+                series = [{"date": date, "value": 0.0} for date in common_dates]
+                # Store raw values for later calculation
+                pce_raw = [pce_dict[date] for date in common_dates]
+                cpi_raw = [cpi_dict[date] for date in common_dates]
+                pi_raw = [pi_dict[date] for date in common_dates]
+            else:
+                db.close()
+                raise ValueError(f"Unknown derived indicator: {code}")
+        elif source_upper == "FRED":
             series = await self.fred.fetch_series(ind.source_symbol, start_date=start_date)
 
         elif source_upper == "YAHOO":
@@ -86,8 +111,42 @@ class ETLRunner:
         raw_series = [x["value"] for x in clean_values]
 
         # --- Check if this indicator should use rate-of-change ---
-        # For rate indicators like DFF, score the velocity (change) not the level
-        if code == "DFF":
+        # For derived indicators, calculate the derived metric
+        if code == "CONSUMER_HEALTH":
+            # Calculate MoM% for PCE, CPI, and PI
+            pce_mom = [0.0]
+            cpi_mom = [0.0]
+            pi_mom = [0.0]
+            
+            for i in range(1, len(pce_raw)):
+                pce_pct = ((pce_raw[i] - pce_raw[i-1]) / pce_raw[i-1]) * 100 if pce_raw[i-1] != 0 else 0.0
+                cpi_pct = ((cpi_raw[i] - cpi_raw[i-1]) / cpi_raw[i-1]) * 100 if cpi_raw[i-1] != 0 else 0.0
+                pi_pct = ((pi_raw[i] - pi_raw[i-1]) / pi_raw[i-1]) * 100 if pi_raw[i-1] != 0 else 0.0
+                
+                pce_mom.append(pce_pct)
+                cpi_mom.append(cpi_pct)
+                pi_mom.append(pi_pct)
+            
+            # Consumer Health = (PCE growth - CPI growth) + (PI growth - CPI growth)
+            # Positive = spending and income outpacing inflation (healthy)
+            # Negative = inflation outpacing spending/income (consumer squeeze)
+            consumer_health = []
+            for i in range(len(pce_mom)):
+                health = (pce_mom[i] - cpi_mom[i]) + (pi_mom[i] - cpi_mom[i])
+                consumer_health.append(health)
+            
+            # Update raw_series with the derived consumer health values
+            raw_series = consumer_health
+            
+            # Normalize the consumer health metric
+            # Positive values = healthy consumer (spending/income > inflation)
+            # Negative values = consumer stress (inflation > spending/income)
+            normalized_series = normalize_series(
+                consumer_health,
+                direction=ind.direction,
+                lookback=ind.lookback_days_for_z,
+            )
+        elif code == "DFF":
             # Calculate rate of change (difference between consecutive points)
             roc_series = [0.0]  # First point has no prior reference
             for i in range(1, len(raw_series)):
@@ -97,25 +156,6 @@ class ETLRunner:
             # Normalize the rate of change (positive change = rising = stress)
             normalized_series = normalize_series(
                 roc_series,
-                direction=ind.direction,
-                lookback=ind.lookback_days_for_z,
-            )
-        elif code in ("PCE", "PI", "CPI"):
-            # For consumer/inflation indicators, use month-over-month percentage change
-            # This captures growth/contraction better than absolute levels
-            mom_pct = [0.0]  # First point has no prior reference
-            for i in range(1, len(raw_series)):
-                if raw_series[i-1] != 0:
-                    pct_change = ((raw_series[i] - raw_series[i-1]) / raw_series[i-1]) * 100
-                    mom_pct.append(pct_change)
-                else:
-                    mom_pct.append(0.0)
-            
-            # Normalize MoM% changes
-            # For PCE/PI: Positive growth = healthy consumer = stability (direction -1)
-            # For CPI: Positive growth = inflation = stress (direction +1)
-            normalized_series = normalize_series(
-                mom_pct,
                 direction=ind.direction,
                 lookback=ind.lookback_days_for_z,
             )
