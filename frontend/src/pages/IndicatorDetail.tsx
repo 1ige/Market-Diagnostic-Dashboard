@@ -47,6 +47,63 @@ interface ComponentData {
   };
 }
 
+interface BondComponentData {
+  date: string;
+  credit_spread_stress: {
+    hy_oas: number;
+    ig_oas: number;
+    stress_score: number;
+    weight: number;
+    contribution: number;
+  };
+  yield_curve_stress: {
+    spread_10y2y: number;
+    spread_10y3m: number;
+    spread_30y5y: number;
+    stress_score: number;
+    weight: number;
+    contribution: number;
+  };
+  rates_momentum_stress: {
+    roc_2y: number;
+    roc_10y: number;
+    stress_score: number;
+    weight: number;
+    contribution: number;
+  };
+  treasury_volatility_stress: {
+    calculated_volatility: number;
+    stress_score: number;
+    weight: number;
+    contribution: number;
+  };
+  composite: {
+    stress_score: number;
+  };
+}
+
+interface LiquidityComponentData {
+  date: string;
+  m2_money_supply: {
+    value: number;
+    yoy_pct: number;
+    z_score: number;
+  };
+  fed_balance_sheet: {
+    value: number;
+    delta: number;
+    z_score: number;
+  };
+  reverse_repo: {
+    value: number;
+    z_score: number;
+  };
+  composite: {
+    liquidity_proxy: number;
+    stress_score: number;
+  };
+}
+
 export default function IndicatorDetail() {
   const { code } = useParams();
   
@@ -63,6 +120,12 @@ export default function IndicatorDetail() {
   );
   const { data: components } = useApi<ComponentData[]>(
     code === "CONSUMER_HEALTH" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+  );
+  const { data: bondComponents } = useApi<BondComponentData[]>(
+    code === "BOND_MARKET_STABILITY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+  );
+  const { data: liquidityComponents } = useApi<LiquidityComponentData[]>(
+    code === "LIQUIDITY_PROXY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
   );
 
   if (!code) return <div className="p-6 text-gray-200">No code provided.</div>;
@@ -323,6 +386,418 @@ export default function IndicatorDetail() {
                 />
               </LineChart>
             </ResponsiveContainer>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Component Breakdown for Bond Market Stability */}
+      {code === "BOND_MARKET_STABILITY" && bondComponents && bondComponents.length > 0 && (
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
+          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-sm text-stealth-400 mb-4">
+            Composite Stress = (Credit × 44%) + (Curve × 23%) + (Momentum × 17%) + (Volatility × 16%)
+          </p>
+          
+          {/* Latest Component Values */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Credit Spreads</div>
+              <div className="text-lg font-bold text-red-400">
+                {bondComponents[bondComponents.length - 1].credit_spread_stress.stress_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Weight: {(bondComponents[bondComponents.length - 1].credit_spread_stress.weight * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-stealth-500">
+                Contrib: {bondComponents[bondComponents.length - 1].credit_spread_stress.contribution.toFixed(1)}
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Yield Curves</div>
+              <div className="text-lg font-bold text-yellow-400">
+                {bondComponents[bondComponents.length - 1].yield_curve_stress.stress_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Weight: {(bondComponents[bondComponents.length - 1].yield_curve_stress.weight * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-stealth-500">
+                Contrib: {bondComponents[bondComponents.length - 1].yield_curve_stress.contribution.toFixed(1)}
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Rates Momentum</div>
+              <div className="text-lg font-bold text-orange-400">
+                {bondComponents[bondComponents.length - 1].rates_momentum_stress.stress_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Weight: {(bondComponents[bondComponents.length - 1].rates_momentum_stress.weight * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-stealth-500">
+                Contrib: {bondComponents[bondComponents.length - 1].rates_momentum_stress.contribution.toFixed(1)}
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Treasury Vol</div>
+              <div className="text-lg font-bold text-purple-400">
+                {bondComponents[bondComponents.length - 1].treasury_volatility_stress.stress_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Weight: {(bondComponents[bondComponents.length - 1].treasury_volatility_stress.weight * 100).toFixed(0)}%
+              </div>
+              <div className="text-xs text-stealth-500">
+                Contrib: {bondComponents[bondComponents.length - 1].treasury_volatility_stress.contribution.toFixed(1)}
+              </div>
+            </div>
+          </div>
+
+          {/* Component Stress Scores Chart */}
+          <div className="h-80 mb-6">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Stress Scores Over Time</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = bondComponents.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Stress Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="credit_spread_stress.stress_score"
+                      name="Credit Spreads"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="yield_curve_stress.stress_score"
+                      name="Yield Curves"
+                      stroke="#eab308"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="rates_momentum_stress.stress_score"
+                      name="Rates Momentum"
+                      stroke="#f97316"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="treasury_volatility_stress.stress_score"
+                      name="Treasury Volatility"
+                      stroke="#a855f7"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+
+          {/* Composite Stress Score Chart */}
+          <div className="h-80">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Stress Score</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = bondComponents.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Composite Stress Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="composite.stress_score"
+                      name="Composite Stress"
+                      stroke="#60a5fa"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Component Breakdown for Liquidity Proxy */}
+      {code === "LIQUIDITY_PROXY" && liquidityComponents && liquidityComponents.length > 0 && (
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
+          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-sm text-stealth-400 mb-4">
+            Liquidity Proxy = z(M2 YoY%) + z(Fed BS Delta) - z(RRP Usage) → Stress Score
+          </p>
+          
+          {/* Latest Component Values */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">M2 Money Supply</div>
+              <div className="text-lg font-bold text-blue-400">
+                {liquidityComponents[liquidityComponents.length - 1].m2_money_supply.yoy_pct.toFixed(2)}%
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                YoY Growth
+              </div>
+              <div className="text-xs text-stealth-500">
+                Z-Score: {liquidityComponents[liquidityComponents.length - 1].m2_money_supply.z_score.toFixed(2)}
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Fed Balance Sheet</div>
+              <div className="text-lg font-bold text-green-400">
+                ${(liquidityComponents[liquidityComponents.length - 1].fed_balance_sheet.delta / 1000).toFixed(1)}B
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Monthly Delta
+              </div>
+              <div className="text-xs text-stealth-500">
+                Z-Score: {liquidityComponents[liquidityComponents.length - 1].fed_balance_sheet.z_score.toFixed(2)}
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Reverse Repo (RRP)</div>
+              <div className="text-lg font-bold text-purple-400">
+                ${(liquidityComponents[liquidityComponents.length - 1].reverse_repo.value / 1000).toFixed(1)}B
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Usage Level
+              </div>
+              <div className="text-xs text-stealth-500">
+                Z-Score: {liquidityComponents[liquidityComponents.length - 1].reverse_repo.z_score.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Component Z-Scores Chart */}
+          <div className="h-80 mb-6">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Z-Scores Over Time</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = liquidityComponents.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Z-Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="m2_money_supply.z_score"
+                      name="M2 YoY%"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="fed_balance_sheet.z_score"
+                      name="Fed BS Delta"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="reverse_repo.z_score"
+                      name="RRP Usage"
+                      stroke="#a855f7"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+
+          {/* Liquidity Stress Score Chart */}
+          <div className="h-80">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Liquidity Stress Score</h4>
+            <p className="text-xs text-stealth-400 mb-2">
+              Lower stress = abundant liquidity (QE, M2 growth) | Higher stress = liquidity drought (QT, RRP peak)
+            </p>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = liquidityComponents.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Stress Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="composite.stress_score"
+                      name="Liquidity Stress"
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               );
             })()}
           </div>
