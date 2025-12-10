@@ -172,31 +172,34 @@ export default function IndicatorDetail() {
 
           {/* Spread Chart */}
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={components}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                <XAxis
-                  dataKey="date"
-                  type="number"
-                  domain={[
-                    () => {
-                      const today = new Date();
-                      const daysBack = new Date(today);
-                      daysBack.setDate(today.getDate() - chartRange.days);
-                      return daysBack.getTime();
-                    },
-                    () => new Date().getTime()
-                  ]}
-                  scale="time"
-                  tickFormatter={(v: number) =>
-                    new Date(v).toLocaleDateString(undefined, {
-                      month: "short",
-                      year: "2-digit",
-                    })
-                  }
-                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                  stroke="#555560"
-                />
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = components.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
                 <YAxis
                   tick={{ fill: "#a4a4b0", fontSize: 12 }}
                   stroke="#555560"
@@ -241,36 +244,41 @@ export default function IndicatorDetail() {
                 />
               </LineChart>
             </ResponsiveContainer>
+              );
+            })()}
           </div>
 
           {/* Spread vs Inflation Chart */}
           <div className="h-80 mt-6">
             <h4 className="text-lg font-semibold mb-2 text-stealth-100">Real Consumer Capacity vs Inflation</h4>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={components}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                <XAxis
-                  dataKey="date"
-                  type="number"
-                  domain={[
-                    () => {
-                      const today = new Date();
-                      const daysBack = new Date(today);
-                      daysBack.setDate(today.getDate() - chartRange.days);
-                      return daysBack.getTime();
-                    },
-                    () => new Date().getTime()
-                  ]}
-                  scale="time"
-                  tickFormatter={(v: number) =>
-                    new Date(v).toLocaleDateString(undefined, {
-                      month: "short",
-                      year: "2-digit",
-                    })
-                  }
-                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                  stroke="#555560"
-                />
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = components.map(item => ({
+                ...item,
+                dateNum: new Date(item.date).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
                 <YAxis
                   tick={{ fill: "#a4a4b0", fontSize: 12 }}
                   stroke="#555560"
@@ -315,6 +323,8 @@ export default function IndicatorDetail() {
                 />
               </LineChart>
             </ResponsiveContainer>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -382,64 +392,67 @@ export default function IndicatorDetail() {
             Raw Value History ({chartRange.label})
           </h3>
           <div className="h-80">
-            {history && history.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                  <XAxis
-                    dataKey="timestamp"
-                    type="number"
-                    domain={[
-                      () => {
-                        const today = new Date();
-                        const daysBack = new Date(today);
-                        daysBack.setDate(today.getDate() - chartRange.days);
-                        return daysBack.getTime();
-                      },
-                      () => new Date().getTime()
-                    ]}
-                    scale="time"
-                    tickFormatter={(v: number) =>
-                      new Date(v).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })
-                    }
-                    tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                    stroke="#555560"
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                    stroke="#555560"
-                    label={{ value: 'Raw Value', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#161619",
-                      borderColor: "#555560",
-                      borderRadius: "8px",
-                      padding: "12px",
-                    }}
-                    labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                    itemStyle={{ color: "#ffffff" }}
-                    formatter={(value: number) => [value.toFixed(2), "Value"]}
-                    labelFormatter={(label: string | number) =>
-                      new Date(label).toLocaleDateString()
-                    }
-                  />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="raw_value"
-                    stroke="#60a5fa"
-                    strokeWidth={2}
-                    dot={false}
-                    animationDuration={300}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
+            {history && history.length > 0 ? (() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = history.map(item => ({
+                ...item,
+                timestampNum: new Date(item.timestamp).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="timestampNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Raw Value', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      itemStyle={{ color: "#ffffff" }}
+                      formatter={(value: number) => [value.toFixed(2), "Value"]}
+                      labelFormatter={(label: string | number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="raw_value"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      animationDuration={300}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })() : (
               <div className="flex items-center justify-center h-full text-stealth-400">
                 No history available
               </div>
@@ -452,23 +465,25 @@ export default function IndicatorDetail() {
             Stability Score History ({chartRange.label})
           </h3>
           <div className="h-80">
-            {history && history.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                  <XAxis
-                    dataKey="timestamp"
-                    type="number"
-                    domain={[
-                      () => {
-                        const today = new Date();
-                        const daysBack = new Date(today);
-                        daysBack.setDate(today.getDate() - chartRange.days);
-                        return daysBack.getTime();
-                      },
-                      () => new Date().getTime()
-                    ]}
-                    scale="time"
+            {history && history.length > 0 ? (() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              
+              const chartData = history.map(item => ({
+                ...item,
+                timestampNum: new Date(item.timestamp).getTime()
+              }));
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="timestampNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
                     tickFormatter={(v: number) =>
                       new Date(v).toLocaleDateString(undefined, {
                         month: "short",
@@ -517,7 +532,8 @@ export default function IndicatorDetail() {
                   />
                 </LineChart>
               </ResponsiveContainer>
-            ) : (
+              );
+            })() : (
               <div className="flex items-center justify-center h-full text-stealth-400">
                 No history available
               </div>
