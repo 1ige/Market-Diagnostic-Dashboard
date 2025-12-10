@@ -134,3 +134,91 @@ def get_indicator_history(code: str, days: int = 365):
         }
         for v in values
     ]
+
+
+@router.get("/indicators/{code}/components")
+def get_indicator_components(code: str, days: int = 365):
+    """
+    Return component breakdown for derived indicators.
+    Currently supports: CONSUMER_HEALTH (returns PCE, PI, CPI data)
+    """
+    from datetime import datetime, timedelta
+    import asyncio
+    from app.services.ingestion.fred_client import FredClient
+    
+    if code != "CONSUMER_HEALTH":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Component breakdown not available for {code}"
+        )
+    
+    # Fetch component data
+    async def fetch_components():
+        client = FredClient()
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        start_date = cutoff.strftime("%Y-%m-%d")
+        
+        pce_series = await client.fetch_series("PCE", start_date=start_date)
+        cpi_series = await client.fetch_series("CPIAUCSL", start_date=start_date)
+        pi_series = await client.fetch_series("PI", start_date=start_date)
+        
+        return pce_series, cpi_series, pi_series
+    
+    pce_data, cpi_data, pi_data = asyncio.run(fetch_components())
+    
+    # Calculate MoM% for each
+    def calc_mom_pct(series):
+        result = []
+        for i in range(len(series)):
+            if i == 0:
+                result.append({"date": series[i]["date"], "value": series[i]["value"], "mom_pct": 0.0})
+            else:
+                prev_val = series[i-1]["value"]
+                curr_val = series[i]["value"]
+                mom_pct = ((curr_val - prev_val) / prev_val * 100) if prev_val != 0 else 0.0
+                result.append({"date": series[i]["date"], "value": curr_val, "mom_pct": mom_pct})
+        return result
+    
+    pce_with_mom = calc_mom_pct(pce_data)
+    cpi_with_mom = calc_mom_pct(cpi_data)
+    pi_with_mom = calc_mom_pct(pi_data)
+    
+    # Align by date and calculate spreads
+    pce_dict = {x["date"]: x for x in pce_with_mom}
+    cpi_dict = {x["date"]: x for x in cpi_with_mom}
+    pi_dict = {x["date"]: x for x in pi_with_mom}
+    
+    common_dates = sorted(set(pce_dict.keys()) & set(cpi_dict.keys()) & set(pi_dict.keys()))
+    
+    result = []
+    for date in common_dates:
+        pce_mom = pce_dict[date]["mom_pct"]
+        cpi_mom = cpi_dict[date]["mom_pct"]
+        pi_mom = pi_dict[date]["mom_pct"]
+        
+        pce_vs_cpi = pce_mom - cpi_mom
+        pi_vs_cpi = pi_mom - cpi_mom
+        consumer_health = pce_vs_cpi + pi_vs_cpi
+        
+        result.append({
+            "date": date,
+            "pce": {
+                "value": pce_dict[date]["value"],
+                "mom_pct": pce_mom,
+            },
+            "cpi": {
+                "value": cpi_dict[date]["value"],
+                "mom_pct": cpi_mom,
+            },
+            "pi": {
+                "value": pi_dict[date]["value"],
+                "mom_pct": pi_mom,
+            },
+            "spreads": {
+                "pce_vs_cpi": pce_vs_cpi,
+                "pi_vs_cpi": pi_vs_cpi,
+                "consumer_health": consumer_health,
+            }
+        })
+    
+    return result

@@ -35,11 +35,26 @@ interface IndicatorDetailResponse {
   has_data?: boolean;
 }
 
+interface ComponentData {
+  date: string;
+  pce: { value: number; mom_pct: number };
+  cpi: { value: number; mom_pct: number };
+  pi: { value: number; mom_pct: number };
+  spreads: {
+    pce_vs_cpi: number;
+    pi_vs_cpi: number;
+    consumer_health: number;
+  };
+}
+
 export default function IndicatorDetail() {
   const { code } = useParams();
   const { data: meta } = useApi<IndicatorDetailResponse>(`/indicators/${code}`);
   const { data: history } = useApi<IndicatorHistoryPoint[]>(
     `/indicators/${code}/history?days=365`
+  );
+  const { data: components } = useApi<ComponentData[]>(
+    code === "CONSUMER_HEALTH" ? `/indicators/${code}/components?days=365` : ""
   );
 
   if (!code) return <div className="p-6 text-gray-200">No code provided.</div>;
@@ -84,6 +99,174 @@ export default function IndicatorDetail() {
               <h4 className="text-sm font-semibold text-stealth-200 mb-1">Typical Range</h4>
               <p className="text-sm text-stealth-400">{meta.metadata.typical_range}</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Component Breakdown for Consumer Health */}
+      {code === "CONSUMER_HEALTH" && components && components.length > 0 && (
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
+          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-sm text-stealth-400 mb-4">
+            Consumer Health = (PCE Growth - CPI Growth) + (PI Growth - CPI Growth)
+          </p>
+          
+          {/* Latest Values */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">PCE (Spending)</div>
+              <div className="text-lg font-bold text-blue-400">
+                {components[components.length - 1].pce.mom_pct.toFixed(3)}%
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                MoM Growth
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">PI (Income)</div>
+              <div className="text-lg font-bold text-green-400">
+                {components[components.length - 1].pi.mom_pct.toFixed(3)}%
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                MoM Growth
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">CPI (Inflation)</div>
+              <div className="text-lg font-bold text-red-400">
+                {components[components.length - 1].cpi.mom_pct.toFixed(3)}%
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                MoM Growth
+              </div>
+            </div>
+          </div>
+
+          {/* Spread Chart */}
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={components}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v: string) =>
+                    new Date(v).toLocaleDateString(undefined, {
+                      month: "short",
+                      year: "2-digit",
+                    })
+                  }
+                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                  stroke="#555560"
+                />
+                <YAxis
+                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                  stroke="#555560"
+                  label={{ value: 'MoM % Growth', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#161619",
+                    borderColor: "#555560",
+                    borderRadius: "8px",
+                    padding: "12px",
+                  }}
+                  labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                  formatter={(value: number) => `${value.toFixed(3)}%`}
+                  labelFormatter={(label: string) =>
+                    new Date(label).toLocaleDateString()
+                  }
+                />
+                <Line
+                  type="monotone"
+                  dataKey="pce.mom_pct"
+                  name="PCE Growth"
+                  stroke="#60a5fa"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="pi.mom_pct"
+                  name="PI Growth"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cpi.mom_pct"
+                  name="CPI (Inflation)"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Spread vs Inflation Chart */}
+          <div className="h-80 mt-6">
+            <h4 className="text-lg font-semibold mb-2 text-stealth-100">Real Consumer Capacity vs Inflation</h4>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={components}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v: string) =>
+                    new Date(v).toLocaleDateString(undefined, {
+                      month: "short",
+                      year: "2-digit",
+                    })
+                  }
+                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                  stroke="#555560"
+                />
+                <YAxis
+                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                  stroke="#555560"
+                  label={{ value: 'Spread %', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#161619",
+                    borderColor: "#555560",
+                    borderRadius: "8px",
+                    padding: "12px",
+                  }}
+                  labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                  formatter={(value: number) => `${value.toFixed(3)}%`}
+                  labelFormatter={(label: string) =>
+                    new Date(label).toLocaleDateString()
+                  }
+                />
+                <Line
+                  type="monotone"
+                  dataKey="spreads.pce_vs_cpi"
+                  name="PCE vs CPI"
+                  stroke="#60a5fa"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="spreads.pi_vs_cpi"
+                  name="PI vs CPI"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="spreads.consumer_health"
+                  name="Consumer Health"
+                  stroke="#f59e0b"
+                  strokeWidth={3}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
