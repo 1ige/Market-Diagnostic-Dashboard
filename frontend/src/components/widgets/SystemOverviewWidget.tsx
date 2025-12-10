@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -32,7 +33,11 @@ interface Alert {
   affected_indicators: string[];
 }
 
-const SystemOverviewWidget = () => {
+interface Props {
+  trendPeriod?: 90 | 180 | 365;
+}
+
+const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   const [data, setData] = useState<SystemStatus | null>(null);
   const [history, setHistory] = useState<SystemHistoryPoint[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -56,11 +61,10 @@ const SystemOverviewWidget = () => {
         setData(statusData);
         setAlerts(alertsData);
         
-        // Build mock history for composite score trend (we'll need to add proper backend endpoint later)
-        // For now, simulate some history based on current score
+        // Build mock history for composite score trend based on trendPeriod
         const mockHistory: SystemHistoryPoint[] = [];
         const now = new Date();
-        for (let i = 90; i >= 0; i--) {
+        for (let i = trendPeriod; i >= 0; i--) {
           const timestamp = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
           const variation = Math.random() * 10 - 5; // Random variation
           const score = Math.max(0, Math.min(100, (statusData.composite_score || 50) + variation));
@@ -84,7 +88,7 @@ const SystemOverviewWidget = () => {
     const interval = setInterval(fetchData, 60000); // Refresh every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [trendPeriod]);
 
   if (loading) {
     return (
@@ -138,17 +142,23 @@ const SystemOverviewWidget = () => {
     STABLE: "text-gray-400",
   }[trendDirection];
 
+  const periodLabel = trendPeriod === 365 ? "1 year" : trendPeriod === 180 ? "6 months" : "90 days";
+
   return (
-    <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-stealth-100">
-          System Overview
-        </h3>
-        <span className="text-xs text-stealth-400">
-          {data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A'}
-        </span>
-      </div>
+    <Link to="/system-breakdown" className="block">
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 space-y-4 hover:bg-stealth-750 hover:border-stealth-600 transition cursor-pointer">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-stealth-100">
+              System Overview
+            </h3>
+            <span className="text-xs text-stealth-500">→ View Breakdown</span>
+          </div>
+          <span className="text-xs text-stealth-400">
+            {data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A'}
+          </span>
+        </div>
 
       {/* Main Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">
@@ -252,7 +262,7 @@ const SystemOverviewWidget = () => {
       {history.length > 0 && (
         <div className="pt-4 border-t border-stealth-700">
           <h4 className="text-sm font-semibold text-stealth-200 mb-3">
-            Composite Score Trend (90 days)
+            Composite Score Trend ({periodLabel})
           </h4>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -307,19 +317,19 @@ const SystemOverviewWidget = () => {
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-3 pt-3 border-t border-stealth-700">
         <div>
-          <div className="text-xs text-stealth-400 mb-1">90-Day Avg</div>
+          <div className="text-xs text-stealth-400 mb-1">{periodLabel} Avg</div>
           <div className="text-sm font-semibold text-stealth-200">
             {(history.reduce((sum, p) => sum + p.composite_score, 0) / history.length).toFixed(1)}
           </div>
         </div>
         <div>
-          <div className="text-xs text-stealth-400 mb-1">90-Day High</div>
+          <div className="text-xs text-stealth-400 mb-1">{periodLabel} High</div>
           <div className="text-sm font-semibold text-stealth-200">
             {Math.max(...history.map(p => p.composite_score)).toFixed(1)}
           </div>
         </div>
         <div>
-          <div className="text-xs text-stealth-400 mb-1">90-Day Low</div>
+          <div className="text-xs text-stealth-400 mb-1">{periodLabel} Low</div>
           <div className="text-sm font-semibold text-stealth-200">
             {Math.min(...history.map(p => p.composite_score)).toFixed(1)}
           </div>
@@ -332,7 +342,8 @@ const SystemOverviewWidget = () => {
           <span className="font-semibold text-stealth-200">Purpose:</span> This dashboard monitors real-time market stability by tracking key economic indicators including volatility (VIX), equity performance (SPY), interest rates (DFF), yield curve (T10Y2Y), and unemployment (UNRATE). Each indicator is scored 0-100 using statistical normalization, then classified as RED (stress), YELLOW (caution), or GREEN (stable). The composite score aggregates all indicators to provide an at-a-glance assessment of overall market health and emerging risks.
         </p>
       </div>
-    </div>
+      </div>
+    </Link>
   );
 };
 

@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Indicators from "./pages/Indicators";
 import Alerts from "./pages/Alerts";
 import IndicatorDetail from "./pages/IndicatorDetail";
+import SystemBreakdown from "./pages/SystemBreakdown";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/indicators" element={<Indicators />} />
             <Route path="/indicators/:code" element={<IndicatorDetail />} />
             <Route path="/alerts" element={<Alerts />} />
+            <Route path="/system-breakdown" element={<SystemBreakdown />} />
           </Routes>
         </div>
       </div>
