@@ -12,7 +12,7 @@ services:
       - "0.0.0.0:8000:8000"  # Bind to all interfaces for external access
     depends_on:
       - db
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: /app/startup.sh
 
   frontend:
     build: 

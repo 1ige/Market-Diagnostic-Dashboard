@@ -458,25 +458,36 @@ class ETLRunner:
                 lookback=ind.lookback_days_for_z,
             )
         elif code == "DFF":
+            # CRITICAL: For DFF, we store RATE-OF-CHANGE, not absolute rate values
+            # This transforms Fed Funds from level (e.g., 3.64%) to momentum (e.g., -0.25% change)
+            # Rationale: Market stress comes from rate CHANGES, not absolute levels
+            # A 5% rate that's stable is less stressful than a 3% rate rising rapidly
+            
             # Calculate rate of change (difference between consecutive points)
-            # Skip first point since it has no prior reference
             roc_series = []
             for i in range(1, len(raw_series)):
                 change = raw_series[i] - raw_series[i-1]
                 roc_series.append(change)
             
-            # Update clean_values to match roc_series length
+            # Update clean_values to match roc_series length (lose first point)
             clean_values = clean_values[1:]
             
-            # Normalize the rate of change (positive change = rising = stress)
+            # IMPORTANT: Replace raw_series with ROC - this is what gets stored in the database
+            raw_series = roc_series
+            
+            # Normalize the rate of change
+            # Positive ROC = rates rising = tightening = stress
+            # With direction=-1, this becomes: falling rates = positive score = stability (GREEN)
             normalized_series = normalize_series(
                 roc_series,
                 direction=ind.direction,
                 lookback=ind.lookback_days_for_z,
             )
         elif code == "SPY":
-            # For SPY, use distance from 50-day EMA as the indicator
-            # This captures trend strength and mean reversion better than raw price
+            # CRITICAL: For SPY, we store EMA GAP PERCENTAGE, not absolute price
+            # This transforms SPY from price level (e.g., $580.45) to trend strength (e.g., +1.35% above EMA)
+            # Rationale: Market stress comes from trend divergence, not absolute price levels
+            # Price below EMA = distribution/weakness, Price above EMA = accumulation/strength
             import numpy as np
             
             if len(raw_series) < 50:
@@ -487,25 +498,30 @@ class ETLRunner:
                     lookback=ind.lookback_days_for_z,
                 )
             else:
-                # Calculate 50-day EMA
+                # Calculate 50-day EMA for trend baseline
                 ema_period = 50
                 prices = np.array(raw_series)
                 
                 # Calculate EMA using exponential weights
                 alpha = 2 / (ema_period + 1)
                 ema = np.zeros_like(prices)
-                ema[0] = prices[0]  # Start with first price
+                ema[0] = prices[0]  # Initialize with first price
                 
                 for i in range(1, len(prices)):
                     ema[i] = alpha * prices[i] + (1 - alpha) * ema[i-1]
                 
                 # Calculate percentage gap from EMA
-                # Positive gap = price above EMA (bullish), Negative = below EMA (bearish)
+                # Positive gap = price above EMA (bullish strength)
+                # Negative gap = price below EMA (bearish weakness/stress)
                 gap_pct = ((prices - ema) / ema) * 100
                 
+                # IMPORTANT: Replace raw_series with gap_pct - this is what gets stored in the database
+                raw_series = gap_pct.tolist()
+                
                 # Normalize the gap percentages
-                # When gap is large positive (price way above EMA) = GREEN (strong trend)
-                # When gap is large negative (price way below EMA) = RED (weak/bearish)
+                # Large positive gap = strong uptrend = stability (GREEN)
+                # Large negative gap = weak/broken trend = stress (RED)
+                # With direction=-1, negative gaps (stress) get lower scores
                 normalized_series = normalize_series(
                     gap_pct.tolist(),
                     direction=ind.direction,
