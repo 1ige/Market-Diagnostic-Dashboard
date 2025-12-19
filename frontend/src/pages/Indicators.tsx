@@ -4,38 +4,50 @@ import { Link } from "react-router-dom";
 import StateSparkline from "../components/widgets/StateSparkline";
 
 export default function Indicators() {
-  const { data } = useApi<IndicatorStatus[]>("/indicators");
+  const { data, loading } = useApi<IndicatorStatus[]>("/indicators");
 
   return (
     <div className="p-3 md:p-6 text-gray-200">
       <h2 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4">All Indicators</h2>
 
-      {/* Desktop Table View */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="w-full bg-stealth-800 rounded">
-          <thead className="text-left text-gray-400">
-            <tr>
-              <th className="px-4 py-3">Code</th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">State</th>
-              <th className="px-4 py-3">Trend</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-300">
-            {data?.map((i) => (
-              <IndicatorRow key={i.code} indicator={i} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && (
+        <div className="text-stealth-400">Loading indicators...</div>
+      )}
 
-      {/* Mobile/Tablet Card View */}
-      <div className="lg:hidden space-y-3">
-        {data?.map((i) => (
-          <IndicatorCard key={i.code} indicator={i} />
-        ))}
-      </div>
+      {!loading && data && (
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full bg-stealth-800 rounded">
+              <thead className="text-left text-gray-400">
+                <tr>
+                  <th className="px-4 py-3">Code</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Score</th>
+                  <th className="px-4 py-3">State</th>
+                  <th className="px-4 py-3">Trend</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-300">
+                {data.map((i) => (
+                  <IndicatorRow key={i.code} indicator={i} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden space-y-3">
+            {data.map((i) => (
+              <IndicatorCard key={i.code} indicator={i} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {!loading && !data && (
+        <div className="text-stealth-400">No indicators available.</div>
+      )}
     </div>
   );
 }
