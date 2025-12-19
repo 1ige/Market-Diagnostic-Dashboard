@@ -22,13 +22,22 @@ export function useApi<T>(endpoint: string) {
   const fetchData = () => {
     setLoading(true);
     setError(null);
-    fetch(`${API_URL}${endpoint}`)
+    const url = `${API_URL}${endpoint}`;
+    console.log('Fetching from:', url);
+    fetch(url)
       .then((res) => {
+        console.log('Response status:', res.status, 'for', endpoint);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
-      .then(setData)
-      .catch((err) => setError(err.message))
+      .then((result) => {
+        console.log('Data received for', endpoint, ':', Array.isArray(result) ? `${result.length} items` : 'object');
+        setData(result);
+      })
+      .catch((err) => {
+        console.error('Fetch error for', endpoint, ':', err.message);
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
   };
 
