@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 
-// Use the same host as the frontend, but port 8000 for API
-// This allows external users to access the API on your public IP
+// Use proxy through Vite dev server to avoid CORS and network issues
+// All /api/* requests will be proxied to the backend container
 const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  // Force HTTP protocol (not HTTPS) for local network access
-  const hostname = window.location.hostname;
-  // If hostname is localhost or 127.0.0.1, use that, otherwise use the actual hostname
-  const apiHost = hostname === 'localhost' || hostname === '127.0.0.1' ? 'localhost' : hostname;
-  return `http://${apiHost}:8000`;
+  // Use relative /api path which Vite will proxy to backend
+  // This works from any device on the network accessing the frontend
+  return '/api';
 };
 
 const API_URL = getApiUrl();
