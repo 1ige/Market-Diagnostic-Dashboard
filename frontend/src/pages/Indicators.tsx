@@ -4,13 +4,28 @@ import { Link } from "react-router-dom";
 import StateSparkline from "../components/widgets/StateSparkline";
 
 export default function Indicators() {
-  const { data, loading } = useApi<IndicatorStatus[]>("/indicators");
+  const { data, loading, error } = useApi<IndicatorStatus[]>("/indicators");
 
   if (loading) {
     return (
       <div className="p-3 md:p-6 text-gray-200">
         <h2 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4">All Indicators</h2>
         <div className="text-stealth-400">Loading indicators...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-3 md:p-6 text-gray-200">
+        <h2 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4">All Indicators</h2>
+        <div className="bg-red-900/20 border border-red-700 text-red-200 p-4 rounded">
+          <div className="font-semibold mb-2">Error loading indicators:</div>
+          <div className="text-sm">{error}</div>
+          <div className="text-xs mt-2 text-red-400">
+            Check console for details or try refreshing the page.
+          </div>
+        </div>
       </div>
     );
   }
