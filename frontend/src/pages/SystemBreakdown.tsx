@@ -169,32 +169,26 @@ export default function SystemBreakdown() {
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">📈</div>
             <div className="text-xs font-semibold text-stealth-200">VIX + SPY</div>
             <div className="text-xs text-stealth-400">Volatility & Equity</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">💵</div>
             <div className="text-xs font-semibold text-stealth-200">DFF + T10Y2Y</div>
             <div className="text-xs text-stealth-400">Rates & Yield Curve</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">🏢</div>
             <div className="text-xs font-semibold text-stealth-200">UNRATE</div>
             <div className="text-xs text-stealth-400">Employment</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">🛒</div>
             <div className="text-xs font-semibold text-stealth-200">Consumer Health</div>
             <div className="text-xs text-stealth-400">PCE, PI, CPI</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">📊</div>
             <div className="text-xs font-semibold text-stealth-200">Bond Market</div>
             <div className="text-xs text-stealth-400">Credit + Curve + Volatility</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-2xl mb-1">💧</div>
             <div className="text-xs font-semibold text-stealth-200">Liquidity Proxy</div>
             <div className="text-xs text-stealth-400">M2 + Fed BS + RRP</div>
           </div>

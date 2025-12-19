@@ -450,13 +450,12 @@ async def get_liquidity_proxy_components(days: int = 365):
 
 
 @router.get("/indicators/{code}/components")
-def get_indicator_components(code: str, days: int = 365):
+async def get_indicator_components(code: str, days: int = 365):
     """
     Return component breakdown for derived indicators.
     Currently supports: CONSUMER_HEALTH (returns PCE, PI, CPI data)
     """
     from datetime import datetime, timedelta
-    import asyncio
     from app.services.ingestion.fred_client import FredClient
     
     if code != "CONSUMER_HEALTH":
@@ -466,72 +465,118 @@ def get_indicator_components(code: str, days: int = 365):
         )
     
     # Fetch component data
-    async def fetch_components():
-        client = FredClient()
-        cutoff = datetime.utcnow() - timedelta(days=days)
-        start_date = cutoff.strftime("%Y-%m-%d")
-        
-        pce_series = await client.fetch_series("PCE", start_date=start_date)
-        cpi_series = await client.fetch_series("CPIAUCSL", start_date=start_date)
-        pi_series = await client.fetch_series("PI", start_date=start_date)
-        
-        return pce_series, cpi_series, pi_series
+    client = FredClient()
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    start_date = cutoff.strftime("%Y-%m-%d")
     
-    pce_data, cpi_data, pi_data = asyncio.run(fetch_components())
+    pce_series = await client.fetch_series("PCE", start_date=start_date)
+    cpi_series = await client.fetch_series("CPIAUCSL", start_date=start_date)
+    pi_series = await client.fetch_series("PI", start_date=start_date)
     
     # Calculate MoM% for each
     def calc_mom_pct(series):
         result = []
         for i in range(len(series)):
-            if i == 0:
+            if i == 0 or series[i]["value"] is None:
                 result.append({"date": series[i]["date"], "value": series[i]["value"], "mom_pct": 0.0})
             else:
                 prev_val = series[i-1]["value"]
                 curr_val = series[i]["value"]
-                mom_pct = ((curr_val - prev_val) / prev_val * 100) if prev_val != 0 else 0.0
+                if prev_val is None or curr_val is None:
+                    mom_pct = 0.0
+                else:
+                    mom_pct = ((curr_val - prev_val) / prev_val * 100) if prev_val != 0 else 0.0
                 result.append({"date": series[i]["date"], "value": curr_val, "mom_pct": mom_pct})
         return result
     
-    pce_with_mom = calc_mom_pct(pce_data)
-    cpi_with_mom = calc_mom_pct(cpi_data)
-    pi_with_mom = calc_mom_pct(pi_data)
+    pce_with_mom = calc_mom_pct(pce_series)
+    cpi_with_mom = calc_mom_pct(cpi_series)
+    pi_with_mom = calc_mom_pct(pi_series)
     
     # Align by date and calculate spreads
-    pce_dict = {x["date"]: x for x in pce_with_mom}
-    cpi_dict = {x["date"]: x for x in cpi_with_mom}
-    pi_dict = {x["date"]: x for x in pi_with_mom}
+    pce_dict = {x["date"]: x for x in pce_with_mom if x["value"] is not None}
+    cpi_dict = {x["date"]: x for x in cpi_with_mom if x["value"] is not None}
+    pi_dict = {x["date"]: x for x in pi_with_mom if x["value"] is not None}
     
-    common_dates = sorted(set(pce_dict.keys()) & set(cpi_dict.keys()) & set(pi_dict.keys()))
+    # Use union of all dates to show all available data
+    all_dates = sorted(set(pce_dict.keys()) | set(cpi_dict.keys()) | set(pi_dict.keys()))
+    
+    # Forward-fill missing values (use last known value)
+    last_pce = None
+    last_pi = None
+    last_cpi = None
     
     result = []
-    for date in common_dates:
-        pce_mom = pce_dict[date]["mom_pct"]
-        cpi_mom = cpi_dict[date]["mom_pct"]
-        pi_mom = pi_dict[date]["mom_pct"]
+    prev_pce_val = None
+    prev_cpi_val = None
+    prev_pi_val = None
+    
+    for date in all_dates:
+        # Update last known values if available
+        if date in pce_dict:
+            last_pce = pce_dict[date]
+        if date in cpi_dict:
+            last_cpi = cpi_dict[date]
+        if date in pi_dict:
+            last_pi = pi_dict[date]
         
-        pce_vs_cpi = pce_mom - cpi_mom
-        pi_vs_cpi = pi_mom - cpi_mom
-        consumer_health = pce_vs_cpi + pi_vs_cpi
+        # Skip if we don't have any data yet
+        if not last_pce or not last_cpi or not last_pi:
+            continue
+        
+        # Calculate MoM based on whether we have new data or are forward-filling
+        if date in pce_dict and prev_pce_val is not None:
+            pce_mom = ((last_pce["value"] - prev_pce_val) / prev_pce_val * 100) if prev_pce_val != 0 else 0.0
+        elif date in pce_dict:
+            pce_mom = 0.0  # First data point
+        else:
+            pce_mom = 0.0  # Forward-filled, no change
+            
+        if date in cpi_dict and prev_cpi_val is not None:
+            cpi_mom = ((last_cpi["value"] - prev_cpi_val) / prev_cpi_val * 100) if prev_cpi_val != 0 else 0.0
+        elif date in cpi_dict:
+            cpi_mom = 0.0  # First data point
+        else:
+            cpi_mom = 0.0  # Forward-filled, no change
+            
+        if date in pi_dict and prev_pi_val is not None:
+            pi_mom = ((last_pi["value"] - prev_pi_val) / prev_pi_val * 100) if prev_pi_val != 0 else 0.0
+        elif date in pi_dict:
+            pi_mom = 0.0  # First data point
+        else:
+            pi_mom = 0.0  # Forward-filled, no change
+        
+        pce_spread = pce_mom - cpi_mom
+        pi_spread = pi_mom - cpi_mom
+        consumer_health = (pce_spread + pi_spread) / 2  # Average of the two spreads
         
         result.append({
             "date": date,
             "pce": {
-                "value": pce_dict[date]["value"],
+                "value": last_pce["value"],
                 "mom_pct": pce_mom,
             },
             "cpi": {
-                "value": cpi_dict[date]["value"],
+                "value": last_cpi["value"],
                 "mom_pct": cpi_mom,
             },
             "pi": {
-                "value": pi_dict[date]["value"],
+                "value": last_pi["value"],
                 "mom_pct": pi_mom,
             },
             "spreads": {
-                "pce_vs_cpi": pce_vs_cpi,
-                "pi_vs_cpi": pi_vs_cpi,
+                "pce_spread": pce_spread,
+                "pi_spread": pi_spread,
                 "consumer_health": consumer_health,
             }
         })
+        
+        # Update previous values for next iteration
+        if date in pce_dict:
+            prev_pce_val = last_pce["value"]
+        if date in cpi_dict:
+            prev_cpi_val = last_cpi["value"]
+        if date in pi_dict:
+            prev_pi_val = last_pi["value"]
     
     return result

@@ -8,6 +8,7 @@ export default function Sidebar() {
       <nav className="flex flex-col space-y-3">
         <Link to="/" className="hover:text-accent-yellow">Dashboard</Link>
         <Link to="/indicators" className="hover:text-accent-yellow">Indicators</Link>
+        <Link to="/market-map" className="hover:text-accent-yellow">Market Map</Link>
         <Link to="/alerts" className="hover:text-accent-yellow">Alerts</Link>
       </nav>
     </div>

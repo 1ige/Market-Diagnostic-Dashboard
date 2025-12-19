@@ -73,20 +73,40 @@ class ETLRunner:
                 cpi_series = await self.fred.fetch_series("CPIAUCSL", start_date=start_date)
                 pi_series = await self.fred.fetch_series("PI", start_date=start_date)
                 
-                # All three are monthly, align by date
+                # Create dictionaries for forward-filling
                 pce_dict = {x["date"]: x["value"] for x in pce_series if x["value"] is not None}
                 cpi_dict = {x["date"]: x["value"] for x in cpi_series if x["value"] is not None}
                 pi_dict = {x["date"]: x["value"] for x in pi_series if x["value"] is not None}
                 
-                # Find common dates
-                common_dates = sorted(set(pce_dict.keys()) & set(cpi_dict.keys()) & set(pi_dict.keys()))
+                # Use union of all dates to capture all available data
+                all_dates = sorted(set(pce_dict.keys()) | set(cpi_dict.keys()) | set(pi_dict.keys()))
                 
-                # Build aligned series with derived value placeholder
+                # Forward-fill: build lists with last known values
+                pce_raw = []
+                cpi_raw = []
+                pi_raw = []
+                last_pce = None
+                last_cpi = None
+                last_pi = None
+                
+                common_dates = []
+                for date in all_dates:
+                    if date in pce_dict:
+                        last_pce = pce_dict[date]
+                    if date in cpi_dict:
+                        last_cpi = cpi_dict[date]
+                    if date in pi_dict:
+                        last_pi = pi_dict[date]
+                    
+                    # Only add if we have at least one value for each series
+                    if last_pce is not None and last_cpi is not None and last_pi is not None:
+                        common_dates.append(date)
+                        pce_raw.append(last_pce)
+                        cpi_raw.append(last_cpi)
+                        pi_raw.append(last_pi)
+                
+                # Build aligned series
                 series = [{"date": date, "value": 0.0} for date in common_dates]
-                # Store raw values for later calculation
-                pce_raw = [pce_dict[date] for date in common_dates]
-                cpi_raw = [cpi_dict[date] for date in common_dates]
-                pi_raw = [pi_dict[date] for date in common_dates]
             elif code == "BOND_MARKET_STABILITY":
                 # This indicator fetches its data in the processing section below
                 # Just create placeholder series for now

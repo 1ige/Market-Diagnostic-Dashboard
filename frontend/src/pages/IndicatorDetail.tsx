@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 
 interface IndicatorMetadata {
@@ -155,7 +156,7 @@ export default function IndicatorDetail() {
   };
 
   return (
-    <div className="p-6 text-gray-200 max-w-7xl">
+    <div className="p-6 text-gray-200 max-w-7xl mx-auto">
       <h2 className="text-3xl font-bold mb-6">
         {meta?.name ?? code}
       </h2>
@@ -196,9 +197,19 @@ export default function IndicatorDetail() {
       {code === "CONSUMER_HEALTH" && components && components.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
           <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
-          <p className="text-sm text-stealth-400 mb-4">
-            Consumer Health = (PCE Growth - CPI Growth) + (PI Growth - CPI Growth)
+          <p className="text-sm text-stealth-400 mb-2">
+            Measures real consumer financial capacity by comparing spending and income growth against inflation.
           </p>
+          <p className="text-sm text-stealth-400 mb-4 font-mono">
+            Consumer Health = [(PCE Growth - CPI Growth) + (PI Growth - CPI Growth)] / 2
+          </p>
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 mb-6">
+            <p className="text-xs text-stealth-300">
+              <span className="text-green-400">Positive values</span> indicate spending and income are outpacing inflation (healthy consumer capacity). 
+              <span className="text-red-400 ml-2">Negative values</span> indicate inflation is eroding real purchasing power (consumer stress).
+              Data updates monthly with ~2 month lag as PCE/PI are released by the BEA.
+            </p>
+          </div>
           
           {/* Latest Values */}
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -210,6 +221,9 @@ export default function IndicatorDetail() {
               <div className="text-xs text-stealth-500 mt-1">
                 MoM Growth
               </div>
+              <div className="text-xs text-stealth-500">
+                vs CPI: {components[components.length - 1].spreads.pce_spread.toFixed(3)}%
+              </div>
             </div>
             
             <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
@@ -219,6 +233,9 @@ export default function IndicatorDetail() {
               </div>
               <div className="text-xs text-stealth-500 mt-1">
                 MoM Growth
+              </div>
+              <div className="text-xs text-stealth-500">
+                vs CPI: {components[components.length - 1].spreads.pi_spread.toFixed(3)}%
               </div>
             </div>
             
@@ -230,24 +247,64 @@ export default function IndicatorDetail() {
               <div className="text-xs text-stealth-500 mt-1">
                 MoM Growth
               </div>
+              <div className="text-xs text-stealth-500">
+                Baseline
+              </div>
             </div>
           </div>
 
-          {/* Spread Chart */}
-          <div className="h-80">
+          {/* Component MoM Growth Chart */}
+          <div className="h-80 mb-6">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Month-over-Month Growth</h4>
             {(() => {
               const today = new Date();
+              today.setHours(23, 59, 59, 999); // End of today
               const daysBack = new Date(today);
               daysBack.setDate(today.getDate() - chartRange.days);
+              daysBack.setHours(0, 0, 0, 0); // Start of that day
               
-              const chartData = components.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              // Get the last data point from all components
+              const lastPoint = components[components.length - 1];
+              const lastDate = new Date(lastPoint.date + 'T00:00:00');
+              
+              // Create monthly points from last data to today for flat line
+              const intermediatePoints = [];
+              const currentDate = new Date(lastDate);
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              currentDate.setDate(1); // First of the month
+              
+              while (currentDate <= today) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  date: currentDate.toISOString().split('T')[0],
+                  dateNum: currentDate.getTime()
+                });
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+              
+              // Add today as final point
+              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].dateNum < today.getTime()) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  date: today.toISOString().split('T')[0],
+                  dateNum: today.getTime()
+                });
+              }
+              
+              // Combine all data with extended flat line, then filter for chart range
+              const allData = [
+                ...components.map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date + 'T00:00:00').getTime()
+                })),
+                ...intermediatePoints
+              ];
+              
+              const extendedData = allData.filter(item => item.dateNum >= daysBack.getTime());
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={extendedData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -263,70 +320,112 @@ export default function IndicatorDetail() {
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
                     />
-                <YAxis
-                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                  stroke="#555560"
-                  label={{ value: 'MoM % Growth', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#161619",
-                    borderColor: "#555560",
-                    borderRadius: "8px",
-                    padding: "12px",
-                  }}
-                  labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                  formatter={(value: number) => `${value.toFixed(3)}%`}
-                  labelFormatter={(label: string) =>
-                    new Date(label).toLocaleDateString()
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pce.mom_pct"
-                  name="PCE Growth"
-                  stroke="#60a5fa"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pi.mom_pct"
-                  name="PI Growth"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cpi.mom_pct"
-                  name="CPI (Inflation)"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'MoM % Growth', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => `${value.toFixed(3)}%`}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pce.mom_pct"
+                      name="PCE Growth"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pi.mom_pct"
+                      name="PI Growth"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cpi.mom_pct"
+                      name="CPI (Inflation)"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               );
             })()}
           </div>
 
-          {/* Spread vs Inflation Chart */}
-          <div className="h-80 mt-6">
-            <h4 className="text-lg font-semibold mb-2 text-stealth-100">Real Consumer Capacity vs Inflation</h4>
+          {/* Consumer Health Index Chart */}
+          <div className="h-80">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Consumer Health Index</h4>
+            <p className="text-xs text-stealth-400 mb-2">
+              Positive = Spending/Income outpacing inflation (healthy). Negative = Inflation eroding consumer capacity (stress).
+            </p>
             {(() => {
               const today = new Date();
+              today.setHours(23, 59, 59, 999); // End of today
               const daysBack = new Date(today);
               daysBack.setDate(today.getDate() - chartRange.days);
+              daysBack.setHours(0, 0, 0, 0); // Start of that day
               
-              const chartData = components.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              // Get the last data point from all components
+              const lastPoint = components[components.length - 1];
+              const lastDate = new Date(lastPoint.date + 'T00:00:00');
+              
+              // Create monthly points from last data to today for flat line
+              const intermediatePoints = [];
+              const currentDate = new Date(lastDate);
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              currentDate.setDate(1); // First of the month
+              
+              while (currentDate <= today) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  date: currentDate.toISOString().split('T')[0],
+                  dateNum: currentDate.getTime()
+                });
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+              
+              // Add today as final point
+              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].dateNum < today.getTime()) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  date: today.toISOString().split('T')[0],
+                  dateNum: today.getTime()
+                });
+              }
+              
+              // Combine all data with extended flat line, then filter for chart range
+              const allData = [
+                ...components.map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date + 'T00:00:00').getTime()
+                })),
+                ...intermediatePoints
+              ];
+              
+              const extendedData = allData.filter(item => item.dateNum >= daysBack.getTime());
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={extendedData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -342,50 +441,54 @@ export default function IndicatorDetail() {
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
                     />
-                <YAxis
-                  tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                  stroke="#555560"
-                  label={{ value: 'Spread %', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#161619",
-                    borderColor: "#555560",
-                    borderRadius: "8px",
-                    padding: "12px",
-                  }}
-                  labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                  formatter={(value: number) => `${value.toFixed(3)}%`}
-                  labelFormatter={(label: string) =>
-                    new Date(label).toLocaleDateString()
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="spreads.pce_vs_cpi"
-                  name="PCE vs CPI"
-                  stroke="#60a5fa"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="spreads.pi_vs_cpi"
-                  name="PI vs CPI"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="spreads.consumer_health"
-                  name="Consumer Health"
-                  stroke="#f59e0b"
-                  strokeWidth={3}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                    <YAxis
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Spread vs Inflation (%)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => `${value.toFixed(3)}%`}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spreads.pce_spread"
+                      name="PCE vs CPI"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spreads.pi_spread"
+                      name="PI vs CPI"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spreads.consumer_health"
+                      name="Consumer Health"
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      dot={false}
+                      connectNulls
+                    />
+                    <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                  </LineChart>
+                </ResponsiveContainer>
               );
             })()}
           </div>
@@ -869,17 +972,50 @@ export default function IndicatorDetail() {
           <div className="h-80">
             {history && history.length > 0 ? (() => {
               const today = new Date();
+              today.setHours(23, 59, 59, 999);
               const daysBack = new Date(today);
               daysBack.setDate(today.getDate() - chartRange.days);
+              daysBack.setHours(0, 0, 0, 0);
               
-              const chartData = history.map(item => ({
-                ...item,
-                timestampNum: new Date(item.timestamp).getTime()
-              }));
+              // Get the last data point
+              const lastPoint = history[history.length - 1];
+              const lastDate = new Date(lastPoint.timestamp);
+              
+              // Create monthly points from last data to today
+              const intermediatePoints = [];
+              const currentDate = new Date(lastDate);
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              currentDate.setDate(1);
+              
+              while (currentDate <= today) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: currentDate.toISOString(),
+                  timestampNum: currentDate.getTime()
+                });
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+              
+              // Add today
+              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].timestampNum < today.getTime()) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: today.toISOString(),
+                  timestampNum: today.getTime()
+                });
+              }
+              
+              const chartData = [
+                ...history.map(item => ({
+                  ...item,
+                  timestampNum: new Date(item.timestamp).getTime()
+                })),
+                ...intermediatePoints
+              ].filter(item => item.timestampNum >= daysBack.getTime());
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="timestampNum"
@@ -923,6 +1059,7 @@ export default function IndicatorDetail() {
                       strokeWidth={2}
                       dot={false}
                       animationDuration={300}
+                      connectNulls
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -942,17 +1079,50 @@ export default function IndicatorDetail() {
           <div className="h-80">
             {history && history.length > 0 ? (() => {
               const today = new Date();
+              today.setHours(23, 59, 59, 999);
               const daysBack = new Date(today);
               daysBack.setDate(today.getDate() - chartRange.days);
+              daysBack.setHours(0, 0, 0, 0);
               
-              const chartData = history.map(item => ({
-                ...item,
-                timestampNum: new Date(item.timestamp).getTime()
-              }));
+              // Get the last data point
+              const lastPoint = history[history.length - 1];
+              const lastDate = new Date(lastPoint.timestamp);
+              
+              // Create monthly points from last data to today
+              const intermediatePoints = [];
+              const currentDate = new Date(lastDate);
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              currentDate.setDate(1);
+              
+              while (currentDate <= today) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: currentDate.toISOString(),
+                  timestampNum: currentDate.getTime()
+                });
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+              
+              // Add today
+              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].timestampNum < today.getTime()) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: today.toISOString(),
+                  timestampNum: today.getTime()
+                });
+              }
+              
+              const chartData = [
+                ...history.map(item => ({
+                  ...item,
+                  timestampNum: new Date(item.timestamp).getTime()
+                })),
+                ...intermediatePoints
+              ].filter(item => item.timestampNum >= daysBack.getTime());
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="timestampNum"
@@ -1004,6 +1174,7 @@ export default function IndicatorDetail() {
                     strokeWidth={2}
                     dot={false}
                     animationDuration={300}
+                    connectNulls
                   />
                 </LineChart>
               </ResponsiveContainer>

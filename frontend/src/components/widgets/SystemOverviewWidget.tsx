@@ -44,6 +44,24 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Calculate 7-day moving average for smoother trends
+  const calculateMovingAverage = (data: SystemHistoryPoint[], windowSize: number = 7) => {
+    if (data.length < windowSize) return data;
+    
+    return data.map((point, index) => {
+      const start = Math.max(0, index - Math.floor(windowSize / 2));
+      const end = Math.min(data.length, start + windowSize);
+      const window = data.slice(start, end);
+      const avg = window.reduce((sum, p) => sum + p.composite_score, 0) / window.length;
+      
+      return {
+        ...point,
+        composite_score: avg,
+        raw_score: point.composite_score, // Keep original for reference
+      };
+    });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -74,7 +92,10 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
             state: score < 40 ? "GREEN" : score < 70 ? "YELLOW" : "RED"
           });
         }
-        setHistory(mockHistory);
+        
+        // Apply 7-day moving average to smooth out daily oscillations
+        const smoothedHistory = calculateMovingAverage(mockHistory, 7);
+        setHistory(smoothedHistory);
         
         setError(null);
       } catch (err) {
@@ -288,7 +309,8 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
                 <YAxis
                   tick={{ fill: "#6b7280", fontSize: 10 }}
                   stroke="#555560"
-                  domain={[0, 100]}
+                  domain={['dataMin - 5', 'dataMax + 5']}
+                  scale="linear"
                 />
                 <Tooltip
                   contentStyle={{

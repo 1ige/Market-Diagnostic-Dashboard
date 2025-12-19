@@ -9,6 +9,7 @@ from app.api.status import router as status_router
 from app.api.indicators import router as indicators_router
 from app.api.alerts import router as alerts_router
 from app.api.dow_theory import router as dow_theory_router
+from app.api.market_map import router as market_map_router
 
 # Set up logging
 logging.basicConfig(
@@ -71,6 +72,7 @@ app.include_router(status_router, tags=["Status"])
 app.include_router(indicators_router, tags=["Indicators"])
 app.include_router(alerts_router, tags=["Alerts"])
 app.include_router(dow_theory_router, tags=["DowTheory"])
+app.include_router(market_map_router, tags=["MarketMap"])
 
 from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
