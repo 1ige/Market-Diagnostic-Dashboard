@@ -6,12 +6,15 @@ const getApiUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  const protocol = window.location.protocol;
+  // Force HTTP protocol (not HTTPS) for local network access
   const hostname = window.location.hostname;
-  return `${protocol}//${hostname}:8000`;
+  // If hostname is localhost or 127.0.0.1, use that, otherwise use the actual hostname
+  const apiHost = hostname === 'localhost' || hostname === '127.0.0.1' ? 'localhost' : hostname;
+  return `http://${apiHost}:8000`;
 };
 
 const API_URL = getApiUrl();
+console.log('API_URL configured as:', API_URL);
 
 export function useApi<T>(endpoint: string) {
   const [data, setData] = useState<T | null>(null);
