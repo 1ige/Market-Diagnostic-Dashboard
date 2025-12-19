@@ -20,14 +20,15 @@ export default function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
     // Fetch indicators data from backend
-    fetch("http://localhost:8000/indicators")
+    fetch(`${apiUrl}/indicators`)
       .then(res => res.json())
       .then(data => setIndicators(data))
       .catch(() => setIndicators(null));
 
     // Fetch active alerts from last 24 hours
-    fetch("http://localhost:8000/alerts?hours=24")
+    fetch(`${apiUrl}/alerts?hours=24`)
       .then(res => res.json())
       .then(data => setAlerts(data))
       .catch(() => setAlerts([]));
@@ -39,8 +40,9 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
       // Trigger backend ETL to fetch latest data from FRED and Yahoo Finance
-      const response = await fetch("http://localhost:8000/admin/ingest/run", {
+      const response = await fetch(`${apiUrl}/admin/ingest/run`, {
         method: "POST",
       });
       

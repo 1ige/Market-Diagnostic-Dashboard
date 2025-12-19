@@ -143,7 +143,8 @@ export default function IndicatorDetail() {
     setRefetchMessage(null);
     
     try {
-      const response = await fetch(`http://localhost:8000/admin/clear-refetch/${code}?days=365`, {
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const response = await fetch(`${apiUrl}/admin/clear-refetch/${code}?days=365`, {
         method: 'POST'
       });
       

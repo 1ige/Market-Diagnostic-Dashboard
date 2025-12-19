@@ -65,9 +65,10 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
         const [statusResponse, alertsResponse] = await Promise.all([
-          fetch("http://localhost:8000/system"),
-          fetch("http://localhost:8000/alerts?hours=24"),
+          fetch(`${apiUrl}/system`),
+          fetch(`${apiUrl}/alerts?hours=24`),
         ]);
         
         if (!statusResponse.ok) throw new Error("Failed to fetch system status");

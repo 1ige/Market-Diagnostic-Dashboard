@@ -45,9 +45,10 @@ const DowTheoryWidget = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
         const [currentResponse, historyResponse] = await Promise.all([
-          fetch("http://localhost:8000/dow-theory"),
-          fetch("http://localhost:8000/dow-theory/history"),
+          fetch(`${apiUrl}/dow-theory`),
+          fetch(`${apiUrl}/dow-theory/history`),
         ]);
         
         if (!currentResponse.ok) throw new Error("Failed to fetch Dow Theory data");

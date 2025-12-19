@@ -37,8 +37,9 @@ export default function IndicatorCard({ indicator }: Props) {
   const [history, setHistory] = useState<IndicatorHistoryPoint[]>([]);
 
   useEffect(() => {
+    const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
     // Fetch last 30 days of history for sparkline
-    fetch(`http://localhost:8000/indicators/${indicator.code}/history?days=30`)
+    fetch(`${apiUrl}/indicators/${indicator.code}/history?days=30`)
       .then(res => res.json())
       .then(data => setHistory(data))
       .catch(() => setHistory([]));

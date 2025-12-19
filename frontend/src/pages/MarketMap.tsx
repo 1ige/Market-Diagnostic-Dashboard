@@ -130,9 +130,10 @@ const MarketMap = () => {
    */
   const fetchData = async () => {
     try {
-      const [mapResponse, intradayResponse] = await Promise.all([
-        fetch("http://localhost:8000/market-map/data?days=5"),
-        fetch("http://localhost:8000/market-map/spy-intraday")
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const [mapResponse, spyResponse] = await Promise.all([
+        fetch(`${apiUrl}/market-map/data?days=5`),
+        fetch(`${apiUrl}/market-map/spy-intraday`)
       ]);
       
       if (!mapResponse.ok) throw new Error("Failed to fetch market map data");
