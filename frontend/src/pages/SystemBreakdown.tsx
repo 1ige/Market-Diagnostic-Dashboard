@@ -153,13 +153,13 @@ export default function SystemBreakdown() {
   const totalWeight = metadata.reduce((sum, m) => sum + m.weight, 0);
 
   return (
-    <div className="p-6 text-gray-200">
-      <h2 className="text-2xl font-bold mb-6">System Breakdown & Methodology</h2>
+    <div className="p-3 md:p-6 text-gray-200">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 md:mb-6">System Breakdown & Methodology</h2>
 
       {/* Overview Section */}
-      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-stealth-100">System Overview</h3>
-        <p className="text-sm text-stealth-300 leading-relaxed mb-4">
+      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">System Overview</h3>
+        <p className="text-xs sm:text-sm text-stealth-300 leading-relaxed mb-3 md:mb-4">
           This Market Diagnostic Dashboard provides a comprehensive, real-time assessment of market stability by monitoring 
           and analyzing <strong>eight critical indicators</strong> across five domains: <strong>volatility</strong> (VIX), 
           <strong>equities</strong> (SPY), <strong>interest rates</strong> (DFF, T10Y2Y), <strong>employment</strong> (UNRATE), 
@@ -167,7 +167,7 @@ export default function SystemBreakdown() {
           Each indicator is independently scored on a 0-100 scale using statistical normalization techniques, then combined into 
           a weighted composite score that reflects overall market health.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
             <div className="text-xs font-semibold text-stealth-200">VIX + SPY</div>
             <div className="text-xs text-stealth-400">Volatility & Equity</div>
@@ -193,19 +193,19 @@ export default function SystemBreakdown() {
             <div className="text-xs text-stealth-400">M2 + Fed BS + RRP</div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <div className="text-green-400 text-2xl mb-2">🟢 GREEN</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
+            <div className="text-green-400 text-xl md:text-2xl mb-1 md:mb-2">🟢 GREEN</div>
             <div className="text-xs text-stealth-400 mb-1">Composite Score: 0-39</div>
             <div className="text-xs text-stealth-300">Market conditions are <strong>stable</strong>. Low volatility, healthy growth, minimal systemic risks.</div>
           </div>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <div className="text-yellow-400 text-2xl mb-2">🟡 YELLOW</div>
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
+            <div className="text-yellow-400 text-xl md:text-2xl mb-1 md:mb-2">🟡 YELLOW</div>
             <div className="text-xs text-stealth-400 mb-1">Composite Score: 40-69</div>
             <div className="text-xs text-stealth-300">Market shows <strong>caution signals</strong>. Increased volatility, mixed indicators, elevated monitoring required.</div>
           </div>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <div className="text-red-400 text-2xl mb-2">🔴 RED</div>
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
+            <div className="text-red-400 text-xl md:text-2xl mb-1 md:mb-2">🔴 RED</div>
             <div className="text-xs text-stealth-400 mb-1">Composite Score: 70-100</div>
             <div className="text-xs text-stealth-300">Market under <strong>stress</strong>. High volatility, recession signals, significant systemic concerns.</div>
           </div>
@@ -213,8 +213,8 @@ export default function SystemBreakdown() {
       </div>
 
       {/* Composite Score Calculation */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-stealth-100">Composite Score Calculation</h3>
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Composite Score Calculation</h3>
         <div className="space-y-4">
           <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
             <div className="text-sm font-mono text-cyan-400 mb-3">
@@ -244,9 +244,9 @@ export default function SystemBreakdown() {
       </div>
 
       {/* Indicator Weights */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-stealth-100">Indicator Weights & Configuration</h3>
-        <p className="text-sm text-stealth-300 mb-4">
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Indicator Weights & Configuration</h3>
+        <p className="text-xs sm:text-sm text-stealth-300 mb-3 md:mb-4">
           Each indicator is assigned a weight based on its historical significance in predicting market instability. 
           Weights reflect how strongly each metric influences the composite score and overall system state.
         </p>

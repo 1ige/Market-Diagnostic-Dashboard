@@ -228,14 +228,14 @@ const MarketMap = () => {
   // =============================================================================
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-3 md:space-y-6">
       {/* =================================================================
           HEADER SECTION
           ================================================================= */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stealth-100">Market Map</h1>
-          <p className="text-sm text-stealth-400 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-stealth-100">Market Map</h1>
+          <p className="text-xs sm:text-sm text-stealth-400 mt-1">
             S&P 500 sector performance - bubble size represents trading volume
           </p>
         </div>
@@ -244,7 +244,7 @@ const MarketMap = () => {
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition ${
+          className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition whitespace-nowrap ${
             isRefreshing
               ? 'bg-stealth-700 text-stealth-400 cursor-not-allowed'
               : 'bg-stealth-700 text-stealth-200 hover:bg-stealth-600 hover:text-stealth-100'
@@ -264,7 +264,8 @@ const MarketMap = () => {
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
-          {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          <span className="hidden xs:inline">{isRefreshing ? 'Refreshing...' : 'Refresh Data'}</span>
+          <span className="xs:hidden">{isRefreshing ? 'Loading...' : 'Refresh'}</span>
         </button>
       </div>
 
@@ -272,10 +273,10 @@ const MarketMap = () => {
           INTRADAY MAJOR INDICES CHART
           Shows 5-minute interval price action for SPY, DJI, RTY across last 5 trading days
           ================================================================= */}
-      <div className="bg-stealth-800 rounded-lg p-6 border border-stealth-700">
-        <h2 className="text-lg font-semibold text-stealth-200 mb-2">Major Indices Intraday (5 min)</h2>
-        <p className="text-stealth-400 text-xs mb-4">SPY (S&P 500), DJI (Dow Jones), RTY (Russell 2000)</p>
-        <div className="h-64">
+      <div className="bg-stealth-800 rounded-lg p-3 md:p-6 border border-stealth-700">
+        <h2 className="text-base md:text-lg font-semibold text-stealth-200 mb-2">Major Indices Intraday (5 min)</h2>
+        <p className="text-stealth-400 text-xs mb-3 md:mb-4">SPY (S&P 500), DJI (Dow Jones), RTY (Russell 2000)</p>
+        <div className="h-48 sm:h-64">
           {intradayData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart>
@@ -390,18 +391,18 @@ const MarketMap = () => {
         </div>
         
         {/* Daily Summary Cards - Aligned with chart sections */}
-        <div className="flex gap-0 mt-4" style={{ paddingLeft: '60px' }}>
+        <div className="flex gap-0 mt-3 md:mt-4" style={{ paddingLeft: '40px' }}>
           {data.week_performance.map((day, idx) => (
             <div
               key={day.date}
-              className="flex-1 text-center p-2 bg-stealth-900 border-t border-b border-stealth-700"
+              className="flex-1 text-center p-1.5 sm:p-2 bg-stealth-900 border-t border-b border-stealth-700"
               style={{ 
                 borderLeft: idx === 0 ? '1px solid #333338' : 'none',
                 borderRight: '1px solid #333338'
               }}
             >
-              <div className="text-xs font-semibold text-stealth-300">{day.day_name}</div>
-              <div className={`text-sm font-bold ${day.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <div className="text-xs font-semibold text-stealth-300 truncate">{day.day_name.substring(0, 3)}</div>
+              <div className={`text-xs sm:text-sm font-bold ${day.pct_change >= 0 ? "text-green-400" : "text-red-400"}`}>
                 {day.pct_change >= 0 ? "+" : ""}{day.pct_change.toFixed(1)}%
               </div>
             </div>
@@ -413,7 +414,7 @@ const MarketMap = () => {
           SECTOR PERFORMANCE GRID
           Each card shows one sector with vertical bubble chart
           ================================================================= */}
-      <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2">
         {data.sectors
           .sort((a, b) => b.pct_change - a.pct_change)  // Sort by performance (best first)
           .map((sector) => {

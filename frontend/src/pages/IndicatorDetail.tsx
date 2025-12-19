@@ -179,7 +179,7 @@ export default function IndicatorDetail() {
     }
   };
 
-  if (!code) return <div className="p-6 text-gray-200">No code provided.</div>;
+  if (!code) return <div className="p-3 md:p-6 text-gray-200">No code provided.</div>;
   
   // Check if data is stale and needs extended view
   const getChartRange = () => {
@@ -206,38 +206,38 @@ export default function IndicatorDetail() {
   };
 
   return (
-    <div className="p-6 text-gray-200 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6">
+    <div className="p-3 md:p-6 text-gray-200 max-w-7xl mx-auto">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
         {meta?.name ?? code}
       </h2>
 
       {/* Metadata Section */}
       {meta?.metadata && (
-        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6 space-y-4">
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6 space-y-3 md:space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-stealth-100 mb-2">Description</h3>
-            <p className="text-stealth-300 leading-relaxed">{meta.metadata.description}</p>
+            <h3 className="text-base md:text-lg font-semibold text-stealth-100 mb-2">Description</h3>
+            <p className="text-sm md:text-base text-stealth-300 leading-relaxed">{meta.metadata.description}</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <div>
-              <h4 className="text-sm font-semibold text-stealth-200 mb-1">Relevance</h4>
-              <p className="text-sm text-stealth-400">{meta.metadata.relevance}</p>
+              <h4 className="text-xs md:text-sm font-semibold text-stealth-200 mb-1">Relevance</h4>
+              <p className="text-xs md:text-sm text-stealth-400">{meta.metadata.relevance}</p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-stealth-200 mb-1">Impact</h4>
-              <p className="text-sm text-stealth-400">{meta.metadata.impact}</p>
+              <h4 className="text-xs md:text-sm font-semibold text-stealth-200 mb-1">Impact</h4>
+              <p className="text-xs md:text-sm text-stealth-400">{meta.metadata.impact}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <div>
-              <h4 className="text-sm font-semibold text-stealth-200 mb-1">Scoring Method</h4>
-              <p className="text-sm text-stealth-400">{meta.metadata.scoring}</p>
+              <h4 className="text-xs md:text-sm font-semibold text-stealth-200 mb-1">Scoring Method</h4>
+              <p className="text-xs md:text-sm text-stealth-400">{meta.metadata.scoring}</p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-stealth-200 mb-1">Typical Range</h4>
-              <p className="text-sm text-stealth-400">{meta.metadata.typical_range}</p>
+              <h4 className="text-xs md:text-sm font-semibold text-stealth-200 mb-1">Typical Range</h4>
+              <p className="text-xs md:text-sm text-stealth-400">{meta.metadata.typical_range}</p>
             </div>
           </div>
         </div>
@@ -245,15 +245,15 @@ export default function IndicatorDetail() {
 
       {/* Component Breakdown for Consumer Health */}
       {code === "CONSUMER_HEALTH" && components && components.length > 0 && (
-        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
-          <p className="text-sm text-stealth-400 mb-2">
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-xs md:text-sm text-stealth-400 mb-2">
             Measures real consumer financial capacity by comparing spending and income growth against inflation.
           </p>
-          <p className="text-sm text-stealth-400 mb-4 font-mono">
+          <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 font-mono break-all">
             Consumer Health = [(PCE Growth - CPI Growth) + (PI Growth - CPI Growth)] / 2
           </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 mb-6">
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-2 md:p-3 mb-4 md:mb-6">
             <p className="text-xs text-stealth-300">
               <span className="text-green-400">Positive values</span> indicate spending and income are outpacing inflation (healthy consumer capacity). 
               <span className="text-red-400 ml-2">Negative values</span> indicate inflation is eroding real purchasing power (consumer stress).
@@ -262,7 +262,7 @@ export default function IndicatorDetail() {
           </div>
           
           {/* Latest Values */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
             <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
               <div className="text-xs text-stealth-400 mb-1">PCE (Spending)</div>
               <div className="text-lg font-bold text-blue-400">
@@ -547,14 +547,14 @@ export default function IndicatorDetail() {
 
       {/* Component Breakdown for Bond Market Stability */}
       {code === "BOND_MARKET_STABILITY" && bondComponents && bondComponents.length > 0 && (
-        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
-          <p className="text-sm text-stealth-400 mb-4">
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
             Composite Stress = (Credit × 44%) + (Curve × 23%) + (Momentum × 17%) + (Volatility × 16%)
           </p>
           
           {/* Latest Component Values */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
             <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
               <div className="text-xs text-stealth-400 mb-1">Credit Spreads</div>
               <div className="text-lg font-bold text-red-400">
@@ -762,14 +762,14 @@ export default function IndicatorDetail() {
 
       {/* Component Breakdown for Liquidity Proxy */}
       {code === "LIQUIDITY_PROXY" && liquidityComponents && liquidityComponents.length > 0 && (
-        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4 text-stealth-100">Component Breakdown</h3>
-          <p className="text-sm text-stealth-400 mb-4">
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
             Liquidity Proxy = z(M2 YoY%) + z(Fed BS Delta) - z(RRP Usage) → Stress Score
           </p>
           
           {/* Latest Component Values */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-3 md:gap-4 mb-4 md:mb-6">
             <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
               <div className="text-xs text-stealth-400 mb-1">M2 Money Supply</div>
               <div className="text-lg font-bold text-blue-400">
