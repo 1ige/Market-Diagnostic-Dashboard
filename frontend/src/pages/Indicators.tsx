@@ -11,7 +11,7 @@ export default function Indicators() {
       <h2 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4">All Indicators</h2>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full bg-stealth-800 rounded">
           <thead className="text-left text-gray-400">
             <tr>
@@ -30,8 +30,8 @@ export default function Indicators() {
         </table>
       </div>
 
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-3">
+      {/* Mobile/Tablet Card View */}
+      <div className="lg:hidden space-y-3">
         {data?.map((i) => (
           <IndicatorCard key={i.code} indicator={i} />
         ))}
