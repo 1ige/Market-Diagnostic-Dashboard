@@ -478,28 +478,27 @@ class ETLRunner:
                 lookback=ind.lookback_days_for_z,
             )
         elif code == "DFF":
-            # CRITICAL: For DFF, we store RATE-OF-CHANGE, not absolute rate values
-            # This transforms Fed Funds from level (e.g., 3.64%) to momentum (e.g., -0.25% change)
+            # CRITICAL: For DFF, we store the ABSOLUTE RATE but score based on RATE-OF-CHANGE
+            # This allows charts to show meaningful data (e.g., 3.64%) while scoring measures momentum
             # Rationale: Market stress comes from rate CHANGES, not absolute levels
             # A 5% rate that's stable is less stressful than a 3% rate rising rapidly
             
-            # Calculate rate of change (difference between consecutive points)
+            # Calculate rate of change for normalization (difference between consecutive points)
             roc_series = []
             for i in range(1, len(raw_series)):
                 change = raw_series[i] - raw_series[i-1]
                 roc_series.append(change)
             
-            # Update clean_values to match roc_series length (lose first point)
-            clean_values = clean_values[1:]
-            
-            # IMPORTANT: Replace raw_series with ROC - this is what gets stored in the database
-            raw_series = roc_series
-            
-            # Normalize the rate of change
+            # Store absolute rates in database (raw_series unchanged)
+            # But normalize based on rate-of-change for scoring
             # Positive ROC = rates rising = tightening = stress
             # With direction=-1, this becomes: falling rates = positive score = stability (GREEN)
+            
+            # Pad roc_series with 0 at the beginning to match raw_series length
+            roc_series_padded = [0.0] + roc_series
+            
             normalized_series = normalize_series(
-                roc_series,
+                roc_series_padded,
                 direction=ind.direction,
                 lookback=ind.lookback_days_for_z,
             )

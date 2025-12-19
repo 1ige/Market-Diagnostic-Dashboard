@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { IndicatorHistoryPoint } from "../types";
@@ -107,6 +108,8 @@ interface LiquidityComponentData {
 
 export default function IndicatorDetail() {
   const { code } = useParams();
+  const [isRefetching, setIsRefetching] = React.useState(false);
+  const [refetchMessage, setRefetchMessage] = React.useState<string | null>(null);
   
   // Determine appropriate lookback period based on data freshness
   const getHistoryDays = () => {
@@ -116,18 +119,64 @@ export default function IndicatorDetail() {
   };
   
   const { data: meta } = useApi<IndicatorDetailResponse>(`/indicators/${code}`);
-  const { data: history } = useApi<IndicatorHistoryPoint[]>(
+  const { data: history, refetch: refetchHistory } = useApi<IndicatorHistoryPoint[]>(
     `/indicators/${code}/history?days=${getHistoryDays()}`
   );
-  const { data: components } = useApi<ComponentData[]>(
+  const { data: components, refetch: refetchComponents } = useApi<ComponentData[]>(
     code === "CONSUMER_HEALTH" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
   );
-  const { data: bondComponents } = useApi<BondComponentData[]>(
+  const { data: bondComponents, refetch: refetchBondComponents } = useApi<BondComponentData[]>(
     code === "BOND_MARKET_STABILITY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
   );
-  const { data: liquidityComponents } = useApi<LiquidityComponentData[]>(
+  const { data: liquidityComponents, refetch: refetchLiquidityComponents } = useApi<LiquidityComponentData[]>(
     code === "LIQUIDITY_PROXY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
   );
+
+  const handleClearAndRefetch = async () => {
+    if (!code) return;
+    
+    if (!confirm(`Are you sure you want to clear and refetch all data for ${code}? This will delete all existing records and fetch fresh data (365 days).`)) {
+      return;
+    }
+    
+    setIsRefetching(true);
+    setRefetchMessage(null);
+    
+    try {
+      const response = await fetch(`http://localhost:8000/admin/clear-refetch/${code}?days=365`, {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to clear and refetch data');
+      }
+      
+      const result = await response.json();
+      const deletedCount = result.deleted_records || 0;
+      const backfilledCount = result.result?.backfilled || 0;
+      
+      if (deletedCount === 0 && backfilledCount === 0) {
+        setRefetchMessage(`✓ Data already up to date`);
+      } else if (deletedCount === 0) {
+        setRefetchMessage(`✓ Refetched ${backfilledCount} new data points`);
+      } else {
+        setRefetchMessage(`✓ Cleared ${deletedCount} records and refetched ${backfilledCount} data points`);
+      }
+      
+      // Refetch all data to update the UI
+      refetchHistory?.();
+      refetchComponents?.();
+      refetchBondComponents?.();
+      refetchLiquidityComponents?.();
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setRefetchMessage(null), 5000);
+    } catch (error) {
+      setRefetchMessage(`✗ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsRefetching(false);
+    }
+  };
 
   if (!code) return <div className="p-6 text-gray-200">No code provided.</div>;
   
@@ -966,9 +1015,41 @@ export default function IndicatorDetail() {
       {/* Historical Charts */}
       <div className="space-y-6">
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6">
-          <h3 className="text-xl font-semibold mb-4 text-stealth-100">
-            Raw Value History ({chartRange.label})
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-stealth-100">
+              Raw Value History ({chartRange.label})
+            </h3>
+            <div className="flex items-center gap-3">
+              {refetchMessage && (
+                <span className={`text-sm ${refetchMessage.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>
+                  {refetchMessage}
+                </span>
+              )}
+              <button
+                onClick={handleClearAndRefetch}
+                disabled={isRefetching}
+                className="px-2 py-1 text-stealth-400 hover:text-stealth-200 disabled:text-stealth-600 disabled:cursor-not-allowed text-xs transition-colors flex items-center gap-1.5"
+                title="Clear all data for this indicator and fetch fresh data from source"
+              >
+                {isRefetching ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="opacity-70">refetching...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="opacity-70">refetch</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
           <div className="h-80">
             {history && history.length > 0 ? (() => {
               const today = new Date();

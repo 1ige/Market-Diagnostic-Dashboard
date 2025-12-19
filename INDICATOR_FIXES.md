@@ -1,7 +1,30 @@
-# Indicator Review and Fixes - December 10, 2025
+# Indicator Review and Fixes - December 2025
 
 ## Summary
 Comprehensive review of all indicator logic, calculations, and configurations revealed critical errors in database configuration and calculation logic. All issues have been fixed and validated.
+
+## December 18, 2025 - Data Storage Fix
+
+### Issue: DFF and SPY Displaying Wrong Values
+**Problem**: Historical charts showed incorrect values:
+- DFF was showing 0 for months when rate was stable at 3.89%
+- SPY was showing stock prices (652.53) instead of EMA gap percentages (0.47%)
+
+**Root Cause**: 
+- DFF was storing rate-of-change values (0 when stable) instead of actual rates
+- Old corrupt data from prior implementation remained in database
+
+**Fix Applied**:
+1. Updated DFF ETL logic to store absolute rates (3.64%, 3.89%) while scoring based on rate-of-change
+2. Cleared all corrupt indicator data from database (2,750 records)
+3. Refetched 365 days of clean data for all indicators (2,240 new records)
+4. Added `/admin/clear-refetch/{code}` endpoint for fixing corrupt data
+5. Added "Clear & Refetch" button to indicator detail pages for easy data cleanup
+
+**Result**: 
+- DFF now shows actual Fed Funds Rate (3.89% → 3.64%) on charts
+- SPY shows EMA gap percentage (-1.95% to +2.51%) correctly
+- Users can fix data corruption with one button click instead of terminal commands
 
 ## Critical Fixes Implemented
 

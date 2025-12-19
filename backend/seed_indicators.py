@@ -6,8 +6,8 @@ This script is automatically run on container startup via startup.sh.
 
 Indicators:
 - VIX: Volatility stress indicator (high = stress)
-- SPY: S&P 500 ETF momentum (below EMA = stress)
-- DFF: Federal Funds Rate (rising rates = stress, stored as rate-of-change)
+- SPY: S&P 500 ETF momentum (stores EMA gap %, below EMA = stress)
+- DFF: Federal Funds Rate (stores absolute rate, scores based on rate-of-change)
 - T10Y2Y: Treasury yield curve (inverted = stress)
 - UNRATE: Unemployment rate (high = stress)
 - CONSUMER_HEALTH: Derived from PCE, CPI, and PI (low = stress)

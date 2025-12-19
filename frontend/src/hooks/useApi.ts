@@ -17,8 +17,9 @@ export function useApi<T>(endpoint: string) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true);
     setError(null);
     fetch(`${API_URL}${endpoint}`)
@@ -29,7 +30,17 @@ export function useApi<T>(endpoint: string) {
       .then(setData)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [endpoint]);
+  };
 
-  return { data, loading, error };
+  useEffect(() => {
+    if (endpoint) {
+      fetchData();
+    }
+  }, [endpoint, refetchTrigger]);
+
+  const refetch = () => {
+    setRefetchTrigger(prev => prev + 1);
+  };
+
+  return { data, loading, error, refetch };
 }

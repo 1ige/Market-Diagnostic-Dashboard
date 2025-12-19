@@ -68,3 +68,41 @@ async def backfill_historical_data(days: int = 365):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/clear-refetch/{code}")
+async def clear_and_refetch_indicator(code: str, days: int = 365):
+    """Clear all data for an indicator and refetch it. Useful for fixing corrupt data."""
+    from app.core.db import SessionLocal
+    from app.models.indicator_value import IndicatorValue
+    from app.models.indicator import Indicator
+    
+    try:
+        db = SessionLocal()
+        
+        # Find the indicator
+        indicator = db.query(Indicator).filter(Indicator.code == code).first()
+        if not indicator:
+            db.close()
+            raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
+        
+        # Delete all values for this indicator
+        deleted_count = db.query(IndicatorValue).filter(
+            IndicatorValue.indicator_id == indicator.id
+        ).delete()
+        
+        db.commit()
+        db.close()
+        
+        # Refetch the data
+        result = await etl.ingest_indicator(code, backfill_days=days)
+        status = etl.update_system_status()
+        
+        return {
+            "message": f"Cleared {deleted_count} records and refetched {code}",
+            "deleted_records": deleted_count,
+            "result": result,
+            "system_status": status
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
