@@ -137,10 +137,10 @@ const MarketMap = () => {
       ]);
       
       if (!mapResponse.ok) throw new Error("Failed to fetch market map data");
-      if (!intradayResponse.ok) throw new Error("Failed to fetch intraday data");
+      if (!spyResponse.ok) throw new Error("Failed to fetch intraday data");
       
       const mapResult = await mapResponse.json();
-      const intradayResult = await intradayResponse.json();
+      const intradayResult = await spyResponse.json();
       
       setData(mapResult);
       setIntradayData(intradayResult.data || []);
