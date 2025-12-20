@@ -1,18 +1,5 @@
 import { useState, useEffect } from "react";
-
-// Use proxy through Vite dev server to avoid CORS and network issues
-// All /api/* requests will be proxied to the backend container
-const getApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Use relative /api path which Vite will proxy to backend
-  // This works from any device on the network accessing the frontend
-  return '/api';
-};
-
-const API_URL = getApiUrl();
-console.log('API_URL configured as:', API_URL);
+import { buildApiUrl } from "../utils/apiUtils";
 
 export function useApi<T>(endpoint: string) {
   const [data, setData] = useState<T | null>(null);
@@ -23,7 +10,7 @@ export function useApi<T>(endpoint: string) {
   const fetchData = () => {
     setLoading(true);
     setError(null);
-    const url = `${API_URL}${endpoint}`;
+    const url = buildApiUrl(endpoint);
     console.log('Fetching from:', url);
     fetch(url)
       .then((res) => {

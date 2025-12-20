@@ -49,13 +49,13 @@ A real-time market stability monitoring system that tracks key financial indicat
 
 **Windows (PowerShell):**
 ```powershell
-.\launch.ps1
+.\scripts\launch.ps1
 ```
 
 **Mac/Linux:**
 ```bash
-chmod +x launch.sh
-./launch.sh
+chmod +x scripts/launch.sh
+./scripts/launch.sh
 ```
 
 The launcher script will:
@@ -154,6 +154,22 @@ VITE_API_URL=http://localhost:8000
 - `GET /dow-theory` - Current Dow Theory market metrics
 - `GET /dow-theory/history` - Historical market direction trend (90 days)
 
+## Project Structure
+
+```
+├── backend/          # FastAPI backend application
+├── frontend/         # React + TypeScript frontend
+├── devops/          # Environment configuration files
+├── docs/            # Project documentation
+├── scripts/         # Launcher and setup scripts
+├── docker-compose.yml
+└── README.md
+```
+
+**Documentation**: See `docs/` folder for detailed implementation notes, indicator fixes, and refactoring summary.
+
+**Scripts**: Launch scripts are located in `scripts/` folder.
+
 ## Architecture
 
 ### Indicator Scoring System
@@ -209,6 +225,7 @@ docker-compose logs -f
 ## Recent Improvements
 
 ### December 2025 Updates
+- **Project Structure Cleanup**: Organized repository with dedicated `docs/` and `scripts/` folders for better maintainability
 - **Fixed Federal Funds Rate Direction**: Now correctly stores rate-of-change instead of absolute rate, with proper directional scoring (falling rates = GREEN, rising rates = RED)
 - **Fixed SPY Calculation**: Now stores EMA gap percentage instead of absolute price for better trend analysis
 - **Automatic Indicator Seeding**: Backend automatically seeds all indicators on startup - no manual intervention needed

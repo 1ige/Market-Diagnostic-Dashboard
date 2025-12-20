@@ -10,6 +10,9 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { getLegacyApiUrl } from "../../utils/apiUtils";
+import { calculateMovingAverage } from "../../utils/componentUtils";
+import { commonXAxisProps, commonYAxisProps, commonGridProps, commonTooltipStyle } from "../../utils/chartUtils";
 
 interface SystemStatus {
   state: string;
@@ -44,28 +47,10 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Calculate 7-day moving average for smoother trends
-  const calculateMovingAverage = (data: SystemHistoryPoint[], windowSize: number = 7) => {
-    if (data.length < windowSize) return data;
-    
-    return data.map((point, index) => {
-      const start = Math.max(0, index - Math.floor(windowSize / 2));
-      const end = Math.min(data.length, start + windowSize);
-      const window = data.slice(start, end);
-      const avg = window.reduce((sum, p) => sum + p.composite_score, 0) / window.length;
-      
-      return {
-        ...point,
-        composite_score: avg,
-        raw_score: point.composite_score, // Keep original for reference
-      };
-    });
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+        const apiUrl = getLegacyApiUrl();
         const [statusResponse, alertsResponse] = await Promise.all([
           fetch(`${apiUrl}/system`),
           fetch(`${apiUrl}/alerts?hours=24`),
@@ -95,7 +80,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
         }
         
         // Apply 7-day moving average to smooth out daily oscillations
-        const smoothedHistory = calculateMovingAverage(mockHistory, 7);
+        const smoothedHistory = calculateMovingAverage(mockHistory, 'composite_score', 7);
         setHistory(smoothedHistory);
         
         setError(null);
@@ -184,8 +169,8 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
 
         {/* Description */}
         <p className="text-xs text-stealth-400 leading-relaxed">
-          Composite score aggregating 8 indicators: VIX, SPY, DFF, T10Y2Y, UNRATE, Consumer Health, 
-          Bond Market Stability, and Liquidity Proxy. Weighted by historical predictive power.
+          Composite score aggregating 10 indicators: VIX, SPY, DFF, T10Y2Y, UNRATE, Consumer Health, 
+          Bond Market Stability, Liquidity Proxy, Analyst Anxiety, and Consumer & Corporate Sentiment. Weighted by historical predictive power.
         </p>
 
       {/* Main Metrics Grid */}

@@ -1,7 +1,7 @@
 """
 Seed Indicators Script
 ----------------------
-Creates all 8 indicator metadata entries in the database.
+Creates all 10 indicator metadata entries in the database.
 This script is automatically run on container startup via startup.sh.
 
 Indicators:
@@ -13,6 +13,8 @@ Indicators:
 - CONSUMER_HEALTH: Derived from PCE, CPI, and PI (low = stress)
 - BOND_MARKET_STABILITY: Derived from 10Y and 30Y volatility (high = stress)
 - LIQUIDITY_PROXY: EFFR volatility (high = stress)
+- ANALYST_ANXIETY: Composite sentiment indicator from VIX, MOVE, HY OAS, ERP (high = stress)
+- SENTIMENT_COMPOSITE: Consumer & corporate confidence from Michigan, NFIB, ISM, CapEx
 
 Real data will be fetched automatically by the ETL scheduler every 4 hours.
 """
@@ -126,6 +128,30 @@ INDICATORS = [
         "threshold_yellow_max": 30,
         "weight": 1.6,
     },
+    {
+        "code": "ANALYST_ANXIETY",
+        "name": "Analyst Anxiety",
+        "source": "DERIVED",
+        "source_symbol": "ANALYST_ANXIETY_COMPOSITE",
+        "category": "sentiment",
+        "direction": -1,  # high composite score = calm/stable, low score = anxious/stress
+        "lookback_days_for_z": 520,
+        "threshold_green_max": 35,
+        "threshold_yellow_max": 65,
+        "weight": 1.7,
+    },
+    {
+        "code": "SENTIMENT_COMPOSITE",
+        "name": "Consumer & Corporate Sentiment",
+        "source": "DERIVED",
+        "source_symbol": "SENTIMENT_COMPOSITE",
+        "category": "sentiment",
+        "direction": -1,  # high sentiment = confidence/stability, low = retrenchment
+        "lookback_days_for_z": 520,
+        "threshold_green_max": 35,
+        "threshold_yellow_max": 65,
+        "weight": 1.6,
+    },
 ]
 
 # Check which indicators already exist
@@ -136,7 +162,7 @@ for ind_data in INDICATORS:
         new_indicators.append(ind_data)
 
 if not new_indicators:
-    print("✅ All 8 indicators already exist")
+    print("✅ All 10 indicators already exist")
     db.close()
     exit(0)
 

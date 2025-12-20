@@ -218,6 +218,66 @@ INDICATOR_METADATA = {
         ]
     },
     
+    "SENTIMENT_COMPOSITE": {
+        "name": "Consumer & Corporate Sentiment Composite",
+        "description": "Composite measure of consumer and corporate confidence levels combining University of Michigan Consumer Sentiment, NFIB Small Business Optimism, ISM New Orders, and Capital Expenditure indicators. Captures the psychological willingness to spend, invest, and expand.",
+        "relevance": "Economic activity is driven by confidence and expectations, not just fundamentals. When consumers and businesses are optimistic, they spend and invest freely, driving growth. When pessimism takes hold, discretionary spending and business investment freeze, creating self-fulfilling contractions. This indicator provides early warning of shifts in economic psychology.",
+        "scoring": "Direction: -1 (indicates high raw confidence should map to high final score). Formula: (Michigan * 0.30) + (NFIB * 0.30) + (ISM * 0.25) + (CapEx * 0.15). Components are z-score normalized to 0-100 confidence scores (higher = more optimistic), then weighted and combined. With direction=-1, high confidence maps to high final scores (GREEN) and low confidence maps to low final scores (RED). Weights are redistributed if optional components are unavailable.",
+        "direction": -1,
+        "positive_is_good": True,
+        "interpretation": "GREEN (Score 65-100): Broad-based optimism across consumers and businesses, supportive of growth. YELLOW (Score 35-65): Mixed or neutral sentiment, cautious expansion. RED (Score 0-35): Pervasive pessimism, contraction risk, spending/investment freeze.",
+        "derived_from": ["UMCSENT", "BOPTEXP", "NEWORDER", "ACOGNO"],
+        "components": {
+            "michigan_consumer_sentiment": {
+                "symbol": "UMCSENT",
+                "weight": 0.30,
+                "description": "University of Michigan Consumer Sentiment Index (30%)",
+                "interpretation": "Leading indicator of consumer spending, which represents ~70% of US GDP. Measures how consumers feel about their finances and the economy. High readings indicate willingness to make big purchases (homes, cars, appliances). Low readings signal caution and spending pullback.",
+                "typical_ranges": "Very Optimistic: 95-110 (late 1990s). Healthy: 85-95. Cautious: 70-85. Pessimistic: 60-70. Crisis: <60 (2008, 2020, 2022 inflation shock).",
+                "monthly": True
+            },
+            "nfib_small_business": {
+                "symbol": "BOPTEXP",
+                "weight": 0.30,
+                "description": "NFIB Small Business Optimism - Expectations Component (30%)",
+                "interpretation": "Small businesses employ ~50% of US workforce and are highly sensitive to economic conditions. Measures business owners' expectations for sales, hiring, and expansion. High readings signal confidence to hire and invest. Low readings indicate defensive posture and cost-cutting.",
+                "typical_ranges": "Very Optimistic: >105 (2018). Healthy: 100-105. Cautious: 95-100. Pessimistic: 90-95. Crisis: <90 (2008-2009, 2020).",
+                "monthly": True
+            },
+            "ism_new_orders": {
+                "symbol": "NEWORDER",
+                "weight": 0.25,
+                "description": "ISM Manufacturing New Orders Index (25%)",
+                "interpretation": "Forward-looking indicator of manufacturing demand. New orders today become production and employment tomorrow. Above 50 = expansion, below 50 = contraction. Leading indicator for industrial production and GDP. Captures business-to-business confidence.",
+                "typical_ranges": "Strong growth: >55. Moderate expansion: 50-55. Stagnation: 45-50. Contraction: <45. Crisis: <40 (2008-2009, 2020).",
+                "monthly": True
+            },
+            "capex_proxy": {
+                "symbol": "ACOGNO",
+                "weight": 0.15,
+                "description": "Nondefense Capital Goods Orders ex-Aircraft (15%)",
+                "interpretation": "Proxy for corporate capital expenditure - the ultimate vote of confidence in the future. When companies order machinery, equipment, and technology, they're committing to multi-year investments. High orders signal expansion plans. Declining orders indicate pessimism about future demand.",
+                "typical_ranges": "Strong CapEx cycle: +10% YoY. Moderate: +2-5% YoY. Weak: -2 to +2% YoY. Recession: -10%+ YoY decline (2008-2009, 2015-2016, 2020).",
+                "monthly": True
+            }
+        },
+        "calculation": "1) Fetch UMCSENT (required), BOPTEXP, NEWORDER, ACOGNO from FRED. 2) Align dates (forward-fill optional components). 3) Compute z-scores for each using 520-day lookback. 4) Map z-scores to 0-100 confidence scores: ((z + 3) / 6) * 100. 5) Weight and combine. 6) If optional components missing, redistribute weights (e.g., Michigan 50% + NFIB 50% if only those two available). 7) Store as composite confidence score 0-100.",
+        "thresholds": {
+            "green_above": 65,
+            "yellow_above": 35
+        },
+        "typical_range": "GREEN (Score 65-100): Broad optimism across consumer and business surveys, supportive of economic expansion. YELLOW (Score 35-65): Mixed sentiment, economy muddling through. RED (Score 0-35): Widespread pessimism, high recession risk, spending/investment paralysis.",
+        "impact": "High impact. Sentiment drives the real economy with a lead time. Consumers and businesses pull back spending and hiring when pessimistic, creating actual economic weakness. This composite captures psychology shifts months before they appear in hard economic data. RED states (score <35) historically precede recessions.",
+        "historical_context": "Sentiment indicators collapsed during: 2008 Financial Crisis (all components plunged), 2011 Debt Ceiling Crisis (brief shock), 2015-2016 Manufacturing Recession (CapEx and ISM weak), 2020 COVID Shock (historic collapse then recovery), 2022 Inflation Shock (Michigan hit 50-year low). Each major sentiment collapse preceded or coincided with GDP contractions or market corrections.",
+        "use_cases": [
+            "Early warning system for demand-driven recessions",
+            "Consumer discretionary sector positioning",
+            "Business cycle stage identification",
+            "Complement to hard economic data (employment, production)",
+            "Forward-looking confidence assessment"
+        ]
+    },
+    
     "LIQUIDITY_PROXY": {
         "name": "Liquidity Proxy Indicator",
         "description": "Composite measure of systemic liquidity conditions combining M2 money supply growth, Federal Reserve balance sheet changes, and overnight reverse repo facility usage. Captures the availability of money and credit in the financial system.",
@@ -264,6 +324,72 @@ INDICATOR_METADATA = {
             "Cryptocurrency and speculative asset timing (most liquidity-sensitive)"
         ],
         "correlation_note": "Strong inverse correlation with VIX. When liquidity is abundant (GREEN), volatility tends to be low. When liquidity drains (RED), volatility spikes. Also correlates with credit spreads and risk appetite metrics."
+    },
+    
+    "ANALYST_ANXIETY": {
+        "name": "Analyst Anxiety",
+        "description": "Composite sentiment indicator measuring institutional and professional market anxiety through volatility stress and credit risk proxies. Combines equity volatility (VIX), rates volatility (MOVE), high-yield credit stress (HY OAS), and equity risk premium dynamics to gauge market fear and stability.",
+        "relevance": "Analyst anxiety captures the professional investment community's collective assessment of market risk. Unlike retail sentiment which can be contrarian, institutional anxiety directly impacts capital allocation, hedging activity, and systemic stability. High anxiety precedes withdrawals, deleveraging, and flight to safety.",
+        "scoring": "Direction: -1 (high stability score = low anxiety = GREEN, low stability score = high anxiety = RED). Each component normalized via z-score (520-day lookback) with momentum blending (75% value, 25% 10-day ROC). Z-scores clamped [-3, +3] and mapped to 0-100 stress scale. Weighted composite inverted to stability score (0-100, where 100 = calm, 0 = extreme anxiety). Direction=-1 ensures high stability maps to GREEN and low stability to RED.",
+        "direction": -1,
+        "positive_is_good": True,
+        "interpretation": "GREEN (Score 65-100): Low institutional anxiety, supportive risk environment, stable credit conditions. YELLOW (Score 35-65): Elevated caution, mixed signals, monitoring required. RED (Score 0-35): High institutional fear, defensive positioning, elevated crash risk.",
+        "derived_from": ["^VIX", "^MOVE", "BAMLH0A0HYM2", "DGS10", "BAMLC0A4CBBB"],
+        "components": {
+            "vix": {
+                "symbol": "^VIX",
+                "weight": 0.40,
+                "description": "CBOE Volatility Index - Equity Market Volatility",
+                "interpretation": "Market's expectation of 30-day S&P 500 volatility derived from options pricing. The 'fear gauge' - spikes during uncertainty and panic. High VIX = high equity market anxiety.",
+                "typical_ranges": "Calm: 10-15. Normal: 15-20. Elevated: 20-30. Crisis: 30+. Extreme panic: 50+ (2008, 2020).",
+                "stress_mapping": "Higher VIX = Higher stress. VIX >30 signals severe anxiety, <15 signals complacency."
+            },
+            "move": {
+                "symbol": "^MOVE",
+                "weight": 0.25,
+                "description": "Merrill Lynch Option Volatility Estimate - Rates Market Volatility",
+                "interpretation": "Treasury market volatility - the 'VIX for bonds'. Elevated MOVE indicates uncertainty about Fed policy, inflation expectations, or fixed-income market dysfunction. High MOVE = high rates market anxiety.",
+                "typical_ranges": "Calm: 50-80. Elevated: 80-120. Stressed: 120-150. Crisis: 150+ (March 2020: 265).",
+                "stress_mapping": "Higher MOVE = Higher stress. MOVE >120 signals significant Treasury market anxiety.",
+                "availability_note": "Optional component - if unavailable, weight redistributed to other components."
+            },
+            "hy_oas": {
+                "symbol": "BAMLH0A0HYM2",
+                "weight": 0.25,
+                "description": "ICE BofA US High Yield Index Option-Adjusted Spread",
+                "interpretation": "Yield spread of junk bonds over Treasuries. Widening spreads indicate investors demanding more compensation for credit risk, signaling deteriorating credit conditions and economic pessimism. High spreads = high credit stress.",
+                "typical_ranges": "Strong: 300-400 bps. Normal: 400-600 bps. Stressed: 600-800 bps. Crisis: 800+ bps (2008: 2000+ bps, 2020: 1100 bps).",
+                "stress_mapping": "Higher spreads = Higher stress. HY OAS >800 bps signals severe credit market anxiety."
+            },
+            "erp_proxy": {
+                "symbol": "BAMLC0A4CBBB - DGS10",
+                "weight": 0.10,
+                "description": "Equity Risk Premium Proxy (BBB Corporate Yield - 10Y Treasury)",
+                "interpretation": "Approximates risk premium investors demand for equity exposure. Widening ERP suggests investors fleeing to safety, demanding higher returns for risk-taking. Rapid ERP expansion signals 'risk-off' environment.",
+                "typical_ranges": "Tight: 1.0-2.0%. Normal: 2.0-3.0%. Widening: 3.0-4.0%. Extreme: 4.0%+ (flight to quality).",
+                "stress_mapping": "Wider spreads and rapid expansion = Higher stress. ERP >3.5% signals significant risk aversion.",
+                "availability_note": "Optional component - if BBB data unavailable, weight redistributed to other components."
+            }
+        },
+        "weight_reallocation": "If MOVE unavailable: VIX=0.44, HY_OAS=0.28, ERP=0.10. If ERP unavailable: VIX=0.55, HY_OAS=0.35. If both unavailable: VIX=0.60, HY_OAS=0.40 (minimum viable configuration).",
+        "calculation": "1) Fetch component data (520+ day history). 2) For each component: compute z-score (520-day mean/std), compute 10-day ROC z-score, blend (75% value + 25% momentum). 3) Clamp z to [-3, +3]. 4) Map to stress: ((z + 3) / 6) * 100. 5) Compute weighted composite stress. 6) Invert to stability: 100 - stress. 7) Apply direction=-1 normalization for final scoring.",
+        "thresholds": {
+            "green_below": 35,
+            "yellow_below": 65
+        },
+        "typical_range": "GREEN (Score 65-100): 2017-2019 'Goldilocks' period, 2021 post-COVID recovery. VIX <20, MOVE <100, tight credit spreads. Institutional confidence high. YELLOW (Score 35-65): 2023-2024 mixed regime, 2015-2016 volatility episodes. Some anxiety but not systemic. RED (Score 0-35): 2008 Financial Crisis, March 2020 COVID crash, Q4 2018. VIX >30, MOVE >150, HY spreads >800 bps.",
+        "impact": "High impact for regime identification. Analyst Anxiety is a leading indicator of institutional risk appetite. Transitions from GREEN to YELLOW provide early warning for defensive positioning. RED states typically coincide with significant drawdowns and require maximum caution. Unlike retail sentiment (contrarian), institutional anxiety is directional - when analysts are anxious, markets tend to decline.",
+        "historical_context": "Major market dislocations show extreme anxiety: 2008 Crisis (RED for months, VIX peaked 89, HY spreads 2000+ bps), 2020 COVID (RED spike, VIX 82, MOVE 265, rapid recovery), 2018 Q4 (YELLOW/RED, VIX spiked to 36, -20% equity drawdown). GREEN regimes (2017-2019, 2021) marked by low volatility, tight spreads, and strong returns.",
+        "use_cases": [
+            "Early warning system for institutional risk-off behavior",
+            "Volatility regime identification and hedging decisions",
+            "Credit cycle assessment and high-yield exposure management",
+            "Portfolio beta adjustment based on anxiety levels",
+            "Options strategy selection (sell premium in GREEN, buy protection in YELLOW/RED)",
+            "Correlation with systematic risk events and market dislocations"
+        ],
+        "directional_interpretation": "7-day delta provides actionable signals: Improving (+3 or more) = Anxiety declining, risk appetite returning. Deteriorating (-3 or less) = Anxiety rising, defensive positioning warranted. Stable (within ±3) = Monitor but no immediate action required.",
+        "correlation_note": "High correlation with overall market stress. Inverse correlation with risk assets (when anxiety rises, stocks/crypto decline). Positive correlation with safe havens (Treasuries, USD). Leads equity drawdowns by days/weeks during transitions from GREEN to RED."
     }
 }
 

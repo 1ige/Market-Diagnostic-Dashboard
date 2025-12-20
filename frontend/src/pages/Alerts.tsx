@@ -1,4 +1,6 @@
 import { useApi } from "../hooks/useApi";
+import { LoadingState, EmptyState } from "../utils/componentUtils";
+import { formatDateTime } from "../utils/styleUtils";
 
 interface Alert {
   id: number;
@@ -15,7 +17,7 @@ export default function Alerts() {
     return (
       <div className="p-6 text-gray-200">
         <h2 className="text-2xl font-bold mb-6">Alerts</h2>
-        <p>Loading alerts...</p>
+        <LoadingState message="Loading alerts..." />
       </div>
     );
   }
@@ -46,7 +48,7 @@ export default function Alerts() {
                     🚨 {alert.message}
                   </div>
                   <div className="text-gray-400 text-xs md:text-sm mt-1">
-                    {new Date(alert.timestamp).toLocaleString()}
+                    {formatDateTime(alert.timestamp)}
                   </div>
                   {alert.affected_indicators && alert.affected_indicators.length > 0 && (
                     <div className="mt-2">

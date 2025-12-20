@@ -3,6 +3,8 @@ import { IndicatorStatus } from "../types";
 import IndicatorCard from "../components/widgets/IndicatorCard";
 import DowTheoryWidget from "../components/widgets/DowTheoryWidget";
 import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
+import { getLegacyApiUrl } from "../utils/apiUtils";
+import { BUTTON_STYLES } from "../utils/styleUtils";
 
 interface Alert {
   id: number;
@@ -20,7 +22,7 @@ export default function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+    const apiUrl = getLegacyApiUrl();
     // Fetch indicators data from backend
     fetch(`${apiUrl}/indicators`)
       .then(res => res.json())
@@ -31,7 +33,7 @@ export default function Dashboard() {
     fetch(`${apiUrl}/alerts?hours=24`)
       .then(res => res.json())
       .then(data => setAlerts(data))
-      .catch(() => setAlerts([]));
+      .catch(() => setAlerts([])  );
   }, [refreshKey]);
 
   const activeAlertCount = alerts.length;
@@ -40,7 +42,7 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const apiUrl = getLegacyApiUrl();
       // Trigger backend ETL to fetch latest data from FRED and Yahoo Finance
       const response = await fetch(`${apiUrl}/admin/ingest/run`, {
         method: "POST",
@@ -147,14 +149,16 @@ export default function Dashboard() {
         {/* System Description */}
         <div className="bg-stealth-850/50 border border-stealth-700/50 rounded-lg p-3 md:p-4">
           <p className="text-xs sm:text-sm text-stealth-300 leading-relaxed">
-            Comprehensive market diagnostic system monitoring <strong className="text-stealth-100">8 critical indicators</strong> across 
+            Comprehensive market diagnostic system monitoring <strong className="text-stealth-100">10 critical indicators</strong> across 
             <strong className="text-stealth-100"> volatility</strong> (VIX), 
             <strong className="text-stealth-100"> equities</strong> (SPY), 
             <strong className="text-stealth-100"> interest rates</strong> (DFF, T10Y2Y), 
             <strong className="text-stealth-100"> employment</strong> (UNRATE), 
-            <strong className="text-stealth-100"> bond markets</strong> (Bond Stability Composite), 
-            <strong className="text-stealth-100"> liquidity</strong> (Liquidity Proxy), and 
-            <strong className="text-stealth-100"> consumer health</strong> (PCE, PI, CPI). 
+            <strong className="text-stealth-100"> consumer health</strong> (Consumer Health Index), 
+            <strong className="text-stealth-100"> bond markets</strong> (Bond Market Stability), 
+            <strong className="text-stealth-100"> liquidity</strong> (Liquidity Proxy), 
+            <strong className="text-stealth-100"> institutional sentiment</strong> (Analyst Anxiety), and 
+            <strong className="text-stealth-100"> forward sentiment</strong> (Consumer & Corporate Sentiment). 
             Each indicator is statistically normalized and weighted to detect early signs of market stress, regime shifts, 
             and systemic risks before they cascade into broader crises.
           </p>

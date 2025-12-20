@@ -2,6 +2,8 @@ import { IndicatorStatus, IndicatorHistoryPoint } from "../../types";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { getLegacyApiUrl } from "../../utils/apiUtils";
+import { getDaysAgo, formatRelativeDate, isWeekend, formatValue } from "../../utils/componentUtils";
 
 interface Props {
   indicator: IndicatorStatus;
@@ -19,6 +21,8 @@ const DATA_FREQUENCY: Record<string, { frequency: string; description: string; e
   CONSUMER_HEALTH: { frequency: "Monthly", description: "Calculated from monthly PCE, PI, and CPI data", expectedLag: 30 },
   BOND_MARKET_STABILITY: { frequency: "Daily", description: "Composite of multiple FRED series, updates on business days", expectedLag: 1 },
   LIQUIDITY_PROXY: { frequency: "Weekly", description: "Composite of M2, Fed Balance Sheet, and Reverse Repo data", expectedLag: 7 },
+  ANALYST_ANXIETY: { frequency: "Daily", description: "Composite of VIX, MOVE, HY spreads, and ERP data", expectedLag: 1 },
+  SENTIMENT_COMPOSITE: { frequency: "Monthly", description: "Composite of Michigan Sentiment, NFIB, ISM New Orders, and CapEx data", expectedLag: 30 },
 };
 
 const colorMap = {
@@ -37,7 +41,7 @@ export default function IndicatorCard({ indicator }: Props) {
   const [history, setHistory] = useState<IndicatorHistoryPoint[]>([]);
 
   useEffect(() => {
-    const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+    const apiUrl = getLegacyApiUrl();
     // Fetch last 30 days of history for sparkline
     fetch(`${apiUrl}/indicators/${indicator.code}/history?days=30`)
       .then(res => res.json())
@@ -51,21 +55,15 @@ export default function IndicatorCard({ indicator }: Props) {
   }));
 
   const lastUpdated = new Date(indicator.timestamp);
-  const now = new Date();
-  const daysAgo = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24));
-  
-  const timeDisplay = daysAgo === 0 
-    ? "Today" 
-    : daysAgo === 1 
-      ? "Yesterday" 
-      : lastUpdated.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const daysAgo = getDaysAgo(lastUpdated);
+  const timeDisplay = formatRelativeDate(lastUpdated);
 
   const metadata = DATA_FREQUENCY[indicator.code] || { frequency: "Daily", description: "Updates on business days", expectedLag: 1 };
   
   // Calculate data freshness with intelligent staleness detection
   // Accounts for publishing delays, weekends, and data source schedules
-  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-  const isStale = daysAgo > (metadata.expectedLag + (isWeekend ? 3 : 0) + 1); // Allow extra buffer for weekends
+  const weekendCheck = isWeekend();
+  const isStale = daysAgo > (metadata.expectedLag + (weekendCheck ? 3 : 0) + 1); // Allow extra buffer for weekends
   
   // Visual indicators for data freshness status
   const freshnessIcon = isStale ? (
@@ -90,9 +88,7 @@ export default function IndicatorCard({ indicator }: Props) {
       <div className="bg-stealth-800 rounded p-4 shadow hover:bg-stealth-700 transition">
         <div className="text-gray-300 text-sm">{indicator.name}</div>
         <div className="text-2xl font-semibold mt-2">
-          {typeof indicator.raw_value === 'number' 
-            ? indicator.raw_value.toFixed(2) 
-            : indicator.raw_value}
+          {formatValue(indicator.raw_value, 2)}
         </div>
         
         {/* Mini Sparkline Chart */}

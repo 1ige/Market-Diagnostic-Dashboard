@@ -2,20 +2,19 @@
 Alert Engine
 Monitors indicator states and triggers alerts when conditions are met
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.core.db import SessionLocal
 from app.models.indicator import Indicator
 from app.models.alert import Alert
+from app.utils.db_helpers import get_db_session
+
 
 def check_alert_conditions():
     """
     Check if 2 or more indicators are RED and create an alert if needed.
     Returns: Alert object if condition met, None otherwise
     """
-    db = SessionLocal()
-    
-    try:
+    with get_db_session() as db:
         # Count RED indicators
         red_indicators = db.query(Indicator).filter(
             Indicator.last_state == "RED"
@@ -26,7 +25,6 @@ def check_alert_conditions():
         # Alert condition: 2 or more RED indicators
         if red_count >= 2:
             # Check if we already have a recent alert (within last hour)
-            from datetime import timedelta
             recent_threshold = datetime.now() - timedelta(hours=1)
             
             recent_alert = db.query(Alert).filter(
@@ -51,17 +49,11 @@ def check_alert_conditions():
                 return alert
         
         return None
-        
-    finally:
-        db.close()
 
 
 def get_recent_alerts(hours: int = 24):
     """Get alerts from the last N hours"""
-    db = SessionLocal()
-    
-    try:
-        from datetime import timedelta
+    with get_db_session() as db:
         since = datetime.now() - timedelta(hours=hours)
         
         alerts = db.query(Alert).filter(
@@ -69,19 +61,13 @@ def get_recent_alerts(hours: int = 24):
         ).order_by(Alert.timestamp.desc()).all()
         
         return alerts
-    finally:
-        db.close()
 
 
 def get_all_alerts(limit: int = 100):
     """Get all alerts, most recent first"""
-    db = SessionLocal()
-    
-    try:
+    with get_db_session() as db:
         alerts = db.query(Alert).order_by(
             Alert.timestamp.desc()
         ).limit(limit).all()
         
         return alerts
-    finally:
-        db.close()

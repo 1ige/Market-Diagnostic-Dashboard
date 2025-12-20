@@ -1,101 +1,50 @@
 from fastapi import APIRouter, HTTPException
-from sqlalchemy.orm import Session
-from typing import List, Generator
+from typing import List
 
-from app.core.db import SessionLocal
 from app.models.indicator import Indicator
 from app.models.indicator_value import IndicatorValue
 from app.services.indicator_metadata import get_indicator_metadata
+from app.utils.db_helpers import get_db_session
+from app.utils.response_helpers import (
+    format_indicator_basic,
+    format_indicator_detail,
+    format_indicator_history,
+)
 
 router = APIRouter()
-
-
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/indicators")
 def list_indicators():
     """Return basic metadata for all indicators."""
-    db = SessionLocal()
-    indicators: List[Indicator] = db.query(Indicator).all()
-    db.close()
-
-    return [
-        {
-            "code": ind.code,
-            "name": ind.name,
-            "source": ind.source,
-            "source_symbol": ind.source_symbol,
-            "category": ind.category,
-            "direction": ind.direction,
-            "lookback_days_for_z": ind.lookback_days_for_z,
-            "threshold_green_max": ind.threshold_green_max,
-            "threshold_yellow_max": ind.threshold_yellow_max,
-            "weight": ind.weight,
-        }
-        for ind in indicators
-    ]
+    with get_db_session() as db:
+        indicators: List[Indicator] = db.query(Indicator).all()
+        return [format_indicator_basic(ind) for ind in indicators]
 
 
 @router.get("/indicators/{code}")
 def get_indicator_detail(code: str):
     """Return metadata + latest value for a single indicator."""
-    db = SessionLocal()
+    with get_db_session() as db:
+        ind: Indicator | None = (
+            db.query(Indicator)
+            .filter(Indicator.code == code)
+            .first()
+        )
 
-    ind: Indicator | None = (
-        db.query(Indicator)
-        .filter(Indicator.code == code)
-        .first()
-    )
+        if not ind:
+            raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
 
-    if not ind:
-        db.close()
-        raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
+        latest: IndicatorValue | None = (
+            db.query(IndicatorValue)
+            .filter(IndicatorValue.indicator_id == ind.id)
+            .order_by(IndicatorValue.timestamp.desc())
+            .first()
+        )
 
-    latest: IndicatorValue | None = (
-        db.query(IndicatorValue)
-        .filter(IndicatorValue.indicator_id == ind.id)
-        .order_by(IndicatorValue.timestamp.desc())
-        .first()
-    )
-
-    metadata = get_indicator_metadata(code)
-    
-    db.close()
-
-    if not latest:
-        return {
-            "code": ind.code,
-            "name": ind.name,
-            "has_data": False,
-            "metadata": metadata,
-        }
-
-    return {
-        "code": ind.code,
-        "name": ind.name,
-        "source": ind.source,
-        "source_symbol": ind.source_symbol,
-        "category": ind.category,
-        "direction": ind.direction,
-        "lookback_days_for_z": ind.lookback_days_for_z,
-        "threshold_green_max": ind.threshold_green_max,
-        "threshold_yellow_max": ind.threshold_yellow_max,
-        "weight": ind.weight,
-        "latest": {
-            "timestamp": latest.timestamp.isoformat(),
-            "raw_value": latest.raw_value,
-            "normalized_value": latest.normalized_value,
-            "score": latest.score,
-            "state": latest.state,
-        },
-        "metadata": metadata,
-    }
+        metadata = get_indicator_metadata(code)
+        
+        return format_indicator_detail(ind, latest, metadata)
 
 
 @router.get("/indicators/{code}/history")
@@ -103,41 +52,29 @@ def get_indicator_history(code: str, days: int = 365):
     """Return time-series history for a single indicator (raw + score + state)."""
     from datetime import datetime, timedelta
 
-    db = SessionLocal()
-
-    ind: Indicator | None = (
-        db.query(Indicator)
-        .filter(Indicator.code == code)
-        .first()
-    )
-
-    if not ind:
-        db.close()
-        raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
-
-    cutoff = datetime.utcnow() - timedelta(days=days)
-
-    values: List[IndicatorValue] = (
-        db.query(IndicatorValue)
-        .filter(
-            IndicatorValue.indicator_id == ind.id,
-            IndicatorValue.timestamp >= cutoff,
+    with get_db_session() as db:
+        ind: Indicator | None = (
+            db.query(Indicator)
+            .filter(Indicator.code == code)
+            .first()
         )
-        .order_by(IndicatorValue.timestamp.asc())
-        .all()
-    )
 
-    db.close()
+        if not ind:
+            raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
 
-    return [
-        {
-            "timestamp": v.timestamp.isoformat(),
-            "raw_value": v.raw_value,
-            "score": v.score,
-            "state": v.state,
-        }
-        for v in values
-    ]
+        cutoff = datetime.utcnow() - timedelta(days=days)
+
+        values: List[IndicatorValue] = (
+            db.query(IndicatorValue)
+            .filter(
+                IndicatorValue.indicator_id == ind.id,
+                IndicatorValue.timestamp >= cutoff,
+            )
+            .order_by(IndicatorValue.timestamp.asc())
+            .all()
+        )
+
+        return format_indicator_history(values)
 
 
 # Note: Specific routes must be defined BEFORE generic routes
@@ -151,6 +88,7 @@ async def get_bond_composite_components(days: int = 365):
     """
     from datetime import datetime, timedelta
     from app.services.ingestion.fred_client import FredClient
+    from app.utils.data_helpers import series_to_dict, find_common_dates
     import numpy as np
     
     cutoff = datetime.utcnow() - timedelta(days=days)
@@ -181,10 +119,7 @@ async def get_bond_composite_components(days: int = 365):
     
     components = await fetch_all_components()
     
-    # Convert to dicts for alignment
-    def series_to_dict(s):
-        return {x["date"]: x["value"] for x in s if x["value"] is not None}
-    
+    # Convert to dicts for alignment using helper
     hy_oas = series_to_dict(components['hy_oas'])
     ig_oas = series_to_dict(components['ig_oas'])
     dgs10 = series_to_dict(components['dgs10'])
@@ -193,10 +128,8 @@ async def get_bond_composite_components(days: int = 365):
     dgs30 = series_to_dict(components['dgs30'])
     dgs5 = series_to_dict(components['dgs5'])
     
-    # Find common dates (only FRED sources)
-    all_dates = set(hy_oas.keys()) & set(ig_oas.keys()) & set(dgs10.keys()) & \
-                set(dgs2.keys()) & set(dgs3mo.keys()) & set(dgs30.keys()) & set(dgs5.keys())
-    common_dates = sorted(all_dates)
+    # Find common dates using helper
+    common_dates = find_common_dates(hy_oas, ig_oas, dgs10, dgs2, dgs3mo, dgs30, dgs5)
     
     # Helper: z-score to 0-100
     def calc_scores(vals, invert=False):
@@ -443,6 +376,389 @@ async def get_liquidity_proxy_components(days: int = 365):
     
     # Filter to only return the requested days (after using full history for calculations)
     from datetime import datetime, timedelta
+    cutoff_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+    result = [r for r in result if r["date"] >= cutoff_date]
+    
+    return result
+
+
+@router.get("/indicators/ANALYST_ANXIETY/components")
+async def get_analyst_anxiety_components(days: int = 365):
+    """
+    Return component breakdown for Analyst Anxiety composite indicator.
+    Shows VIX, MOVE, HY OAS, and ERP proxy with weights and contributions.
+    """
+    from datetime import datetime, timedelta
+    from app.services.ingestion.fred_client import FredClient
+    from app.services.ingestion.yahoo_client import YahooClient
+    import numpy as np
+    
+    # Fetch extra historical data for lookback calculations (520 days as per spec)
+    fetch_days = days + 520 + 30  # Extra buffer
+    cutoff = datetime.utcnow() - timedelta(days=fetch_days)
+    start_date = cutoff.strftime("%Y-%m-%d")
+    
+    # Fetch all components
+    fred = FredClient()
+    yahoo = YahooClient()
+    
+    # Fetch VIX
+    vix_raw = yahoo.fetch_series("^VIX", start_date=start_date)
+    
+    # Fetch MOVE (optional)
+    move_raw = []
+    try:
+        move_raw = yahoo.fetch_series("^MOVE", start_date=start_date)
+    except:
+        pass
+    
+    # Fetch HY OAS
+    hy_oas_raw = await fred.fetch_series("BAMLH0A0HYM2", start_date=start_date)
+    
+    # Fetch 10Y Treasury
+    dgs10_raw = await fred.fetch_series("DGS10", start_date=start_date)
+    
+    # Fetch BBB Corporate Yield (optional for ERP)
+    bbb_raw = []
+    try:
+        bbb_raw = await fred.fetch_series("BAMLC0A4CBBB", start_date=start_date)
+    except:
+        pass
+    
+    # Convert to dicts
+    def series_to_dict(s):
+        return {x["date"]: x["value"] for x in s if x["value"] is not None}
+    
+    vix_dict = series_to_dict(vix_raw)
+    move_dict = series_to_dict(move_raw) if move_raw else {}
+    hy_oas_dict = series_to_dict(hy_oas_raw)
+    dgs10_dict = series_to_dict(dgs10_raw)
+    bbb_dict = series_to_dict(bbb_raw) if bbb_raw else {}
+    
+    # Find common dates (VIX, HY OAS, DGS10 required)
+    required_dates = set(vix_dict.keys()) & set(hy_oas_dict.keys()) & set(dgs10_dict.keys())
+    common_dates = sorted(required_dates)
+    
+    if len(common_dates) < 30:
+        raise HTTPException(status_code=500, detail="Insufficient data for Analyst Anxiety components")
+    
+    # Forward fill optional components
+    def forward_fill_to_dates(data_dict, target_dates):
+        result = {}
+        last_value = None
+        for date in target_dates:
+            if date in data_dict:
+                last_value = data_dict[date]
+            if last_value is not None:
+                result[date] = last_value
+        return result
+    
+    move_filled = forward_fill_to_dates(move_dict, common_dates) if move_dict else {}
+    bbb_filled = forward_fill_to_dates(bbb_dict, common_dates) if bbb_dict else {}
+    
+    # Extract values
+    vix_vals = np.array([vix_dict[d] for d in common_dates])
+    hy_oas_vals = np.array([hy_oas_dict[d] for d in common_dates])
+    dgs10_vals = np.array([dgs10_dict[d] for d in common_dates])
+    
+    has_move = len(move_filled) == len(common_dates) and all(d in move_filled for d in common_dates)
+    has_bbb = len(bbb_filled) == len(common_dates) and all(d in bbb_filled for d in common_dates)
+    
+    move_vals = np.array([move_filled[d] for d in common_dates]) if has_move else None
+    bbb_vals = np.array([bbb_filled[d] for d in common_dates]) if has_bbb else None
+    erp_vals = (bbb_vals - dgs10_vals) if has_bbb else None
+    
+    # Helper function to compute stress scores (matches ETL logic)
+    def compute_stress_score(vals, use_momentum=True):
+        lookback = min(520, len(vals))
+        window = vals[-lookback:]
+        mean = np.mean(window)
+        std = np.std(window)
+        if std == 0:
+            std = 1
+        
+        z_base = (vals - mean) / std
+        
+        if use_momentum and len(vals) > 10:
+            roc_10d = np.zeros_like(vals)
+            for i in range(10, len(vals)):
+                roc_10d[i] = vals[i] - vals[i-10]
+            
+            roc_mean = np.mean(roc_10d[-lookback:])
+            roc_std = np.std(roc_10d[-lookback:])
+            if roc_std == 0:
+                roc_std = 1
+            z_momentum = (roc_10d - roc_mean) / roc_std
+            
+            z_blended = 0.75 * z_base + 0.25 * z_momentum
+        else:
+            z_blended = z_base
+        
+        z_clamped = np.clip(z_blended, -3, 3)
+        stress = ((z_clamped + 3) / 6) * 100
+        
+        return stress
+    
+    # Compute stress scores for each component
+    vix_stress = compute_stress_score(vix_vals)
+    hy_oas_stress = compute_stress_score(hy_oas_vals)
+    move_stress = compute_stress_score(move_vals) if has_move else None
+    erp_stress = compute_stress_score(erp_vals) if has_bbb else None
+    
+    # Determine weights based on available components
+    if has_move and has_bbb:
+        weights = {'vix': 0.40, 'move': 0.25, 'hy_oas': 0.25, 'erp': 0.10}
+        composite_stress = (
+            vix_stress * weights['vix'] +
+            move_stress * weights['move'] +
+            hy_oas_stress * weights['hy_oas'] +
+            erp_stress * weights['erp']
+        )
+    elif has_move:
+        weights = {'vix': 0.44, 'move': 0.28, 'hy_oas': 0.28, 'erp': 0.00}
+        composite_stress = (
+            vix_stress * weights['vix'] +
+            move_stress * weights['move'] +
+            hy_oas_stress * weights['hy_oas']
+        )
+    elif has_bbb:
+        weights = {'vix': 0.55, 'move': 0.00, 'hy_oas': 0.35, 'erp': 0.10}
+        composite_stress = (
+            vix_stress * weights['vix'] +
+            hy_oas_stress * weights['hy_oas'] +
+            erp_stress * weights['erp']
+        )
+    else:
+        weights = {'vix': 0.60, 'move': 0.00, 'hy_oas': 0.40, 'erp': 0.00}
+        composite_stress = (
+            vix_stress * weights['vix'] +
+            hy_oas_stress * weights['hy_oas']
+        )
+    
+    # Convert stress to stability (invert: 0 stress = 100 stability)
+    composite_stability = 100 - composite_stress
+    
+    # Build result
+    result = []
+    for i, date in enumerate(common_dates):
+        entry = {
+            "date": date,
+            "vix": {
+                "value": float(vix_vals[i]),
+                "stress_score": float(vix_stress[i]),
+                "stability_score": float(100 - vix_stress[i]),
+                "weight": weights['vix'],
+                "contribution": float(vix_stress[i] * weights['vix']),
+            },
+            "hy_oas": {
+                "value": float(hy_oas_vals[i]),
+                "stress_score": float(hy_oas_stress[i]),
+                "stability_score": float(100 - hy_oas_stress[i]),
+                "weight": weights['hy_oas'],
+                "contribution": float(hy_oas_stress[i] * weights['hy_oas']),
+            },
+            "composite": {
+                "stress_score": float(composite_stress[i]),
+                "stability_score": float(composite_stability[i]),
+            }
+        }
+        
+        if has_move:
+            entry["move"] = {
+                "value": float(move_vals[i]),
+                "stress_score": float(move_stress[i]),
+                "stability_score": float(100 - move_stress[i]),
+                "weight": weights['move'],
+                "contribution": float(move_stress[i] * weights['move']),
+            }
+        
+        if has_bbb:
+            entry["erp_proxy"] = {
+                "bbb_yield": float(bbb_vals[i]),
+                "treasury_10y": float(dgs10_vals[i]),
+                "spread": float(erp_vals[i]),
+                "stress_score": float(erp_stress[i]),
+                "stability_score": float(100 - erp_stress[i]),
+                "weight": weights['erp'],
+                "contribution": float(erp_stress[i] * weights['erp']),
+            }
+        
+        result.append(entry)
+    
+    # Filter to only return the requested days
+    cutoff_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+    result = [r for r in result if r["date"] >= cutoff_date]
+    
+    return result
+
+
+@router.get("/indicators/SENTIMENT_COMPOSITE/components")
+async def get_sentiment_composite_components(days: int = 365):
+    """
+    Get breakdown of Consumer & Corporate Sentiment Composite components.
+    Returns Michigan Consumer Sentiment, NFIB, ISM New Orders, CapEx proxy.
+    """
+    from datetime import datetime, timedelta
+    from app.services.ingestion.fred_client import FredClient
+    import numpy as np
+    
+    client = FredClient()
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    start_date = cutoff.strftime("%Y-%m-%d")
+    
+    # Fetch all components
+    umich_series = await client.fetch_series("UMCSENT", start_date=start_date)
+    
+    nfib_series = []
+    try:
+        nfib_series = await client.fetch_series("BOPTEXP", start_date=start_date)
+    except:
+        try:
+            nfib_series = await client.fetch_series("BOPTTOTM", start_date=start_date)
+        except:
+            pass
+    
+    ism_series = []
+    try:
+        ism_series = await client.fetch_series("NEWORDER", start_date=start_date)
+    except:
+        pass
+    
+    capex_series = []
+    try:
+        capex_series = await client.fetch_series("ACOGNO", start_date=start_date)
+    except:
+        pass
+    
+    # Convert to dicts
+    def series_to_dict(s):
+        return {x["date"]: x["value"] for x in s if x["value"] is not None}
+    
+    umich_dict = series_to_dict(umich_series)
+    nfib_dict = series_to_dict(nfib_series) if nfib_series else {}
+    ism_dict = series_to_dict(ism_series) if ism_series else {}
+    capex_dict = series_to_dict(capex_series) if capex_series else {}
+    
+    if len(umich_dict) < 12:
+        raise HTTPException(status_code=404, detail="Insufficient data for SENTIMENT_COMPOSITE")
+    
+    common_dates = sorted(set(umich_dict.keys()))
+    
+    # Forward fill
+    def forward_fill_to_dates(data_dict, target_dates):
+        result = {}
+        last_value = None
+        for date in target_dates:
+            if date in data_dict:
+                last_value = data_dict[date]
+            if last_value is not None:
+                result[date] = last_value
+        return result
+    
+    nfib_filled = forward_fill_to_dates(nfib_dict, common_dates) if nfib_dict else {}
+    ism_filled = forward_fill_to_dates(ism_dict, common_dates) if ism_dict else {}
+    capex_filled = forward_fill_to_dates(capex_dict, common_dates) if capex_dict else {}
+    
+    # Extract values
+    umich_vals = np.array([umich_dict[d] for d in common_dates])
+    
+    has_nfib = len(nfib_filled) == len(common_dates)
+    has_ism = len(ism_filled) == len(common_dates)
+    has_capex = len(capex_filled) == len(common_dates)
+    
+    nfib_vals = np.array([nfib_filled[d] for d in common_dates]) if has_nfib else None
+    ism_vals = np.array([ism_filled[d] for d in common_dates]) if has_ism else None
+    capex_vals = np.array([capex_filled[d] for d in common_dates]) if has_capex else None
+    
+    # Compute confidence scores
+    def compute_confidence_score(vals):
+        lookback = min(520, len(vals))
+        window = vals[-lookback:]
+        mean = np.mean(window)
+        std = np.std(window)
+        if std == 0:
+            std = 1
+        
+        z_vals = (vals - mean) / std
+        z_clamped = np.clip(z_vals, -3, 3)
+        confidence = ((z_clamped + 3) / 6) * 100
+        
+        return confidence
+    
+    umich_conf = compute_confidence_score(umich_vals)
+    nfib_conf = compute_confidence_score(nfib_vals) if has_nfib else None
+    ism_conf = compute_confidence_score(ism_vals) if has_ism else None
+    capex_conf = compute_confidence_score(capex_vals) if has_capex else None
+    
+    # Determine weights
+    if has_nfib and has_ism and has_capex:
+        weights = {'umich': 0.30, 'nfib': 0.30, 'ism': 0.25, 'capex': 0.15}
+        composite_conf = (
+            umich_conf * weights['umich'] +
+            nfib_conf * weights['nfib'] +
+            ism_conf * weights['ism'] +
+            capex_conf * weights['capex']
+        )
+    elif has_nfib and has_ism:
+        weights = {'umich': 0.33, 'nfib': 0.33, 'ism': 0.34, 'capex': 0.00}
+        composite_conf = (
+            umich_conf * weights['umich'] +
+            nfib_conf * weights['nfib'] +
+            ism_conf * weights['ism']
+        )
+    elif has_nfib:
+        weights = {'umich': 0.50, 'nfib': 0.50, 'ism': 0.00, 'capex': 0.00}
+        composite_conf = (
+            umich_conf * weights['umich'] +
+            nfib_conf * weights['nfib']
+        )
+    else:
+        weights = {'umich': 1.00, 'nfib': 0.00, 'ism': 0.00, 'capex': 0.00}
+        composite_conf = umich_conf
+    
+    # Build result
+    result = []
+    for i, date in enumerate(common_dates):
+        entry = {
+            "date": date,
+            "michigan_sentiment": {
+                "value": float(umich_vals[i]),
+                "confidence_score": float(umich_conf[i]),
+                "weight": weights['umich'],
+                "contribution": float(umich_conf[i] * weights['umich']),
+            },
+            "composite": {
+                "confidence_score": float(composite_conf[i]),
+            }
+        }
+        
+        if has_nfib:
+            entry["nfib_optimism"] = {
+                "value": float(nfib_vals[i]),
+                "confidence_score": float(nfib_conf[i]),
+                "weight": weights['nfib'],
+                "contribution": float(nfib_conf[i] * weights['nfib']),
+            }
+        
+        if has_ism:
+            entry["ism_new_orders"] = {
+                "value": float(ism_vals[i]),
+                "confidence_score": float(ism_conf[i]),
+                "weight": weights['ism'],
+                "contribution": float(ism_conf[i] * weights['ism']),
+            }
+        
+        if has_capex:
+            entry["capex_proxy"] = {
+                "value": float(capex_vals[i]),
+                "confidence_score": float(capex_conf[i]),
+                "weight": weights['capex'],
+                "contribution": float(capex_conf[i] * weights['capex']),
+            }
+        
+        result.append(entry)
+    
+    # Filter to requested days
     cutoff_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
     result = [r for r in result if r["date"] >= cutoff_date]
     

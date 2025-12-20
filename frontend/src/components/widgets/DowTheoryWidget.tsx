@@ -9,6 +9,8 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { getLegacyApiUrl } from "../../utils/apiUtils";
+import { commonXAxisProps, commonYAxisProps, commonGridProps } from "../../utils/chartUtils";
 
 interface DowTheoryData {
   timestamp: string;
@@ -45,7 +47,7 @@ const DowTheoryWidget = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+        const apiUrl = getLegacyApiUrl();
         const [currentResponse, historyResponse] = await Promise.all([
           fetch(`${apiUrl}/dow-theory`),
           fetch(`${apiUrl}/dow-theory/history`),

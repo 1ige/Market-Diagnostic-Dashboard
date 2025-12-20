@@ -115,6 +115,14 @@ class ETLRunner:
                 # This indicator fetches its data in the processing section below
                 # Just create placeholder series for now
                 series = [{"date": start_date, "value": 0.0}]
+            elif code == "ANALYST_ANXIETY":
+                # This indicator fetches its data in the processing section below
+                # Just create placeholder series for now
+                series = [{"date": start_date, "value": 0.0}]
+            elif code == "SENTIMENT_COMPOSITE":
+                # This indicator fetches its data in the processing section below
+                # Just create placeholder series for now
+                series = [{"date": start_date, "value": 0.0}]
             else:
                 db.close()
                 raise ValueError(f"Unknown derived indicator: {code}")
@@ -472,6 +480,377 @@ class ETLRunner:
             raw_series = liquidity_stress.tolist()
             
             # Normalize for consistency
+            normalized_series = normalize_series(
+                raw_series,
+                direction=ind.direction,
+                lookback=ind.lookback_days_for_z,
+            )
+        elif code == "ANALYST_ANXIETY":
+            import numpy as np
+            
+            # Fetch components for Analyst Anxiety composite
+            # A. VIX from Yahoo - Weight 0.40
+            vix_series = self.yahoo.fetch_series("^VIX", start_date=start_date)
+            
+            # B. MOVE from Yahoo - Weight 0.25  
+            move_series = []
+            try:
+                move_series = self.yahoo.fetch_series("^MOVE", start_date=start_date)
+            except:
+                print("Warning: MOVE (^MOVE) not available from Yahoo, using reduced component model")
+            
+            # C. High Yield OAS from FRED - Weight 0.25
+            hy_oas_series = await self.fred.fetch_series("BAMLH0A0HYM2", start_date=start_date)
+            
+            # D. ERP Proxy (10Y - BBB) - Weight 0.10
+            # Use BBB Corporate Yield minus 10Y Treasury as risk premium proxy
+            dgs10_series = await self.fred.fetch_series("DGS10", start_date=start_date)
+            
+            # Try to get BBB corporate yield (BAMLC0A4CBBB)
+            bbb_series = []
+            try:
+                bbb_series = await self.fred.fetch_series("BAMLC0A4CBBB", start_date=start_date)
+            except:
+                print("Warning: BBB Corporate Yield not available, using reduced component model")
+            
+            # Convert to dicts for alignment
+            def series_to_dict(s):
+                return {x["date"]: x["value"] for x in s if x["value"] is not None}
+            
+            vix_dict = series_to_dict(vix_series)
+            move_dict = series_to_dict(move_series) if move_series else {}
+            hy_oas_dict = series_to_dict(hy_oas_series)
+            dgs10_dict = series_to_dict(dgs10_series)
+            bbb_dict = series_to_dict(bbb_series) if bbb_series else {}
+            
+            # Find dates where core components exist (VIX, HY OAS, DGS10 are required)
+            required_dates = set(vix_dict.keys()) & set(hy_oas_dict.keys()) & set(dgs10_dict.keys())
+            
+            if len(required_dates) < 30:
+                db.close()
+                raise ValueError(f"Insufficient overlapping data for {code}: only {len(required_dates)} common dates")
+            
+            # Sort dates
+            common_dates = sorted(required_dates)
+            
+            # Forward fill MOVE and BBB data to align with common dates
+            def forward_fill_to_dates(data_dict, target_dates):
+                result = {}
+                last_value = None
+                for date in target_dates:
+                    if date in data_dict:
+                        last_value = data_dict[date]
+                    if last_value is not None:
+                        result[date] = last_value
+                return result
+            
+            move_filled = forward_fill_to_dates(move_dict, common_dates) if move_dict else {}
+            bbb_filled = forward_fill_to_dates(bbb_dict, common_dates) if bbb_dict else {}
+            
+            # Extract aligned values
+            vix_vals = np.array([vix_dict[d] for d in common_dates])
+            hy_oas_vals = np.array([hy_oas_dict[d] for d in common_dates])
+            dgs10_vals = np.array([dgs10_dict[d] for d in common_dates])
+            
+            # Check which optional components are available
+            has_move = len(move_filled) == len(common_dates) and all(d in move_filled for d in common_dates)
+            has_bbb = len(bbb_filled) == len(common_dates) and all(d in bbb_filled for d in common_dates)
+            
+            move_vals = np.array([move_filled[d] for d in common_dates]) if has_move else None
+            bbb_vals = np.array([bbb_filled[d] for d in common_dates]) if has_bbb else None
+            
+            # Helper function to compute normalized stress scores with momentum
+            def compute_stress_score(vals, use_momentum=True):
+                """
+                Convert raw values to 0-100 stress scores using z-score normalization.
+                Higher values = higher stress.
+                Includes momentum component for sensitivity to rapid changes.
+                """
+                # Compute baseline z-score (lookback 520 days as per spec)
+                lookback = min(520, len(vals))
+                window = vals[-lookback:]
+                mean = np.mean(window)
+                std = np.std(window)
+                if std == 0:
+                    std = 1
+                
+                z_base = (vals - mean) / std
+                
+                # Compute momentum z-score (10-day ROC)
+                if use_momentum and len(vals) > 10:
+                    roc_10d = np.zeros_like(vals)
+                    for i in range(10, len(vals)):
+                        roc_10d[i] = vals[i] - vals[i-10]
+                    
+                    roc_mean = np.mean(roc_10d[-lookback:])
+                    roc_std = np.std(roc_10d[-lookback:])
+                    if roc_std == 0:
+                        roc_std = 1
+                    z_momentum = (roc_10d - roc_mean) / roc_std
+                    
+                    # Blend: 75% base, 25% momentum
+                    z_blended = 0.75 * z_base + 0.25 * z_momentum
+                else:
+                    z_blended = z_base
+                
+                # Clamp to [-3, +3] to avoid outliers
+                z_clamped = np.clip(z_blended, -3, 3)
+                
+                # Map to 0-100 stress scale
+                stress = ((z_clamped + 3) / 6) * 100
+                
+                return stress
+            
+            # Compute stress scores for each component
+            vix_stress = compute_stress_score(vix_vals)
+            hy_oas_stress = compute_stress_score(hy_oas_vals)
+            
+            # Determine weights based on available components
+            if has_move and has_bbb:
+                # All 4 components available
+                move_stress = compute_stress_score(move_vals)
+                
+                # Compute ERP proxy stress (BBB - 10Y)
+                erp_vals = bbb_vals - dgs10_vals
+                erp_stress = compute_stress_score(erp_vals)
+                
+                # Original weights
+                weights = {
+                    'vix': 0.40,
+                    'move': 0.25,
+                    'hy_oas': 0.25,
+                    'erp': 0.10
+                }
+                
+                composite_stress = (
+                    vix_stress * weights['vix'] +
+                    move_stress * weights['move'] +
+                    hy_oas_stress * weights['hy_oas'] +
+                    erp_stress * weights['erp']
+                )
+            elif has_move:
+                # VIX + MOVE + HY OAS (no ERP)
+                move_stress = compute_stress_score(move_vals)
+                
+                # Redistribute 0.10 ERP weight
+                weights = {
+                    'vix': 0.44,  # 0.40 + 0.04
+                    'move': 0.28,  # 0.25 + 0.03
+                    'hy_oas': 0.28  # 0.25 + 0.03
+                }
+                
+                composite_stress = (
+                    vix_stress * weights['vix'] +
+                    move_stress * weights['move'] +
+                    hy_oas_stress * weights['hy_oas']
+                )
+            elif has_bbb:
+                # VIX + HY OAS + ERP (no MOVE)
+                erp_vals = bbb_vals - dgs10_vals
+                erp_stress = compute_stress_score(erp_vals)
+                
+                # Redistribute 0.25 MOVE weight
+                weights = {
+                    'vix': 0.55,  # 0.40 + 0.15
+                    'hy_oas': 0.35,  # 0.25 + 0.10
+                    'erp': 0.10
+                }
+                
+                composite_stress = (
+                    vix_stress * weights['vix'] +
+                    hy_oas_stress * weights['hy_oas'] +
+                    erp_stress * weights['erp']
+                )
+            else:
+                # Only VIX + HY OAS (minimum viable)
+                # Redistribute weights
+                weights = {
+                    'vix': 0.60,  # 0.40 + 0.20
+                    'hy_oas': 0.40  # 0.25 + 0.15
+                }
+                
+                composite_stress = (
+                    vix_stress * weights['vix'] +
+                    hy_oas_stress * weights['hy_oas']
+                )
+            
+            # Convert stress scores (0-100, higher = more anxious) to stability scores
+            # Stability = 100 - stress
+            composite_stability = 100 - composite_stress
+            
+            # Store composite stability score
+            # With direction=-1 in config, this will be inverted during normalization
+            # so that low stability → low final score (RED) and high stability → high final score (GREEN)
+            
+            # Update series with actual dates and values
+            series = [{"date": common_dates[i], "value": composite_stability[i]} for i in range(len(common_dates))]
+            clean_values = series
+            raw_series = composite_stability.tolist()
+            
+            # Normalize for consistency with system
+            normalized_series = normalize_series(
+                raw_series,
+                direction=ind.direction,
+                lookback=ind.lookback_days_for_z,
+            )
+        elif code == "SENTIMENT_COMPOSITE":
+            import numpy as np
+            
+            # Fetch components for Consumer & Corporate Sentiment
+            # A. University of Michigan Consumer Sentiment - Weight 0.30
+            umich_series = await self.fred.fetch_series("UMCSENT", start_date=start_date)
+            
+            # B. NFIB Small Business Optimism - Weight 0.30
+            # FRED symbol: BOPTTOTM (Total Index) or use proxy
+            nfib_series = []
+            try:
+                nfib_series = await self.fred.fetch_series("BOPTEXP", start_date=start_date)  # Expectations component
+            except:
+                print("Warning: NFIB (BOPTEXP) not available, trying alternative")
+                try:
+                    nfib_series = await self.fred.fetch_series("BOPTTOTM", start_date=start_date)
+                except:
+                    print("Warning: NFIB not available, using reduced component model")
+            
+            # C. ISM New Orders (Manufacturing) - Weight 0.25
+            ism_mfg_series = []
+            try:
+                ism_mfg_series = await self.fred.fetch_series("NEWORDER", start_date=start_date)
+            except:
+                print("Warning: ISM Manufacturing New Orders (NEWORDER) not available")
+            
+            # D. CapEx Proxy (Nondefense Capital Goods ex-Aircraft) - Weight 0.15
+            capex_series = []
+            try:
+                capex_series = await self.fred.fetch_series("ACOGNO", start_date=start_date)
+            except:
+                print("Warning: CapEx proxy (ACOGNO) not available")
+            
+            # Convert to dicts for alignment
+            def series_to_dict(s):
+                return {x["date"]: x["value"] for x in s if x["value"] is not None}
+            
+            umich_dict = series_to_dict(umich_series)
+            nfib_dict = series_to_dict(nfib_series) if nfib_series else {}
+            ism_dict = series_to_dict(ism_mfg_series) if ism_mfg_series else {}
+            capex_dict = series_to_dict(capex_series) if capex_series else {}
+            
+            # Find dates where Michigan sentiment exists (required component)
+            # Monthly data, so need at least 12 months (not 30 days)
+            if len(umich_dict) < 12:
+                db.close()
+                raise ValueError(f"Insufficient Michigan Consumer Sentiment data for {code}")
+            
+            required_dates = set(umich_dict.keys())
+            common_dates = sorted(required_dates)
+            
+            # Forward fill optional components
+            def forward_fill_to_dates(data_dict, target_dates):
+                result = {}
+                last_value = None
+                for date in target_dates:
+                    if date in data_dict:
+                        last_value = data_dict[date]
+                    if last_value is not None:
+                        result[date] = last_value
+                return result
+            
+            nfib_filled = forward_fill_to_dates(nfib_dict, common_dates) if nfib_dict else {}
+            ism_filled = forward_fill_to_dates(ism_dict, common_dates) if ism_dict else {}
+            capex_filled = forward_fill_to_dates(capex_dict, common_dates) if capex_dict else {}
+            
+            # Extract values
+            umich_vals = np.array([umich_dict[d] for d in common_dates])
+            
+            # Check which optional components are available
+            has_nfib = len(nfib_filled) == len(common_dates) and all(d in nfib_filled for d in common_dates)
+            has_ism = len(ism_filled) == len(common_dates) and all(d in ism_filled for d in common_dates)
+            has_capex = len(capex_filled) == len(common_dates) and all(d in capex_filled for d in common_dates)
+            
+            nfib_vals = np.array([nfib_filled[d] for d in common_dates]) if has_nfib else None
+            ism_vals = np.array([ism_filled[d] for d in common_dates]) if has_ism else None
+            capex_vals = np.array([capex_filled[d] for d in common_dates]) if has_capex else None
+            
+            # Helper function to compute confidence scores (higher values = better sentiment)
+            def compute_confidence_score(vals):
+                """Convert raw values to 0-100 confidence scores using z-score normalization."""
+                lookback = min(520, len(vals))
+                window = vals[-lookback:]
+                mean = np.mean(window)
+                std = np.std(window)
+                if std == 0:
+                    std = 1
+                z_vals = (vals - mean) / std
+                z_clamped = np.clip(z_vals, -3, 3)
+                confidence = ((z_clamped + 3) / 6) * 100
+                return confidence
+            
+            # Compute confidence scores for each component
+            umich_conf = compute_confidence_score(umich_vals)
+            nfib_conf = compute_confidence_score(nfib_vals) if has_nfib else None
+            ism_conf = compute_confidence_score(ism_vals) if has_ism else None
+            capex_conf = compute_confidence_score(capex_vals) if has_capex else None
+            
+            # Determine weights based on available components
+            if has_nfib and has_ism and has_capex:
+                # All components available
+                weights = {
+                    'umich': 0.30,
+                    'nfib': 0.30,
+                    'ism': 0.25,
+                    'capex': 0.15
+                }
+                composite_conf = (
+                    umich_conf * weights['umich'] +
+                    nfib_conf * weights['nfib'] +
+                    ism_conf * weights['ism'] +
+                    capex_conf * weights['capex']
+                )
+            elif has_nfib and has_ism:
+                # No CapEx
+                weights = {
+                    'umich': 0.33,
+                    'nfib': 0.33,
+                    'ism': 0.34,
+                    'capex': 0.00
+                }
+                composite_conf = (
+                    umich_conf * weights['umich'] +
+                    nfib_conf * weights['nfib'] +
+                    ism_conf * weights['ism']
+                )
+            elif has_nfib:
+                # Only Michigan + NFIB
+                weights = {
+                    'umich': 0.50,
+                    'nfib': 0.50,
+                    'ism': 0.00,
+                    'capex': 0.00
+                }
+                composite_conf = (
+                    umich_conf * weights['umich'] +
+                    nfib_conf * weights['nfib']
+                )
+            else:
+                # Only Michigan (minimum)
+                weights = {
+                    'umich': 1.00,
+                    'nfib': 0.00,
+                    'ism': 0.00,
+                    'capex': 0.00
+                }
+                composite_conf = umich_conf
+            
+            # Store composite confidence score (0-100, higher = better sentiment)
+            # With direction=-1 in config, this will be properly normalized
+            # High confidence -> high final score (GREEN), low confidence -> low final score (RED)
+            
+            # Update series with actual dates and values
+            series = [{"date": common_dates[i], "value": composite_conf[i]} for i in range(len(common_dates))]
+            clean_values = series
+            raw_series = composite_conf.tolist()
+            
+            # Normalize for consistency with system
             normalized_series = normalize_series(
                 raw_series,
                 direction=ind.direction,

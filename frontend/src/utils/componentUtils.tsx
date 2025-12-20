@@ -1,0 +1,108 @@
+/**
+ * Component Utilities
+ * 
+ * Shared logic for common component patterns.
+ */
+
+/**
+ * Loading state component pattern
+ */
+export function LoadingState({ message = "Loading..." }: { message?: string }) {
+  return (
+    <div className="p-6 text-gray-200">
+      <p>{message}</p>
+    </div>
+  );
+}
+
+/**
+ * Error state component pattern
+ */
+export function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="bg-red-900/20 border border-red-700 text-red-200 p-4 rounded">
+      <div className="font-semibold mb-2">Error:</div>
+      <div className="text-sm">{message}</div>
+    </div>
+  );
+}
+
+/**
+ * Empty state component pattern
+ */
+export function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="bg-stealth-800 border border-stealth-700 text-stealth-400 p-4 rounded text-center">
+      {message}
+    </div>
+  );
+}
+
+/**
+ * Calculate days ago from a date
+ */
+export function getDaysAgo(date: Date | string): number {
+  const targetDate = typeof date === 'string' ? new Date(date) : date;
+  const now = new Date();
+  return Math.floor((now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Format date relative to now (Today, Yesterday, or date string)
+ */
+export function formatRelativeDate(date: Date | string): string {
+  const daysAgo = getDaysAgo(date);
+  const targetDate = typeof date === 'string' ? new Date(date) : date;
+  
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  
+  return targetDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
+ * Check if current day is a weekend
+ */
+export function isWeekend(date: Date = new Date()): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+/**
+ * Calculate moving average for smoothing data
+ */
+export function calculateMovingAverage<T extends { [key: string]: any }>(
+  data: T[],
+  valueKey: string,
+  windowSize: number = 7
+): T[] {
+  if (data.length < windowSize) return data;
+  
+  return data.map((point, index) => {
+    const start = Math.max(0, index - Math.floor(windowSize / 2));
+    const end = Math.min(data.length, start + windowSize);
+    const window = data.slice(start, end);
+    const avg = window.reduce((sum, p) => sum + (p[valueKey] || 0), 0) / window.length;
+    
+    return {
+      ...point,
+      [valueKey]: avg,
+      [`raw_${valueKey}`]: point[valueKey], // Keep original
+    };
+  });
+}
+
+/**
+ * Safe number formatting with fallback
+ */
+export function formatValue(value: any, decimals: number = 2): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === 'number') {
+    return value.toFixed(decimals);
+  }
+  return String(value);
+}

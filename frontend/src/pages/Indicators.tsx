@@ -2,6 +2,7 @@ import { useApi } from "../hooks/useApi";
 import { IndicatorStatus, IndicatorHistoryPoint } from "../types";
 import { Link } from "react-router-dom";
 import StateSparkline from "../components/widgets/StateSparkline";
+import { getStateBadgeClass } from "../utils/styleUtils";
 
 export default function Indicators() {
   const { data, loading, error } = useApi<IndicatorStatus[]>("/indicators");
@@ -103,12 +104,6 @@ function IndicatorCard({ indicator }: { indicator: IndicatorStatus }) {
     `/indicators/${indicator.code}/history?days=60`
   );
 
-  const stateColors = {
-    GREEN: "bg-green-900/20 border-green-700 text-green-400",
-    YELLOW: "bg-yellow-900/20 border-yellow-700 text-yellow-400",
-    RED: "bg-red-900/20 border-red-700 text-red-400",
-  };
-
   return (
     <Link to={`/indicators/${indicator.code}`}>
       <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-3 hover:bg-stealth-750 transition">
@@ -117,7 +112,7 @@ function IndicatorCard({ indicator }: { indicator: IndicatorStatus }) {
             <div className="text-accent-yellow font-semibold text-sm">{indicator.code}</div>
             <div className="text-stealth-300 text-xs mt-0.5">{indicator.name}</div>
           </div>
-          <div className={`px-2 py-1 rounded text-xs font-semibold border ${stateColors[indicator.state]}`}>
+          <div className={getStateBadgeClass(indicator.state)}>
             {indicator.state}
           </div>
         </div>

@@ -3,6 +3,10 @@ import { useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { IndicatorHistoryPoint } from "../types";
 import StateSparkline from "../components/widgets/StateSparkline";
+import { ComponentChart } from "../components/widgets/ComponentChart";
+import { ComponentCard } from "../components/widgets/ComponentCard";
+import { processComponentData, calculateDateRange, extendStaleData, filterByDateRange } from "../utils/chartDataUtils";
+import { prepareExtendedComponentData } from "../utils/indicatorDetailHelpers";
 import {
   LineChart,
   Line,
@@ -106,6 +110,75 @@ interface LiquidityComponentData {
   };
 }
 
+interface SentimentCompositeComponentData {
+  date: string;
+  michigan_sentiment: {
+    value: number;
+    confidence_score: number;
+    weight: number;
+    contribution: number;
+  };
+  nfib_optimism?: {
+    value: number;
+    confidence_score: number;
+    weight: number;
+    contribution: number;
+  };
+  ism_new_orders?: {
+    value: number;
+    confidence_score: number;
+    weight: number;
+    contribution: number;
+  };
+  capex_proxy?: {
+    value: number;
+    confidence_score: number;
+    weight: number;
+    contribution: number;
+  };
+  composite: {
+    confidence_score: number;
+  };
+}
+
+interface AnalystAnxietyComponentData {
+  date: string;
+  vix: {
+    value: number;
+    stress_score: number;
+    stability_score: number;
+    weight: number;
+    contribution: number;
+  };
+  hy_oas: {
+    value: number;
+    stress_score: number;
+    stability_score: number;
+    weight: number;
+    contribution: number;
+  };
+  move?: {
+    value: number;
+    stress_score: number;
+    stability_score: number;
+    weight: number;
+    contribution: number;
+  };
+  erp_proxy?: {
+    bbb_yield: number;
+    treasury_10y: number;
+    spread: number;
+    stress_score: number;
+    stability_score: number;
+    weight: number;
+    contribution: number;
+  };
+  composite: {
+    stress_score: number;
+    stability_score: number;
+  };
+}
+
 export default function IndicatorDetail() {
   const { code } = useParams();
   const [isRefetching, setIsRefetching] = React.useState(false);
@@ -130,6 +203,12 @@ export default function IndicatorDetail() {
   );
   const { data: liquidityComponents, refetch: refetchLiquidityComponents } = useApi<LiquidityComponentData[]>(
     code === "LIQUIDITY_PROXY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+  );
+  const { data: analystAnxietyComponents, refetch: refetchAnalystAnxietyComponents } = useApi<AnalystAnxietyComponentData[]>(
+    code === "ANALYST_ANXIETY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+  );
+  const { data: sentimentCompositeComponents, refetch: refetchSentimentCompositeComponents } = useApi<SentimentCompositeComponentData[]>(
+    code === "SENTIMENT_COMPOSITE" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
   );
 
   const handleClearAndRefetch = async () => {
@@ -169,6 +248,7 @@ export default function IndicatorDetail() {
       refetchComponents?.();
       refetchBondComponents?.();
       refetchLiquidityComponents?.();
+      refetchAnalystAnxietyComponents?.();
       
       // Clear message after 5 seconds
       setTimeout(() => setRefetchMessage(null), 5000);
@@ -203,6 +283,14 @@ export default function IndicatorDetail() {
     GREEN: "text-green-400 bg-green-500/10 border-green-500/30",
     YELLOW: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
     RED: "text-red-400 bg-red-500/10 border-red-500/30",
+  };
+
+  // Helper to prepare chart data with date range and deduplication
+  const prepareChartData = <T extends { date: string }>(
+    components: T[],
+    daysBack: number
+  ): { data: (T & { dateNum: number })[]; dateRange: { startTime: number; endTime: number } } => {
+    return processComponentData(components, daysBack);
   };
 
   return (
@@ -307,116 +395,26 @@ export default function IndicatorDetail() {
           <div className="h-80 mb-6">
             <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Month-over-Month Growth</h4>
             {(() => {
-              const today = new Date();
-              today.setHours(23, 59, 59, 999); // End of today
-              const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
-              daysBack.setHours(0, 0, 0, 0); // Start of that day
-              
-              // Get the last data point from all components
-              const lastPoint = components[components.length - 1];
-              const lastDate = new Date(lastPoint.date + 'T00:00:00');
-              
-              // Create monthly points from last data to today for flat line
-              const intermediatePoints = [];
-              const currentDate = new Date(lastDate);
-              currentDate.setMonth(currentDate.getMonth() + 1);
-              currentDate.setDate(1); // First of the month
-              
-              while (currentDate <= today) {
-                intermediatePoints.push({
-                  ...lastPoint,
-                  date: currentDate.toISOString().split('T')[0],
-                  dateNum: currentDate.getTime()
-                });
-                currentDate.setMonth(currentDate.getMonth() + 1);
-              }
-              
-              // Add today as final point
-              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].dateNum < today.getTime()) {
-                intermediatePoints.push({
-                  ...lastPoint,
-                  date: today.toISOString().split('T')[0],
-                  dateNum: today.getTime()
-                });
-              }
-              
-              // Combine all data with extended flat line, then filter for chart range
-              const allData = [
-                ...components.map(item => ({
-                  ...item,
-                  dateNum: new Date(item.date + 'T00:00:00').getTime()
-                })),
-                ...intermediatePoints
-              ];
-              
-              const extendedData = allData.filter(item => item.dateNum >= daysBack.getTime());
+              const { data: extendedData, dateRange } = prepareExtendedComponentData({
+                components,
+                chartRangeDays: chartRange.days,
+                extendToToday: true
+              });
               
               return (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={extendedData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                    <XAxis
-                      dataKey="dateNum"
-                      type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
-                      scale="time"
-                      tickFormatter={(v: number) =>
-                        new Date(v).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "2-digit",
-                        })
-                      }
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                    />
-                    <YAxis
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                      label={{ value: 'MoM % Growth', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        borderColor: "#555560",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                      formatter={(value: number) => `${value.toFixed(3)}%`}
-                      labelFormatter={(label: number) =>
-                        new Date(label).toLocaleDateString()
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="pce.mom_pct"
-                      name="PCE Growth"
-                      stroke="#60a5fa"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="pi.mom_pct"
-                      name="PI Growth"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="cpi.mom_pct"
-                      name="CPI (Inflation)"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ComponentChart
+                  data={extendedData}
+                  lines={[
+                    { dataKey: "pce.mom_pct", name: "PCE Growth", stroke: "#60a5fa" },
+                    { dataKey: "pi.mom_pct", name: "PI Growth", stroke: "#10b981" },
+                    { dataKey: "cpi.mom_pct", name: "CPI (Inflation)", stroke: "#ef4444" }
+                  ]}
+                  referenceLines={[
+                    { y: 0, stroke: "#666", label: "Neutral", labelFill: "#666" }
+                  ]}
+                  yAxisLabel="MoM % Growth"
+                  dateRange={dateRange}
+                />
               );
             })()}
           </div>
@@ -428,117 +426,28 @@ export default function IndicatorDetail() {
               Positive = Spending/Income outpacing inflation (healthy). Negative = Inflation eroding consumer capacity (stress).
             </p>
             {(() => {
-              const today = new Date();
-              today.setHours(23, 59, 59, 999); // End of today
-              const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
-              daysBack.setHours(0, 0, 0, 0); // Start of that day
-              
-              // Get the last data point from all components
-              const lastPoint = components[components.length - 1];
-              const lastDate = new Date(lastPoint.date + 'T00:00:00');
-              
-              // Create monthly points from last data to today for flat line
-              const intermediatePoints = [];
-              const currentDate = new Date(lastDate);
-              currentDate.setMonth(currentDate.getMonth() + 1);
-              currentDate.setDate(1); // First of the month
-              
-              while (currentDate <= today) {
-                intermediatePoints.push({
-                  ...lastPoint,
-                  date: currentDate.toISOString().split('T')[0],
-                  dateNum: currentDate.getTime()
-                });
-                currentDate.setMonth(currentDate.getMonth() + 1);
-              }
-              
-              // Add today as final point
-              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].dateNum < today.getTime()) {
-                intermediatePoints.push({
-                  ...lastPoint,
-                  date: today.toISOString().split('T')[0],
-                  dateNum: today.getTime()
-                });
-              }
-              
-              // Combine all data with extended flat line, then filter for chart range
-              const allData = [
-                ...components.map(item => ({
-                  ...item,
-                  dateNum: new Date(item.date + 'T00:00:00').getTime()
-                })),
-                ...intermediatePoints
-              ];
-              
-              const extendedData = allData.filter(item => item.dateNum >= daysBack.getTime());
+              const { data: extendedData, dateRange } = prepareExtendedComponentData({
+                components,
+                chartRangeDays: chartRange.days,
+                extendToToday: true
+              });
               
               return (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={extendedData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                    <XAxis
-                      dataKey="dateNum"
-                      type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
-                      scale="time"
-                      tickFormatter={(v: number) =>
-                        new Date(v).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "2-digit",
-                        })
-                      }
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                    />
-                    <YAxis
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                      label={{ value: 'Spread vs Inflation (%)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        borderColor: "#555560",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                      formatter={(value: number) => `${value.toFixed(3)}%`}
-                      labelFormatter={(label: number) =>
-                        new Date(label).toLocaleDateString()
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="spreads.pce_spread"
-                      name="PCE vs CPI"
-                      stroke="#60a5fa"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="spreads.pi_spread"
-                      name="PI vs CPI"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="spreads.consumer_health"
-                      name="Consumer Health"
-                      stroke="#f59e0b"
-                      strokeWidth={3}
-                      dot={false}
-                      connectNulls
-                    />
-                    <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ComponentChart
+                  data={extendedData}
+                  lines={[
+                    { dataKey: "spreads.pce_spread", name: "PCE vs CPI", stroke: "#60a5fa" },
+                    { dataKey: "spreads.pi_spread", name: "PI vs CPI", stroke: "#10b981" },
+                    { dataKey: "spreads.consumer_health", name: "Consumer Health", stroke: "#f59e0b", strokeWidth: 3 }
+                  ]}
+                  referenceLines={[
+                    { y: 0, stroke: "#666", label: "Neutral", labelFill: "#666" },
+                    { y: 65, stroke: "#10b981", label: "GREEN", labelFill: "#10b981" },
+                    { y: 35, stroke: "#ef4444", label: "RED", labelFill: "#ef4444" }
+                  ]}
+                  yAxisLabel="Spread vs Inflation (%)"
+                  dateRange={dateRange}
+                />
               );
             })()}
           </div>
@@ -612,85 +521,24 @@ export default function IndicatorDetail() {
           <div className="h-80 mb-6">
             <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Stress Scores Over Time</h4>
             {(() => {
-              const today = new Date();
-              const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
-              
-              const chartData = bondComponents.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              const { data, dateRange } = processComponentData(bondComponents, chartRange.days);
               
               return (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                    <XAxis
-                      dataKey="dateNum"
-                      type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
-                      scale="time"
-                      tickFormatter={(v: number) =>
-                        new Date(v).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "2-digit",
-                        })
-                      }
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                    />
-                    <YAxis
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                      label={{ value: 'Stress Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        borderColor: "#555560",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                      formatter={(value: number) => value.toFixed(2)}
-                      labelFormatter={(label: number) =>
-                        new Date(label).toLocaleDateString()
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="credit_spread_stress.stress_score"
-                      name="Credit Spreads"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="yield_curve_stress.stress_score"
-                      name="Yield Curves"
-                      stroke="#eab308"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="rates_momentum_stress.stress_score"
-                      name="Rates Momentum"
-                      stroke="#f97316"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="treasury_volatility_stress.stress_score"
-                      name="Treasury Volatility"
-                      stroke="#a855f7"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ComponentChart
+                  data={data}
+                  lines={[
+                    { dataKey: "credit_spread_stress.stress_score", name: "Credit Spreads", stroke: "#ef4444" },
+                    { dataKey: "yield_curve_stress.stress_score", name: "Yield Curves", stroke: "#eab308" },
+                    { dataKey: "rates_momentum_stress.stress_score", name: "Rates Momentum", stroke: "#f97316" },
+                    { dataKey: "treasury_volatility_stress.stress_score", name: "Treasury Volatility", stroke: "#a855f7" }
+                  ]}
+                  referenceLines={[
+                    { y: 65, stroke: "#ef4444", label: "HIGH STRESS", labelFill: "#ef4444" },
+                    { y: 35, stroke: "#10b981", label: "LOW STRESS", labelFill: "#10b981" }
+                  ]}
+                  yAxisLabel="Stress Score (0-100)"
+                  dateRange={dateRange}
+                />
               );
             })()}
           </div>
@@ -699,61 +547,21 @@ export default function IndicatorDetail() {
           <div className="h-80">
             <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Stress Score</h4>
             {(() => {
-              const today = new Date();
-              const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
-              
-              const chartData = bondComponents.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              const { data, dateRange } = processComponentData(bondComponents, chartRange.days);
               
               return (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                    <XAxis
-                      dataKey="dateNum"
-                      type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
-                      scale="time"
-                      tickFormatter={(v: number) =>
-                        new Date(v).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "2-digit",
-                        })
-                      }
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                    />
-                    <YAxis
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                      label={{ value: 'Composite Stress Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        borderColor: "#555560",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                      formatter={(value: number) => value.toFixed(2)}
-                      labelFormatter={(label: number) =>
-                        new Date(label).toLocaleDateString()
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="composite.stress_score"
-                      name="Composite Stress"
-                      stroke="#60a5fa"
-                      strokeWidth={3}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ComponentChart
+                  data={data}
+                  lines={[
+                    { dataKey: "composite.stress_score", name: "Composite Stress", stroke: "#60a5fa", strokeWidth: 3 }
+                  ]}
+                  referenceLines={[
+                    { y: 65, stroke: "#ef4444", label: "HIGH STRESS", labelFill: "#ef4444" },
+                    { y: 35, stroke: "#10b981", label: "LOW STRESS", labelFill: "#10b981" }
+                  ]}
+                  yAxisLabel="Composite Stress Score"
+                  dateRange={dateRange}
+                />
               );
             })()}
           </div>
@@ -814,77 +622,22 @@ export default function IndicatorDetail() {
           <div className="h-80 mb-6">
             <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Z-Scores Over Time</h4>
             {(() => {
-              const today = new Date();
-              const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
-              
-              const chartData = liquidityComponents.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              const { data, dateRange } = processComponentData(liquidityComponents, chartRange.days);
               
               return (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                    <XAxis
-                      dataKey="dateNum"
-                      type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
-                      scale="time"
-                      tickFormatter={(v: number) =>
-                        new Date(v).toLocaleDateString(undefined, {
-                          month: "short",
-                          year: "2-digit",
-                        })
-                      }
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                    />
-                    <YAxis
-                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                      stroke="#555560"
-                      label={{ value: 'Z-Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        borderColor: "#555560",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
-                      formatter={(value: number) => value.toFixed(2)}
-                      labelFormatter={(label: number) =>
-                        new Date(label).toLocaleDateString()
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="m2_money_supply.z_score"
-                      name="M2 YoY%"
-                      stroke="#60a5fa"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="fed_balance_sheet.z_score"
-                      name="Fed BS Delta"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="reverse_repo.z_score"
-                      name="RRP Usage"
-                      stroke="#a855f7"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <ComponentChart
+                  data={data}
+                  lines={[
+                    { dataKey: "m2_money_supply.z_score", name: "M2 YoY%", stroke: "#60a5fa" },
+                    { dataKey: "fed_balance_sheet.z_score", name: "Fed BS Delta", stroke: "#10b981" },
+                    { dataKey: "reverse_repo.z_score", name: "RRP Usage", stroke: "#a855f7" }
+                  ]}
+                  referenceLines={[
+                    { y: 0, stroke: "#666", label: "Neutral", labelFill: "#666" }
+                  ]}
+                  yAxisLabel="Z-Score"
+                  dateRange={dateRange}
+                />
               );
             })()}
           </div>
@@ -896,23 +649,126 @@ export default function IndicatorDetail() {
               Lower stress = abundant liquidity (QE, M2 growth) | Higher stress = liquidity drought (QT, RRP peak)
             </p>
             {(() => {
+              const { data, dateRange } = processComponentData(liquidityComponents, chartRange.days);
+              
+              return (
+                <ComponentChart
+                  data={data}
+                  lines={[
+                    { dataKey: "composite.stress_score", name: "Liquidity Stress", stroke: "#f59e0b", strokeWidth: 3 }
+                  ]}
+                  referenceLines={[
+                    { y: 60, stroke: "#ef4444", label: "HIGH STRESS", labelFill: "#ef4444" },
+                    { y: 30, stroke: "#10b981", label: "LOW STRESS", labelFill: "#10b981" }
+                  ]}
+                  yAxisLabel="Stress Score (0-100)"
+                  dateRange={dateRange}
+                />
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Component Breakdown for Analyst Anxiety */}
+      {code === "ANALYST_ANXIETY" && analystAnxietyComponents && analystAnxietyComponents.length > 0 && (
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
+            Analyst Anxiety measures institutional market fear through volatility and credit stress indicators. 
+            Stability Score = 100 - Weighted Composite Stress.
+          </p>
+          
+          {/* Latest Component Values */}
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">VIX (Equity Vol)</div>
+              <div className="text-lg font-bold text-blue-400">
+                {analystAnxietyComponents[analystAnxietyComponents.length - 1].vix.value.toFixed(2)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Stability: {analystAnxietyComponents[analystAnxietyComponents.length - 1].vix.stability_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500">
+                Weight: {(analystAnxietyComponents[analystAnxietyComponents.length - 1].vix.weight * 100).toFixed(0)}%
+              </div>
+            </div>
+            
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">HY OAS (Credit)</div>
+              <div className="text-lg font-bold text-red-400">
+                {analystAnxietyComponents[analystAnxietyComponents.length - 1].hy_oas.value.toFixed(0)} bps
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Stability: {analystAnxietyComponents[analystAnxietyComponents.length - 1].hy_oas.stability_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500">
+                Weight: {(analystAnxietyComponents[analystAnxietyComponents.length - 1].hy_oas.weight * 100).toFixed(0)}%
+              </div>
+            </div>
+            
+            {analystAnxietyComponents[analystAnxietyComponents.length - 1].move && (
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-xs text-stealth-400 mb-1">MOVE (Rates Vol)</div>
+                <div className="text-lg font-bold text-yellow-400">
+                  {analystAnxietyComponents[analystAnxietyComponents.length - 1].move!.value.toFixed(2)}
+                </div>
+                <div className="text-xs text-stealth-500 mt-1">
+                  Stability: {analystAnxietyComponents[analystAnxietyComponents.length - 1].move!.stability_score.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500">
+                  Weight: {(analystAnxietyComponents[analystAnxietyComponents.length - 1].move!.weight * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+            
+            {analystAnxietyComponents[analystAnxietyComponents.length - 1].erp_proxy && (
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-xs text-stealth-400 mb-1">ERP Proxy (BBB-10Y)</div>
+                <div className="text-lg font-bold text-purple-400">
+                  {analystAnxietyComponents[analystAnxietyComponents.length - 1].erp_proxy!.spread.toFixed(2)}%
+                </div>
+                <div className="text-xs text-stealth-500 mt-1">
+                  Stability: {analystAnxietyComponents[analystAnxietyComponents.length - 1].erp_proxy!.stability_score.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500">
+                  Weight: {(analystAnxietyComponents[analystAnxietyComponents.length - 1].erp_proxy!.weight * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Component Stability Scores Chart (90-day default) */}
+          <div className="h-80 mb-6">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Stability Scores (90-Day View)</h4>
+            {(() => {
               const today = new Date();
               const daysBack = new Date(today);
-              daysBack.setDate(today.getDate() - chartRange.days);
+              // Default to 90 days for Analyst Anxiety as per spec
+              daysBack.setDate(today.getDate() - 90);
               
-              const chartData = liquidityComponents.map(item => ({
-                ...item,
-                dateNum: new Date(item.date).getTime()
-              }));
+              const chartData = analystAnxietyComponents
+                .map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date).getTime()
+                }))
+                .filter(item => item.dateNum >= daysBack.getTime());
+              
+              // Deduplicate by date
+              const dateMap7 = new Map();
+              chartData.forEach(item => dateMap7.set(item.date, item));
+              const deduplicatedData7 = Array.from(dateMap7.values()).sort((a, b) => a.dateNum - b.dateNum);
+              
+              const maxDate = deduplicatedData7.length > 0 ? Math.max(...deduplicatedData7.map(d => d.dateNum)) : today.getTime();
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={deduplicatedData7}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
                       type="number"
-                      domain={[daysBack.getTime(), today.getTime()]}
+                      domain={[daysBack.getTime(), maxDate]}
                       scale="time"
                       tickFormatter={(v: number) =>
                         new Date(v).toLocaleDateString(undefined, {
@@ -924,9 +780,10 @@ export default function IndicatorDetail() {
                       stroke="#555560"
                     />
                     <YAxis
+                      domain={[0, 100]}
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Stress Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      label={{ value: 'Stability Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -943,12 +800,369 @@ export default function IndicatorDetail() {
                     />
                     <Line
                       type="monotone"
-                      dataKey="composite.stress_score"
-                      name="Liquidity Stress"
-                      stroke="#f59e0b"
+                      dataKey="vix.stability_score"
+                      name="VIX Stability"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="hy_oas.stability_score"
+                      name="Credit Stability"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    {deduplicatedData7.some(d => d.move) && (
+                      <Line
+                        type="monotone"
+                        dataKey="move.stability_score"
+                        name="MOVE Stability"
+                        stroke="#eab308"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
+                    {deduplicatedData7.some(d => d.erp_proxy) && (
+                      <Line
+                        type="monotone"
+                        dataKey="erp_proxy.stability_score"
+                        name="ERP Stability"
+                        stroke="#a855f7"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
+                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
+                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+
+          {/* Composite Stability Score Chart (smooth Bezier style) */}
+          <div className="h-80">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Stability Score (90-Day Smooth)</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - 90);
+              
+              const chartData = analystAnxietyComponents
+                .map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date).getTime()
+                }))
+                .filter(item => item.dateNum >= daysBack.getTime());
+              
+              // Deduplicate by date
+              const dateMap8 = new Map();
+              chartData.forEach(item => dateMap8.set(item.date, item));
+              const deduplicatedData8 = Array.from(dateMap8.values()).sort((a, b) => a.dateNum - b.dateNum);
+              
+              const maxDate = deduplicatedData8.length > 0 ? Math.max(...deduplicatedData8.map(d => d.dateNum)) : today.getTime();
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={deduplicatedData8}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), maxDate]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Stability Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="composite.stability_score"
+                      name="Analyst Anxiety Stability"
+                      stroke="#10b981"
                       strokeWidth={3}
                       dot={false}
                     />
+                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
+                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Component Breakdown for Sentiment Composite */}
+      {code === "SENTIMENT_COMPOSITE" && sentimentCompositeComponents && sentimentCompositeComponents.length > 0 && (
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
+          <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
+            Consumer & Corporate Sentiment measures economic confidence through consumer and business surveys, 
+            forward-looking demand indicators (new orders), and capital expenditure commitments.
+          </p>
+          
+          {/* Latest Component Values */}
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="text-xs text-stealth-400 mb-1">Michigan Sentiment</div>
+              <div className="text-lg font-bold text-blue-400">
+                {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].michigan_sentiment.value.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500 mt-1">
+                Confidence: {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].michigan_sentiment.confidence_score.toFixed(1)}
+              </div>
+              <div className="text-xs text-stealth-500">
+                Weight: {(sentimentCompositeComponents[sentimentCompositeComponents.length - 1].michigan_sentiment.weight * 100).toFixed(0)}%
+              </div>
+            </div>
+            
+            {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].nfib_optimism && (
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-xs text-stealth-400 mb-1">NFIB Small Biz</div>
+                <div className="text-lg font-bold text-green-400">
+                  {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].nfib_optimism!.value.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500 mt-1">
+                  Confidence: {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].nfib_optimism!.confidence_score.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500">
+                  Weight: {(sentimentCompositeComponents[sentimentCompositeComponents.length - 1].nfib_optimism!.weight * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+            
+            {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].ism_new_orders && (
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-xs text-stealth-400 mb-1">ISM New Orders</div>
+                <div className="text-lg font-bold text-yellow-400">
+                  {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].ism_new_orders!.value.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500 mt-1">
+                  Confidence: {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].ism_new_orders!.confidence_score.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500">
+                  Weight: {(sentimentCompositeComponents[sentimentCompositeComponents.length - 1].ism_new_orders!.weight * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+            
+            {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].capex_proxy && (
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-xs text-stealth-400 mb-1">CapEx Orders (Billions)</div>
+                <div className="text-lg font-bold text-purple-400">
+                  ${(sentimentCompositeComponents[sentimentCompositeComponents.length - 1].capex_proxy!.value / 1000).toFixed(1)}B
+                </div>
+                <div className="text-xs text-stealth-500 mt-1">
+                  Confidence: {sentimentCompositeComponents[sentimentCompositeComponents.length - 1].capex_proxy!.confidence_score.toFixed(1)}
+                </div>
+                <div className="text-xs text-stealth-500">
+                  Weight: {(sentimentCompositeComponents[sentimentCompositeComponents.length - 1].capex_proxy!.weight * 100).toFixed(0)}%
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Component Confidence Scores Chart (365-day for monthly data) */}
+          <div className="h-80 mb-6">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Confidence Scores (12-Month View)</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - 365);
+              
+              const chartData = sentimentCompositeComponents
+                .map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date).getTime()
+                }))
+                .filter(item => item.dateNum >= daysBack.getTime());
+              
+              // Deduplicate by date
+              const dateMap9 = new Map();
+              chartData.forEach(item => dateMap9.set(item.date, item));
+              const deduplicatedData9 = Array.from(dateMap9.values()).sort((a, b) => a.dateNum - b.dateNum);
+              
+              const maxDate = deduplicatedData9.length > 0 ? Math.max(...deduplicatedData9.map(d => d.dateNum)) : today.getTime();
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={deduplicatedData9}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), maxDate]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Confidence Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="michigan_sentiment.confidence_score"
+                      name="Michigan"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    {chartData.some(d => d.nfib_optimism) && (
+                      <Line
+                        type="monotone"
+                        dataKey="nfib_optimism.confidence_score"
+                        name="NFIB"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
+                    {chartData.some(d => d.ism_new_orders) && (
+                      <Line
+                        type="monotone"
+                        dataKey="ism_new_orders.confidence_score"
+                        name="ISM"
+                        stroke="#eab308"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
+                    {chartData.some(d => d.capex_proxy) && (
+                      <Line
+                        type="monotone"
+                        dataKey="capex_proxy.confidence_score"
+                        name="CapEx"
+                        stroke="#a855f7"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    )}
+                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
+                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+
+          {/* Composite Confidence Score Chart */}
+          <div className="h-80">
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Confidence Score (12-Month View)</h4>
+            {(() => {
+              const today = new Date();
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - 365);
+              
+              const chartData = sentimentCompositeComponents
+                .map(item => ({
+                  ...item,
+                  dateNum: new Date(item.date).getTime()
+                }))
+                .filter(item => item.dateNum >= daysBack.getTime());
+              
+              // Deduplicate by date
+              const dateMap10 = new Map();
+              chartData.forEach(item => dateMap10.set(item.date, item));
+              const deduplicatedData10 = Array.from(dateMap10.values()).sort((a, b) => a.dateNum - b.dateNum);
+              
+              const maxDate = deduplicatedData10.length > 0 ? Math.max(...deduplicatedData10.map(d => d.dateNum)) : today.getTime();
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={deduplicatedData10}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="dateNum"
+                      type="number"
+                      domain={[daysBack.getTime(), maxDate]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          year: "2-digit",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      label={{ value: 'Confidence Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      formatter={(value: number) => value.toFixed(2)}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="composite.confidence_score"
+                      name="Sentiment Composite"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
+                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
                   </LineChart>
                 </ResponsiveContainer>
               );
