@@ -52,37 +52,36 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
     const fetchData = async () => {
       try {
         const apiUrl = getLegacyApiUrl();
-        const [statusResponse, alertsResponse] = await Promise.all([
+        const [statusResponse, historyResponse, alertsResponse] = await Promise.all([
           fetch(`${apiUrl}/system`),
+          fetch(`${apiUrl}/system/history?days=${trendPeriod}`),
           fetch(`${apiUrl}/alerts?hours=24`),
         ]);
         
         if (!statusResponse.ok) throw new Error("Failed to fetch system status");
+        if (!historyResponse.ok) throw new Error("Failed to fetch system history");
         if (!alertsResponse.ok) throw new Error("Failed to fetch alerts");
         
         const statusData = await statusResponse.json();
+        const historyData = await historyResponse.json();
         const alertsData = await alertsResponse.json();
         
         setData(statusData);
         setAlerts(alertsData);
         
-        // Build mock history for composite score trend based on trendPeriod
-        const mockHistory: SystemHistoryPoint[] = [];
-        const now = new Date();
-        for (let i = trendPeriod; i >= 0; i--) {
-          const timestamp = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-          const variation = Math.random() * 10 - 5; // Random variation
-          const score = Math.max(0, Math.min(100, (statusData.composite_score || 50) + variation));
-          mockHistory.push({
-            timestamp: timestamp.toISOString(),
-            composite_score: score,
-            state: getStateFromScore(score)
-          });
+        // Use real historical data from backend
+        if (Array.isArray(historyData) && historyData.length > 0) {
+          // Apply 7-day moving average to smooth out daily oscillations
+          const smoothedHistory = calculateMovingAverage(historyData, 'composite_score', 7);
+          setHistory(smoothedHistory);
+        } else {
+          // Fallback: if no history available, use current data point only
+          setHistory([{
+            timestamp: statusData.timestamp || new Date().toISOString(),
+            composite_score: statusData.composite_score,
+            state: statusData.state
+          }]);
         }
-        
-        // Apply 7-day moving average to smooth out daily oscillations
-        const smoothedHistory = calculateMovingAverage(mockHistory, 'composite_score', 7);
-        setHistory(smoothedHistory);
         
         setError(null);
       } catch (err) {
