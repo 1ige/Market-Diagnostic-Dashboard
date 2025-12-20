@@ -16,7 +16,7 @@
 - Dark theme (`bg-stealth-900`, `bg-stealth-800`)
 - Low-contrast color palette
 - Historical data visualization (up to 365 days)
-- Individual indicator detail pages with full history charts
+- Individual indicator detail pages (e.g., Analyst Confidence) with full history charts
 
 #### 3. ✅ Market Stability Summary (Green/Yellow/Red System)
 - **Status:** COMPLETE

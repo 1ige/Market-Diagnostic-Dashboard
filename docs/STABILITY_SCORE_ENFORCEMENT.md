@@ -5,9 +5,10 @@
 
 ---
 
-## ✅ Confirmed Invariant
 
-**"Higher score ALWAYS means better market stability"**
+## 🟢 Confirmed Invariant
+
+**"Higher score ALWAYS means better market stability and confidence"**
 
 ### Stability Score Model
 - **Scale**: 0–100
@@ -46,8 +47,8 @@
 **Problem**: Four composite indicators had inverted thresholds (green_max > yellow_max):
 - BOND_MARKET_STABILITY: green_max=65, yellow_max=35 (BACKWARDS)
 - LIQUIDITY_PROXY: green_max=60, yellow_max=30 (BACKWARDS)
-- ANALYST_ANXIETY: green_max=35, yellow_max=65 (BACKWARDS)
-- SENTIMENT_COMPOSITE: green_max=35, yellow_max=65 (BACKWARDS)
+   - ANALYST_CONFIDENCE: green_max=35, yellow_max=65 (BACKWARDS)
+   - SENTIMENT_COMPOSITE: green_max=35, yellow_max=65 (BACKWARDS)
 
 This broke the `classify_state` function which expects: `score < green_max = RED`
 
@@ -92,7 +93,7 @@ Updated comments to clarify these are stability score thresholds.
   - BOND_MARKET_STABILITY: Now says "higher score = more stable bond markets"
   - LIQUIDITY_PROXY: Now says "higher score = more market liquidity"
   - CONSUMER_HEALTH: Updated ranges to stability score semantics
-  - ANALYST_ANXIETY: Now says "higher score = calm markets (low anxiety)"
+   - ANALYST_CONFIDENCE: Now says "higher score = calm markets (high confidence)"
   - SENTIMENT_COMPOSITE: Now says "higher score = more confidence"
 - Removed direction field from metadata interface
 - Removed direction display from weights section

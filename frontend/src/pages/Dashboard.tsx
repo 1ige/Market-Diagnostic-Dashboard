@@ -157,7 +157,7 @@ export default function Dashboard() {
             <strong className="text-stealth-100"> consumer health</strong> (Consumer Health Index), 
             <strong className="text-stealth-100"> bond markets</strong> (Bond Market Stability), 
             <strong className="text-stealth-100"> liquidity</strong> (Liquidity Proxy), 
-            <strong className="text-stealth-100"> institutional sentiment</strong> (Analyst Anxiety), and 
+            <strong className="text-stealth-100"> institutional sentiment</strong> (Analyst Confidence), and 
             <strong className="text-stealth-100"> forward sentiment</strong> (Consumer & Corporate Sentiment). 
             Each indicator is statistically normalized and weighted to detect early signs of market stress, regime shifts, 
             and systemic risks before they cascade into broader crises.

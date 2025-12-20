@@ -676,13 +676,13 @@ export default function IndicatorDetail() {
         </div>
       )}
 
-      {/* Component Breakdown for Analyst Anxiety */}
+      {/* Component Breakdown for Analyst Confidence */}
       {code === "ANALYST_ANXIETY" && analystAnxietyComponents && analystAnxietyComponents.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
-            Analyst Anxiety measures institutional market fear through volatility and credit stress indicators. 
-            Higher stability scores indicate calm markets with low anxiety.
+            Analyst Confidence measures institutional market calm through volatility and credit stress indicators. 
+            Higher stability scores indicate high confidence and calm markets.
           </p>
           
           {/* Latest Component Values */}
@@ -750,7 +750,7 @@ export default function IndicatorDetail() {
             {(() => {
               const today = new Date();
               const daysBack = new Date(today);
-              // Default to 90 days for Analyst Anxiety as per spec
+              // Default to 90 days for Analyst Confidence as per spec
               daysBack.setDate(today.getDate() - 90);
               
               const chartData = analystAnxietyComponents
@@ -910,7 +910,7 @@ export default function IndicatorDetail() {
                     <Line
                       type="monotone"
                       dataKey="composite.stability_score"
-                      name="Analyst Anxiety Stability"
+                      name="Analyst Confidence Stability"
                       stroke="#10b981"
                       strokeWidth={3}
                       dot={false}

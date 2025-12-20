@@ -1,4 +1,4 @@
-# Indicator Review and Fixes - December 2025
+# Indicator Review and Fixes - December 2025 (Analyst Confidence update)
 
 ## Summary
 Comprehensive review of all indicator logic, calculations, and configurations revealed critical errors in database configuration and calculation logic. All issues have been fixed and validated.

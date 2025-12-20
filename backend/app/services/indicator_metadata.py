@@ -327,9 +327,9 @@ INDICATOR_METADATA = {
     },
     
     "ANALYST_ANXIETY": {
-        "name": "Analyst Anxiety",
-        "description": "Composite sentiment indicator measuring institutional and professional market anxiety through volatility stress and credit risk proxies. Combines equity volatility (VIX), rates volatility (MOVE), high-yield credit stress (HY OAS), and equity risk premium dynamics to gauge market fear and stability.",
-        "relevance": "Analyst anxiety captures the professional investment community's collective assessment of market risk. Unlike retail sentiment which can be contrarian, institutional anxiety directly impacts capital allocation, hedging activity, and systemic stability. High anxiety precedes withdrawals, deleveraging, and flight to safety.",
+        "name": "Analyst Confidence",
+        "description": "Composite sentiment indicator measuring institutional and professional market confidence through volatility calm and credit risk proxies. Combines equity volatility (VIX), rates volatility (MOVE), high-yield credit stress (HY OAS), and equity risk premium dynamics to gauge market confidence and stability.",
+        "relevance": "Analyst confidence captures the professional investment community's collective assessment of market stability. Unlike retail sentiment which can be contrarian, institutional confidence directly impacts capital allocation, hedging activity, and systemic stability. High confidence precedes risk-taking, capital deployment, and market rallies.",
         "scoring": "Final output is a stability score (0-100) where HIGHER = LOWER ANXIETY = MORE STABLE. Each component (VIX, MOVE, HY OAS, ERP) normalized via z-score with momentum blending, mapped to stress, then inverted to stability. Thresholds: ≥70 = GREEN (calm markets), 40-69 = YELLOW (elevated caution), <40 = RED (high anxiety).",
         "direction": -1,
         "positive_is_good": True,
@@ -378,7 +378,7 @@ INDICATOR_METADATA = {
             "yellow_below": 65
         },
         "typical_range": "GREEN (Score 65-100): 2017-2019 'Goldilocks' period, 2021 post-COVID recovery. VIX <20, MOVE <100, tight credit spreads. Institutional confidence high. YELLOW (Score 35-65): 2023-2024 mixed regime, 2015-2016 volatility episodes. Some anxiety but not systemic. RED (Score 0-35): 2008 Financial Crisis, March 2020 COVID crash, Q4 2018. VIX >30, MOVE >150, HY spreads >800 bps.",
-        "impact": "High impact for regime identification. Analyst Anxiety is a leading indicator of institutional risk appetite. Transitions from GREEN to YELLOW provide early warning for defensive positioning. RED states typically coincide with significant drawdowns and require maximum caution. Unlike retail sentiment (contrarian), institutional anxiety is directional - when analysts are anxious, markets tend to decline.",
+        "impact": "High impact for regime identification. Analyst Confidence is a leading indicator of institutional risk appetite. Transitions from GREEN to YELLOW provide early warning for defensive positioning. RED states typically coincide with significant drawdowns and require maximum caution. Unlike retail sentiment (contrarian), institutional confidence is directional - when analysts are confident, markets tend to rise.",
         "historical_context": "Major market dislocations show extreme anxiety: 2008 Crisis (RED for months, VIX peaked 89, HY spreads 2000+ bps), 2020 COVID (RED spike, VIX 82, MOVE 265, rapid recovery), 2018 Q4 (YELLOW/RED, VIX spiked to 36, -20% equity drawdown). GREEN regimes (2017-2019, 2021) marked by low volatility, tight spreads, and strong returns.",
         "use_cases": [
             "Early warning system for institutional risk-off behavior",

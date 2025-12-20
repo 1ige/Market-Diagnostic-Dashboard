@@ -55,10 +55,9 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://96.232.170.38:5173",  # External access
-        "*"  # Allow all origins for external sharing (remove in production)
+        "http://96.232.170.38:5173"  # External access
     ],
-    allow_credentials=True,
+    allow_credentials=True,  # Do not use '*' in allow_origins with credentials
     allow_methods=["*"],
     allow_headers=["*"],
 )

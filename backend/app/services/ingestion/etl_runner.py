@@ -489,7 +489,7 @@ class ETLRunner:
         elif code == "ANALYST_ANXIETY":
             import numpy as np
             
-            # Fetch components for Analyst Anxiety composite
+            # Fetch components for Analyst Confidence composite
             # A. VIX from Yahoo - Weight 0.40
             vix_series = self.yahoo.fetch_series("^VIX", start_date=start_date)
             

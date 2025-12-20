@@ -1,4 +1,4 @@
-# Code Refactoring Summary
+# Code Refactoring Summary (Analyst Confidence terminology)
 
 ## Overview
 Successfully refactored the Market Diagnostic Dashboard codebase to eliminate repetitive code patterns and improve maintainability by introducing helper utilities.

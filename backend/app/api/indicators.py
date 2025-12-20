@@ -385,7 +385,7 @@ async def get_liquidity_proxy_components(days: int = 365):
 @router.get("/indicators/ANALYST_ANXIETY/components")
 async def get_analyst_anxiety_components(days: int = 365):
     """
-    Return component breakdown for Analyst Anxiety composite indicator.
+    Return component breakdown for Analyst Confidence composite indicator.
     Shows VIX, MOVE, HY OAS, and ERP proxy with weights and contributions.
     """
     from datetime import datetime, timedelta

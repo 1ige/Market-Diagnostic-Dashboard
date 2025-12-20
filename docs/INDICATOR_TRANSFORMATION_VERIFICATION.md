@@ -1,7 +1,7 @@
 # Indicator Transformation Verification
 
 **Date**: December 20, 2025
-**Purpose**: Verify that ALL stored indicator scores are stability scores (higher = better)
+**Purpose**: Verify that ALL stored indicator scores are stability scores (higher = better, higher = more confidence)
 
 ---
 

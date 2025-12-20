@@ -5,7 +5,19 @@ All notable changes to the Market Diagnostic Dashboard project will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## [2025-12-20] Analyst Confidence & CORS Overhaul
+
+### Changed
+- Renamed all user-facing references of "Analyst Anxiety" to "Analyst Confidence" across frontend, backend, and documentation for clarity and consistency.
+- Renamed IndicatorDetail page/component to AnalystConfidenceDetail for clarity.
+- Updated all routes, imports, and references to use AnalystConfidenceDetail.
+- Updated backend CORS middleware configuration to only allow specific origins with credentials, fixing CORS errors on frontend load.
+- Updated all documentation to reflect the new "Analyst Confidence" terminology and scoring semantics.
+
+### Fixed
+- Fixed CORS errors that caused the dashboard to fail loading on first refresh.
+
 
 ### Changed
 - **Stability Score Invariant Enforcement** (2025-12-20)

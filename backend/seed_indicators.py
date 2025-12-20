@@ -129,7 +129,7 @@ INDICATORS = [
     },
     {
         "code": "ANALYST_ANXIETY",
-        "name": "Analyst Anxiety",
+        "name": "Analyst Confidence",
         "source": "DERIVED",
         "source_symbol": "ANALYST_ANXIETY_COMPOSITE",
         "category": "sentiment",

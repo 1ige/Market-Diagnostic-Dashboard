@@ -170,7 +170,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
         {/* Description */}
         <p className="text-xs text-stealth-400 leading-relaxed">
           Composite score aggregating 10 indicators: VIX, SPY, DFF, T10Y2Y, UNRATE, Consumer Health, 
-          Bond Market Stability, Liquidity Proxy, Analyst Anxiety, and Consumer & Corporate Sentiment. Weighted by historical predictive power.
+          Bond Market Stability, Liquidity Proxy, Analyst Confidence, and Consumer & Corporate Sentiment. Weighted by historical predictive power.
         </p>
 
       {/* Main Metrics Grid */}

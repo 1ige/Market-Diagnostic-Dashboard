@@ -246,7 +246,7 @@ export default function SystemBreakdown() {
           and analyzing <strong>ten critical indicators</strong> across six domains: <strong>volatility</strong> (VIX), 
           <strong>equities</strong> (SPY), <strong>interest rates</strong> (DFF, T10Y2Y), <strong>employment</strong> (UNRATE), 
           <strong>bonds</strong> (Bond Market Stability), <strong>liquidity</strong> (Liquidity Proxy), <strong>consumers</strong> (Consumer Health), 
-          and <strong>sentiment</strong> (Analyst Anxiety, Consumer & Corporate Sentiment). 
+          and <strong>sentiment</strong> (Analyst Confidence, Consumer & Corporate Sentiment). 
           Each indicator is independently scored on a 0-100 scale using statistical normalization techniques, then combined into 
           a weighted composite score that reflects overall market health.
         </p>
@@ -276,7 +276,7 @@ export default function SystemBreakdown() {
             <div className="text-xs text-stealth-400">M2 + Fed BS + RRP</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
-            <div className="text-xs font-semibold text-stealth-200">Analyst Anxiety</div>
+            <div className="text-xs font-semibold text-stealth-200">Analyst Confidence</div>
             <div className="text-xs text-stealth-400">VIX + MOVE + HY OAS + ERP</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
@@ -750,11 +750,11 @@ export default function SystemBreakdown() {
               <div className="text-xs text-stealth-500">
                 Note: Weights are calibrated based on historical correlation with market downturns and systemic crises. 
                 Bond Market Stability receives highest weight (1.8) as fixed income dysfunction typically precedes equity crashes. 
-                Sentiment indicators (Analyst Anxiety 1.7, Sentiment Composite 1.6) capture forward-looking confidence shifts.
+                Sentiment indicators (Analyst Confidence 1.7, Sentiment Composite 1.6) capture forward-looking confidence shifts.
                 All indicators output stability scores where higher values indicate better market conditions.
                 <br /><br />
                 <strong className="text-stealth-400">Tip:</strong> Click on any composite indicator (Bond Market Stability, Liquidity Proxy, Consumer Health, 
-                Analyst Anxiety, or Consumer & Corporate Sentiment) to view detailed component breakdowns, calculation formulas, and historical context.
+                Analyst Confidence, or Consumer & Corporate Sentiment) to view detailed component breakdowns, calculation formulas, and historical context.
               </div>
             </div>
           </div>
