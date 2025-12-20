@@ -12,8 +12,8 @@ INDICATOR_METADATA = {
         "positive_is_good": False,
         "interpretation": "High VIX = Market Fear/Stress (BAD). Low VIX = Market Calm (GOOD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "VIX typically ranges from 10-20 in calm markets, 20-30 during uncertainty, and 30+ during crisis periods.",
         "impact": "Critical early warning indicator. Elevated VIX (RED state) signals imminent market volatility and potential corrections."
@@ -29,8 +29,8 @@ INDICATOR_METADATA = {
         "interpretation": "Rising rates = Tightening Policy/Stress (BAD). Falling rates = Easing Policy (GOOD).",
         "use_rate_of_change": True,
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Near-zero during easing (0-0.25%). Neutral: 2-3%. Restrictive: 4%+. Crisis response involves rapid cuts.",
         "impact": "Very high impact. Rate changes affect mortgage rates, corporate borrowing, stock valuations, and economic activity. Aggressive hiking cycles (RED) increase recession risk."
@@ -47,8 +47,8 @@ INDICATOR_METADATA = {
         "use_ema_gap": True,
         "ema_period": 50,
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Healthy bull: +2% to +8% above 50 EMA. Neutral: -2% to +2%. Bearish: -2% to -10%. Crisis: -10%+.",
         "impact": "Very high impact. Distance from 50 EMA captures market structure better than raw price. Sustained negative gaps (RED) signal broken trends and increased correction risk. Reduces noise from absolute price levels."
@@ -63,8 +63,8 @@ INDICATOR_METADATA = {
         "positive_is_good": False,
         "interpretation": "High DXY = Extreme Strength/Risk-off (BAD). Moderate DXY = Balanced (GOOD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "DXY normally ranges 90-105. Levels above 110 indicate extreme dollar strength and potential market stress.",
         "impact": "Moderate to high impact. Extreme dollar moves can trigger currency crises and affect global liquidity conditions."
@@ -79,8 +79,8 @@ INDICATOR_METADATA = {
         "positive_is_good": False,
         "interpretation": "High unemployment = Weak Economy (BAD). Low unemployment = Strong Economy (GOOD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Healthy economy: 3.5-5%. Elevated stress: 5-7%. Crisis levels: 7%+",
         "impact": "High impact on consumer confidence and spending. Rising unemployment is a key recession indicator that affects market sentiment and Fed policy."
@@ -95,8 +95,8 @@ INDICATOR_METADATA = {
         "positive_is_good": True,
         "interpretation": "Positive spread = Normal Curve/Growth (GOOD). Negative spread = Inverted/Recession Signal (BAD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Healthy: +0.5% to +2%. Warning: 0% to -0.5%. Crisis: -0.5% or lower",
         "impact": "Very high impact. The most reliable recession predictor. Sustained inversion (RED state) signals elevated recession probability within 12-24 months."
@@ -111,8 +111,8 @@ INDICATOR_METADATA = {
         "positive_is_good": False,
         "interpretation": "High TED = Credit Stress/Banking Fear (BAD). Low TED = Normal Lending (GOOD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Normal: 10-30 basis points. Elevated: 50-100 bps. Crisis: 200+ bps (2008 reached 450 bps)",
         "impact": "Critical indicator during financial crises. Sharp widening (RED state) signals severe credit market dysfunction and potential systemic risk."
@@ -127,8 +127,8 @@ INDICATOR_METADATA = {
         "positive_is_good": False,
         "interpretation": "High spread = Credit Stress/Default Risk (BAD). Low spread = Credit Confidence (GOOD).",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Normal: 300-500 bps. Elevated: 500-800 bps. Crisis: 800+ bps",
         "impact": "High impact on corporate financing and market sentiment. Widening spreads (RED) can trigger credit crunches and constrain business investment."
@@ -138,15 +138,15 @@ INDICATOR_METADATA = {
         "name": "Consumer Health Index",
         "description": "Derived indicator measuring consumer financial health by comparing spending and income growth against inflation. Combines PCE (Personal Consumption Expenditures), PI (Personal Income), and CPI (Consumer Price Index) to assess real consumer capacity.",
         "relevance": "When spending and income growth outpace inflation, consumers have expanding real purchasing power and economic health is strong. When inflation outpaces spending/income growth, consumers face a squeeze with declining real purchasing power, signaling economic stress.",
-        "scoring": "Direction: -1 (negative = stress). Calculates average of two spreads: [(PCE MoM% - CPI MoM%) + (PI MoM% - CPI MoM%)] / 2. Positive spread = spending and income outpacing inflation (healthy). Negative spread = inflation eroding real consumer capacity (stress).",
+        "scoring": "Final output is a stability score (0-100) where HIGHER = HEALTHIER CONSUMERS = MORE STABLE. Backend calculates real consumer purchasing power by comparing spending/income growth against inflation: [(PCE - CPI) + (PI - CPI)] / 2. Positive spread normalized to higher stability scores. Thresholds: ≥70 = GREEN (healthy), 40-69 = YELLOW (neutral), <40 = RED (stress).",
         "direction": -1,
         "positive_is_good": True,
         "interpretation": "Positive spread = Real consumer purchasing power expanding (GOOD). Negative spread = Inflation squeeze on consumers (BAD). Shows whether consumer fundamentals support economic growth or signal contraction.",
         "derived_from": ["PCE", "PI", "CPI"],
         "calculation": "Consumer Health = Average[(PCE Growth - CPI Growth), (PI Growth - CPI Growth)] - Avoids double-weighting inflation",
         "thresholds": {
-            "green_below": 30,
-            "yellow_below": 60
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "Healthy: +1% to +3% spread. Neutral: -0.5% to +1%. Warning: -1% to -3%. Crisis: -3%+ (severe squeeze).",
         "impact": "Very high impact. This composite metric reveals whether consumer fundamentals align with market indicators. Negative spreads (RED state) signal consumers losing purchasing power despite nominal growth, indicating recession risk and reduced corporate revenue expectations. Captures the real-world impact of inflation on consumer capacity."
@@ -156,10 +156,10 @@ INDICATOR_METADATA = {
         "name": "Bond Market Stability Composite",
         "description": "Comprehensive bond market health index aggregating five critical fixed-income signals: credit spreads, yield curve shape, rate momentum, Treasury volatility, and term premium. Provides a holistic 0-100 stability score for bond market conditions.",
         "relevance": "The bond market often signals economic stress before equities. This composite captures multiple dimensions of fixed-income market health, from credit risk to rate volatility, offering early warnings of systemic instability. Bond markets are larger and more sensitive to macroeconomic shifts than equities.",
-        "scoring": "Direction: -1 (indicates high raw value should map to low final score). Computes weighted composite stress score from 5 sub-indicators, each z-score normalized and mapped to 0-100 where higher = more stress. The direction=-1 setting inverts this during normalization so that high stress maps to low final scores (RED) and low stress maps to high final scores (GREEN). Thresholds: 65-100 = GREEN (stable), 35-65 = YELLOW (caution), 0-35 = RED (stress).",
+        "scoring": "Final output is a stability score (0-100) where HIGHER = MORE STABLE. Backend computes weighted composite stress from sub-indicators, then inverts to stability score. Thresholds: ≥70 = GREEN (stable), 40-69 = YELLOW (caution), <40 = RED (stress).",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "High score (65+) = Healthy bond markets, normal credit conditions, manageable volatility (GOOD). Mid score (35-65) = Elevated concerns, some stress signals (CAUTION). Low score (0-35) = Severe bond market stress, credit crunch, high volatility (BAD).",
+        "interpretation": "High score (70+) = Healthy bond markets, normal credit conditions, manageable volatility (GREEN). Mid score (40-69) = Elevated concerns, some stress signals (YELLOW). Low score (<40) = Severe bond market stress, credit crunch, high volatility (RED).",
         "derived_from": ["BAMLH0A0HYM2", "BAMLC0A0CM", "DGS10", "DGS2", "DGS3MO", "DGS30", "DGS5"],
         "components": {
             "credit_spread_stress": {
@@ -203,8 +203,8 @@ INDICATOR_METADATA = {
         },
         "calculation": "Composite Stress Score = (Credit Spread Stress * 0.44) + (Yield Curve Stress * 0.23) + (Rates Momentum Stress * 0.17) + (Treasury Volatility Stress * 0.16). Stored as raw stress score (0-100, higher = more stress). The direction=-1 indicator setting inverts this during normalization for final scoring.",
         "thresholds": {
-            "green_below": 65,
-            "yellow_below": 35
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "GREEN (Score 65-100): Normal bond market conditions with healthy credit, normal curve, low volatility. YELLOW (Score 35-65): Some stress signals emerging, elevated caution. RED (Score 0-35): Severe bond market dysfunction, credit crunch, high volatility.",
         "impact": "Very high impact. Bond markets are leading indicators of economic conditions. This composite captures systemic stress before it manifests in equities. RED states (score <35) historically coincide with recessions, credit crises, or major policy shifts. The weighted approach prioritizes credit conditions (44%) as the most sensitive early warning system.",
@@ -222,10 +222,10 @@ INDICATOR_METADATA = {
         "name": "Consumer & Corporate Sentiment Composite",
         "description": "Composite measure of consumer and corporate confidence levels combining University of Michigan Consumer Sentiment, NFIB Small Business Optimism, ISM New Orders, and Capital Expenditure indicators. Captures the psychological willingness to spend, invest, and expand.",
         "relevance": "Economic activity is driven by confidence and expectations, not just fundamentals. When consumers and businesses are optimistic, they spend and invest freely, driving growth. When pessimism takes hold, discretionary spending and business investment freeze, creating self-fulfilling contractions. This indicator provides early warning of shifts in economic psychology.",
-        "scoring": "Direction: -1 (indicates high raw confidence should map to high final score). Formula: (Michigan * 0.30) + (NFIB * 0.30) + (ISM * 0.25) + (CapEx * 0.15). Components are z-score normalized to 0-100 confidence scores (higher = more optimistic), then weighted and combined. With direction=-1, high confidence maps to high final scores (GREEN) and low confidence maps to low final scores (RED). Weights are redistributed if optional components are unavailable.",
+        "scoring": "Final output is a stability score (0-100) where HIGHER = MORE CONFIDENCE = MORE STABLE. Components (Michigan, NFIB, ISM, CapEx) z-score normalized and mapped to 0-100 confidence scale, then weighted and combined. Thresholds: ≥70 = GREEN (broad optimism), 40-69 = YELLOW (mixed sentiment), <40 = RED (pessimism).",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "GREEN (Score 65-100): Broad-based optimism across consumers and businesses, supportive of growth. YELLOW (Score 35-65): Mixed or neutral sentiment, cautious expansion. RED (Score 0-35): Pervasive pessimism, contraction risk, spending/investment freeze.",
+        "interpretation": "GREEN (Score 70-100): Broad-based optimism across consumers and businesses, supportive of growth. YELLOW (Score 40-69): Mixed or neutral sentiment, cautious expansion. RED (Score <40): Pervasive pessimism, contraction risk, spending/investment freeze.",
         "derived_from": ["UMCSENT", "BOPTEXP", "NEWORDER", "ACOGNO"],
         "components": {
             "michigan_consumer_sentiment": {
@@ -263,8 +263,8 @@ INDICATOR_METADATA = {
         },
         "calculation": "1) Fetch UMCSENT (required), BOPTEXP, NEWORDER, ACOGNO from FRED. 2) Align dates (forward-fill optional components). 3) Compute z-scores for each using 520-day lookback. 4) Map z-scores to 0-100 confidence scores: ((z + 3) / 6) * 100. 5) Weight and combine. 6) If optional components missing, redistribute weights (e.g., Michigan 50% + NFIB 50% if only those two available). 7) Store as composite confidence score 0-100.",
         "thresholds": {
-            "green_above": 65,
-            "yellow_above": 35
+            "green_above": 70,
+            "yellow_above": 40
         },
         "typical_range": "GREEN (Score 65-100): Broad optimism across consumer and business surveys, supportive of economic expansion. YELLOW (Score 35-65): Mixed sentiment, economy muddling through. RED (Score 0-35): Widespread pessimism, high recession risk, spending/investment paralysis.",
         "impact": "High impact. Sentiment drives the real economy with a lead time. Consumers and businesses pull back spending and hiring when pessimistic, creating actual economic weakness. This composite captures psychology shifts months before they appear in hard economic data. RED states (score <35) historically precede recessions.",
@@ -282,10 +282,10 @@ INDICATOR_METADATA = {
         "name": "Liquidity Proxy Indicator",
         "description": "Composite measure of systemic liquidity conditions combining M2 money supply growth, Federal Reserve balance sheet changes, and overnight reverse repo facility usage. Captures the availability of money and credit in the financial system.",
         "relevance": "Liquidity is the lifeblood of financial markets. When liquidity is abundant, asset prices rise and volatility falls. When liquidity drains, markets become vulnerable to shocks and corrections. This indicator provides early warning of liquidity regime shifts.",
-        "scoring": "Direction: -1 (indicates high raw value should map to low final score). Formula: z(M2 YoY%) + z(ΔFed Balance Sheet) - z(RRP Usage). Components are z-score normalized and combined into liquidity proxy, then inverted and scaled to create a stress score (0-100, where higher = worse liquidity). The direction=-1 setting inverts this during normalization so high stress maps to low final scores (RED) and low stress maps to high final scores (GREEN).",
+        "scoring": "Final output is a stability score (0-100) where HIGHER = MORE LIQUIDITY = MORE STABLE. Backend combines z-scores of M2 growth, Fed balance sheet changes, and inverted RRP usage into liquidity metric, then maps to stability score. Thresholds: ≥70 = GREEN (abundant liquidity), 40-69 = YELLOW (neutral/mixed), <40 = RED (liquidity drought).",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "GREEN (Score 60-100): Abundant liquidity, supportive tailwinds for risk assets. YELLOW (Score 30-60): Neutral/mixed liquidity, market vulnerable to shocks. RED (Score 0-30): Liquidity drought, high fragility, increased crash risk.",
+        "interpretation": "GREEN (Score 70-100): Abundant liquidity, supportive tailwinds for risk assets. YELLOW (Score 40-69): Neutral/mixed liquidity, market vulnerable to shocks. RED (Score <40): Liquidity drought, high fragility, increased crash risk.",
         "derived_from": ["M2SL", "WALCL", "RRPONTSYD"],
         "components": {
             "m2_money_supply": {
@@ -309,8 +309,8 @@ INDICATOR_METADATA = {
         },
         "calculation": "1) Calculate M2 YoY% change (12-month lookback). 2) Calculate Fed balance sheet delta (month-over-month change). 3) Get RRP usage level. 4) Compute z-scores for each. 5) Combine: Liquidity = z(M2_YoY) + z(ΔFedBS) - z(RRP). 6) Map to 0-100 stress score (inverted: high liquidity = high score).",
         "thresholds": {
-            "green_below": 60,
-            "yellow_below": 30
+            "green_below": 40,
+            "yellow_below": 70
         },
         "typical_range": "GREEN (Score 60-100): 2020-2021 QE era, abundant liquidity supporting asset prices. YELLOW (Score 30-60): 2019 normal conditions, 2023-2024 partial recovery. RED (Score 0-30): 2022 aggressive QT and M2 contraction.",
         "impact": "Very high impact. Liquidity drives ALL asset classes. The saying 'don't fight the Fed' refers primarily to liquidity conditions. Major market regimes correlate with liquidity: 2008-2014 QE = bull market, 2018 QT = correction, 2020-2021 massive QE = bubble, 2022 aggressive QT = bear market. This indicator provides systematic edge for timing risk-on/risk-off positioning.",
@@ -330,10 +330,10 @@ INDICATOR_METADATA = {
         "name": "Analyst Anxiety",
         "description": "Composite sentiment indicator measuring institutional and professional market anxiety through volatility stress and credit risk proxies. Combines equity volatility (VIX), rates volatility (MOVE), high-yield credit stress (HY OAS), and equity risk premium dynamics to gauge market fear and stability.",
         "relevance": "Analyst anxiety captures the professional investment community's collective assessment of market risk. Unlike retail sentiment which can be contrarian, institutional anxiety directly impacts capital allocation, hedging activity, and systemic stability. High anxiety precedes withdrawals, deleveraging, and flight to safety.",
-        "scoring": "Direction: -1 (high stability score = low anxiety = GREEN, low stability score = high anxiety = RED). Each component normalized via z-score (520-day lookback) with momentum blending (75% value, 25% 10-day ROC). Z-scores clamped [-3, +3] and mapped to 0-100 stress scale. Weighted composite inverted to stability score (0-100, where 100 = calm, 0 = extreme anxiety). Direction=-1 ensures high stability maps to GREEN and low stability to RED.",
+        "scoring": "Final output is a stability score (0-100) where HIGHER = LOWER ANXIETY = MORE STABLE. Each component (VIX, MOVE, HY OAS, ERP) normalized via z-score with momentum blending, mapped to stress, then inverted to stability. Thresholds: ≥70 = GREEN (calm markets), 40-69 = YELLOW (elevated caution), <40 = RED (high anxiety).",
         "direction": -1,
         "positive_is_good": True,
-        "interpretation": "GREEN (Score 65-100): Low institutional anxiety, supportive risk environment, stable credit conditions. YELLOW (Score 35-65): Elevated caution, mixed signals, monitoring required. RED (Score 0-35): High institutional fear, defensive positioning, elevated crash risk.",
+        "interpretation": "GREEN (Score 70-100): Low institutional anxiety, supportive risk environment, stable credit conditions. YELLOW (Score 40-69): Elevated caution, mixed signals, monitoring required. RED (Score <40): High institutional fear, defensive positioning, elevated crash risk.",
         "derived_from": ["^VIX", "^MOVE", "BAMLH0A0HYM2", "DGS10", "BAMLC0A4CBBB"],
         "components": {
             "vix": {
@@ -401,7 +401,7 @@ def get_indicator_metadata(code: str) -> dict:
         "description": "No description available.",
         "relevance": "Not specified.",
         "scoring": "Standard z-score normalization with 0-100 scaling.",
-        "thresholds": {"green_below": 30, "yellow_below": 60},
+        "thresholds": {"green_below": 40, "yellow_below": 70},
         "typical_range": "Not specified.",
         "impact": "Not specified."
     })

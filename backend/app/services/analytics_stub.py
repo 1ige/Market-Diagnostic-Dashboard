@@ -36,13 +36,13 @@ def compute_z_scores(values, lookback=252):
 
 def direction_adjusted(z_scores, direction):
     """
-    direction = +1 → high value = stress → z as is
-    direction = -1 → high value = stability → invert z
+    direction = +1 → high value = stress → invert z (so high stress = low score)
+    direction = -1 → high value = stability → z as is (so high stability = high score)
     """
     if direction == 1:
-        return z_scores
+        return [-z for z in z_scores]  # Invert: high stress → negative z → low score
     else:
-        return [-z for z in z_scores]
+        return z_scores  # Keep as is: high value = high score
 
 
 def map_z_to_score(z):

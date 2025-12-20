@@ -2,21 +2,21 @@ import { useEffect, useState } from "react";
 import { useApi } from "../hooks/useApi";
 import { IndicatorStatus } from "../types";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
   PieChart,
   Pie,
   Cell,
   Legend,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import { getLegacyApiUrl } from "../utils/apiUtils";
+import { 
+  getStateFromScore, 
+  getStateColor, 
+  STATE_DESCRIPTIONS,
+  STABILITY_THRESHOLDS,
+  type StabilityState 
+} from "../utils/stabilityConstants";
 
 interface SystemHistoryPoint {
   timestamp: string;
@@ -38,7 +38,8 @@ interface IndicatorMetadata {
   code: string;
   name: string;
   weight: number;
-  direction: number;
+  // Note: direction is a backend normalization detail, not exposed to UI
+  // All scores displayed are stability scores (higher = better)
 }
 
 export default function SystemBreakdown() {
@@ -47,6 +48,19 @@ export default function SystemBreakdown() {
   const [history, setHistory] = useState<SystemHistoryPoint[]>([]);
   const [heatmapData, setHeatmapData] = useState<HeatmapDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,18 +70,16 @@ export default function SystemBreakdown() {
         const metaResponse = await fetch(`${apiUrl}/indicators`);
         const indicatorData = await metaResponse.json();
         
-        // For now, we'll use hardcoded weights (should come from backend)
+        // Use hardcoded weights (TODO: fetch from backend)
         const metaWithWeights: IndicatorMetadata[] = indicatorData.map((ind: IndicatorStatus) => ({
           code: ind.code,
           name: ind.name,
           weight: getIndicatorWeight(ind.code),
-          direction: getIndicatorDirection(ind.code),
         }));
         
         setMetadata(metaWithWeights);
         
-        // Fetch historical data for all 10 indicators
-        // Structure: Map<date, Map<indicator_code, {state, score}>>
+        // Build data structure: Map<date, Map<indicator_code, {state, score}>>
         const dateIndicatorMap = new Map<string, Map<string, { state: string; score: number }>>();
         const indicatorCodes = indicatorData.map((ind: IndicatorStatus) => ind.code);
         
@@ -78,7 +90,7 @@ export default function SystemBreakdown() {
               const data = await response.json();
               
               if (Array.isArray(data)) {
-                // Group by date and take the latest point per day for this indicator
+                // Aggregate by date, keeping only the latest timestamp per day
                 const dailyData = new Map<string, any>();
                 data.forEach((point: any) => {
                   const dateKey = point.timestamp.split('T')[0];
@@ -88,21 +100,13 @@ export default function SystemBreakdown() {
                   }
                 });
                 
-                // Now add to the main map - one entry per indicator per day
+                // Add consolidated daily data to main map
                 dailyData.forEach((point, dateKey) => {
                   if (!dateIndicatorMap.has(dateKey)) {
                     dateIndicatorMap.set(dateKey, new Map());
                   }
                   const indicatorMap = dateIndicatorMap.get(dateKey)!;
-                  
-                  // Determine state based on score
-                  let state = 'GREEN';
-                  if (point.score < 40) {
-                    state = 'RED';
-                  } else if (point.score < 70) {
-                    state = 'YELLOW';
-                  }
-                  
+                  const state = getStateFromScore(point.score);
                   indicatorMap.set(code, { state, score: point.score });
                 });
               }
@@ -112,7 +116,7 @@ export default function SystemBreakdown() {
           })
         );
         
-        // Build heatmap data and state count data
+        // Build heatmap visualization data and state distribution history
         const heatmapPoints: HeatmapDataPoint[] = [];
         const historyPoints: SystemHistoryPoint[] = [];
         
@@ -124,12 +128,12 @@ export default function SystemBreakdown() {
         sortedDates.forEach(date => {
           const indicatorMap = dateIndicatorMap.get(date)!;
           
-          // Count states for this date
+          // Count state distribution for this date
           let redCount = 0;
           let yellowCount = 0;
           let greenCount = 0;
           
-          // Build heatmap data for each indicator on this date
+          // Populate heatmap data points for all indicators on this date
           indicatorCodes.forEach((code: string) => {
             const indicatorData = indicatorMap.get(code);
             if (indicatorData) {
@@ -140,14 +144,14 @@ export default function SystemBreakdown() {
                 score: indicatorData.score,
               });
               
-              // Count for state distribution
+              // Increment state counters
               if (indicatorData.state === 'RED') redCount++;
               else if (indicatorData.state === 'YELLOW') yellowCount++;
               else greenCount++;
             }
           });
           
-          // Add to history data
+          // Create history point with state counts for this date
           historyPoints.push({
             timestamp: date,
             composite_score: 0,
@@ -190,21 +194,8 @@ export default function SystemBreakdown() {
     return weights[code] || 1.0;
   };
 
-  const getIndicatorDirection = (code: string): number => {
-    const directions: Record<string, number> = {
-      VIX: 1,
-      SPY: -1,
-      DFF: -1,
-      T10Y2Y: -1,
-      UNRATE: 1,
-      CONSUMER_HEALTH: -1,
-      BOND_MARKET_STABILITY: -1,
-      LIQUIDITY_PROXY: -1,
-      ANALYST_ANXIETY: -1,
-      SENTIMENT_COMPOSITE: -1,
-    };
-    return directions[code] || 1;
-  };
+  // Direction field removed - all scores are stability scores (higher = better)
+  // Backend handles normalization; frontend only displays final scores
 
   if (loading) {
     return (
@@ -295,121 +286,19 @@ export default function SystemBreakdown() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-green-400 text-xl md:text-2xl mb-1 md:mb-2">🟢 GREEN</div>
-            <div className="text-xs text-stealth-400 mb-1">Composite Score: 0-39</div>
-            <div className="text-xs text-stealth-300">Market conditions are <strong>stable</strong>. Low volatility, healthy growth, minimal systemic risks.</div>
+            <div className="text-green-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.GREEN.label}</div>
+            <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.GREEN.range}</div>
+            <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.GREEN.description}</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-yellow-400 text-xl md:text-2xl mb-1 md:mb-2">🟡 YELLOW</div>
-            <div className="text-xs text-stealth-400 mb-1">Composite Score: 40-69</div>
-            <div className="text-xs text-stealth-300">Market shows <strong>caution signals</strong>. Increased volatility, mixed indicators, elevated monitoring required.</div>
+            <div className="text-yellow-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.YELLOW.label}</div>
+            <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.YELLOW.range}</div>
+            <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.YELLOW.description}</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-red-400 text-xl md:text-2xl mb-1 md:mb-2">🔴 RED</div>
-            <div className="text-xs text-stealth-400 mb-1">Composite Score: 70-100</div>
-            <div className="text-xs text-stealth-300">Market under <strong>stress</strong>. High volatility, recession signals, significant systemic concerns.</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Composite Score Calculation */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
-        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Composite Score Calculation</h3>
-        <div className="space-y-4">
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <div className="text-sm font-mono text-cyan-400 mb-3">
-              Composite Score = Σ (Indicator Score × Weight) / Σ Weights
-            </div>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p><strong>Step 1:</strong> Each indicator is normalized to a 0-100 scale where lower scores indicate better market stability.</p>
-              <p><strong>Step 2:</strong> Individual scores are multiplied by their assigned weights to reflect importance.</p>
-              <p><strong>Step 3:</strong> Weighted scores are summed and divided by total weight to produce the composite.</p>
-              <p><strong>Step 4:</strong> The composite score is classified: GREEN (&lt;40), YELLOW (40-69), or RED (≥70).</p>
-            </div>
-          </div>
-          
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-semibold text-stealth-200 mb-2">Example Calculation</h4>
-            <div className="text-xs font-mono text-stealth-300 space-y-1">
-              <div>VIX Score: 30 × Weight: 1.5 = 45.0</div>
-              <div>SPY Score: 52 × Weight: 1.4 = 72.8</div>
-              <div>DFF Score: 47 × Weight: 1.3 = 61.1</div>
-              <div>T10Y2Y Score: 6 × Weight: 1.6 = 9.6</div>
-              <div>UNRATE Score: 100 × Weight: 1.2 = 120.0</div>
-              <div>CONSUMER_HEALTH Score: 92 × Weight: 1.4 = 128.8</div>
-              <div>BOND_MARKET Score: 75 × Weight: 1.8 = 135.0</div>
-              <div>LIQUIDITY Score: 41 × Weight: 1.6 = 65.6</div>
-              <div>ANALYST_ANXIETY Score: 27 × Weight: 1.7 = 45.9</div>
-              <div>SENTIMENT Score: 21 × Weight: 1.6 = 33.6</div>
-              <div className="pt-2 border-t border-stealth-700 mt-2">Total Weighted: 717.4 / Total Weight: 14.6 = <strong className="text-yellow-400">49.1 (YELLOW)</strong></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Indicator Weights */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
-        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Indicator Weights & Configuration</h3>
-        <p className="text-xs sm:text-sm text-stealth-300 mb-3 md:mb-4">
-          Each indicator is assigned a weight based on its historical significance in predicting market instability. 
-          Weights reflect how strongly each metric influences the composite score and overall system state.
-        </p>
-        <div className="space-y-3">
-          {metadata.map((meta) => {
-            const indicator = indicators?.find(i => i.code === meta.code);
-            const weightPercentage = ((meta.weight / totalWeight) * 100).toFixed(1);
-            
-            // Detailed descriptions for each indicator
-            const descriptions: Record<string, string> = {
-              VIX: "CBOE Volatility Index - Market fear gauge. Higher values indicate increased expected volatility and investor anxiety. Real-time measure of equity market stress.",
-              SPY: "S&P 500 ETF - 50-day EMA gap analysis. Measures momentum and trend strength of broad equity market. Negative gap (price below EMA) signals distribution and weakness.",
-              DFF: "Federal Funds Rate - Rate-of-change tracks Fed monetary policy aggressiveness. Rapid rate increases signal restrictive policy and recession risk.",
-              T10Y2Y: "10Y-2Y Treasury Spread - Yield curve indicator. Inversions (negative spread) historically precede recessions by 12-18 months. Key recession predictor.",
-              UNRATE: "Unemployment Rate - Labor market health. Rising unemployment signals economic slowdown and consumer stress. Lagging but critical recession indicator.",
-              CONSUMER_HEALTH: "Derived indicator combining Personal Consumption Expenditures, Personal Income, and CPI to assess real consumer purchasing power and spending capacity.",
-              BOND_MARKET_STABILITY: "Composite of credit spreads (HY, IG), yield curve stress, rate momentum, and Treasury volatility. Captures systemic stress in fixed income markets.",
-              LIQUIDITY_PROXY: "Combines M2 money supply growth, Fed balance sheet changes, and overnight reverse repo usage. Measures systemic liquidity availability and tightness.",
-              ANALYST_ANXIETY: "Composite sentiment indicator aggregating VIX (equity vol), MOVE (rates vol), high-yield credit spreads, and equity risk premium. Captures institutional fear.",
-              SENTIMENT_COMPOSITE: "Consumer & corporate confidence composite from Michigan Consumer Sentiment, NFIB Small Business Optimism, ISM New Orders, and CapEx commitments. Forward-looking demand indicator."
-            };
-            
-            return (
-              <div key={meta.code} className="bg-stealth-900 border border-stealth-600 rounded p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-4">
-                    <div className="font-semibold text-stealth-100 min-w-[180px]">{meta.name}</div>
-                    <div className="text-sm text-stealth-400">
-                      Weight: <span className="text-stealth-200 font-mono">{meta.weight.toFixed(1)}</span> ({weightPercentage}%)
-                    </div>
-                    <div className="text-sm text-stealth-400">
-                      Direction: <span className="text-stealth-200 font-mono">{meta.direction === 1 ? "↑ Higher is better" : "↓ Lower is better"}</span>
-                    </div>
-                  </div>
-                  {indicator && (
-                    <div className={`px-3 py-1 rounded font-semibold ${
-                      indicator.state === "GREEN" ? "bg-green-500/20 text-green-400" :
-                      indicator.state === "YELLOW" ? "bg-yellow-500/20 text-yellow-400" :
-                      "bg-red-500/20 text-red-400"
-                    }`}>
-                      {indicator.state}
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs text-stealth-400 mt-2">
-                  {descriptions[meta.code] || "Market stability indicator"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 pt-4 border-t border-stealth-600">
-          <div className="text-sm text-stealth-400 mb-2">
-            Total Weight: <span className="text-stealth-200 font-mono">{totalWeight.toFixed(1)}</span>
-          </div>
-          <div className="text-xs text-stealth-500">
-            Note: Weights are calibrated based on historical correlation with market downturns and systemic crises. 
-            Bond Market Stability receives highest weight (1.8) as fixed income dysfunction typically precedes equity crashes. 
-            Sentiment indicators (Analyst Anxiety 1.7, Sentiment Composite 1.6) capture forward-looking confidence shifts.
+            <div className="text-red-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.RED.label}</div>
+            <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.RED.range}</div>
+            <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.RED.description}</div>
           </div>
         </div>
       </div>
@@ -493,365 +382,10 @@ export default function SystemBreakdown() {
         </div>
       </div>
 
-      {/* Individual Indicator Scoring Methodology */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-stealth-100">Individual Indicator Scoring Methodology</h3>
-        <p className="text-sm text-stealth-300 mb-4">
-          Each indicator uses specialized scoring logic tailored to its characteristics and market significance.
-        </p>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* VIX */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">VIX (CBOE Volatility Index)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                Score = min(100, max(0, (VIX - 12) × 3.33))
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>12-20:</strong> Normal market conditions (0-26 score)</li>
-                <li><strong>20-30:</strong> Elevated volatility (26-60 score)</li>
-                <li><strong>30-40:</strong> High stress (60-93 score)</li>
-                <li><strong>&gt;40:</strong> Extreme fear (93-100 score)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: VIX above 30 historically signals market crises (2008, 2020).</p>
-            </div>
-          </div>
-
-          {/* SPY */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">SPY (S&P 500 ETF - 50-day EMA Gap)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                Gap% = ((Price - EMA₅₀) / EMA₅₀) × 100<br/>
-                Score = 50 - (Gap% × 2)
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>&gt;+10%:</strong> Strong uptrend (0-30 score - stable)</li>
-                <li><strong>0 to +10%:</strong> Moderate uptrend (30-50 score)</li>
-                <li><strong>-5% to 0:</strong> Consolidation (50-60 score)</li>
-                <li><strong>&lt;-5%:</strong> Downtrend/breakdown (60-100 score)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: Sustained divergence from EMA indicates trend weakness.</p>
-            </div>
-          </div>
-
-          {/* DFF */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">DFF (Federal Funds Rate - Rate of Change)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                ROC = DFF(today) - DFF(previous)<br/>
-                Score = 50 + (ROC × 20)
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>Declining:</strong> Easing policy (0-40 score - supportive)</li>
-                <li><strong>Stable:</strong> Neutral policy (40-60 score)</li>
-                <li><strong>Rising fast:</strong> Tightening cycle (60-100 score - restrictive)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: Rapid rate hikes historically precede market corrections.</p>
-            </div>
-          </div>
-
-          {/* T10Y2Y */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">T10Y2Y (10Y-2Y Treasury Spread)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                Spread = 10Y Yield - 2Y Yield<br/>
-                Score = 50 - (Spread × 20)
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>&gt;+1.5%:</strong> Steep curve (0-20 score - healthy)</li>
-                <li><strong>0 to +1.5%:</strong> Normal curve (20-50 score)</li>
-                <li><strong>-0.5% to 0:</strong> Flattening (50-60 score)</li>
-                <li><strong>&lt;-0.5%:</strong> Inverted curve (60-100 score - recession warning)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: Inversions preceded every recession since 1955.</p>
-            </div>
-          </div>
-
-          {/* UNRATE */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">UNRATE (Unemployment Rate)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                Score = (UNRATE - 3.5) × 10
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>&lt;4%:</strong> Full employment (0-5 score)</li>
-                <li><strong>4-5%:</strong> Healthy labor market (5-15 score)</li>
-                <li><strong>5-7%:</strong> Weakening (15-35 score)</li>
-                <li><strong>&gt;7%:</strong> Recession conditions (35-100 score)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: Rising unemployment reduces consumer spending and GDP growth.</p>
-            </div>
-          </div>
-
-          {/* CONSUMER_HEALTH */}
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-            <h4 className="text-sm font-bold text-cyan-400 mb-2">CONSUMER_HEALTH (Derived Indicator)</h4>
-            <div className="text-xs text-stealth-300 space-y-2">
-              <p className="font-mono bg-stealth-950 p-2 rounded">
-                CH = (PCE_MoM% - CPI_MoM%) + (PI_MoM% - CPI_MoM%)<br/>
-                Score = 50 - (CH × 50)
-              </p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>Positive CH:</strong> Real income/spending growth outpaces inflation (0-40 score)</li>
-                <li><strong>Near 0:</strong> Neutral consumer capacity (40-60 score)</li>
-                <li><strong>Negative CH:</strong> Inflation eroding purchasing power (60-100 score)</li>
-              </ul>
-              <p className="text-stealth-400 italic">Rationale: Consumer spending drives 70% of US GDP. Negative spreads signal demand destruction.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bond Market Stability Composite */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6">
-        <h4 className="text-lg font-semibold mb-3 text-stealth-100">Bond Market Stability Composite</h4>
-        <div className="space-y-3 text-sm">
-          <p className="text-stealth-300">
-            <strong className="text-stealth-200">Weight: 1.8</strong> · Aggregates four bond market signals into a comprehensive stress score.
-          </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 space-y-2">
-            <div className="font-mono text-xs text-stealth-300">
-              <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
-              <div className="ml-3 space-y-1">
-                <div>• <span className="text-blue-400">Credit Spread Stress (44%)</span>: HY OAS + IG OAS z-scores</div>
-                <div>• <span className="text-blue-400">Yield Curve Stress (23%)</span>: 10Y-2Y, 10Y-3M, 30Y-5Y spreads</div>
-                <div>• <span className="text-blue-400">Rates Momentum Stress (17%)</span>: 3-month ROC of 2Y and 10Y yields</div>
-                <div>• <span className="text-blue-400">Treasury Volatility Stress (16%)</span>: 20-day rolling std dev of DGS10</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
-              composite_stress = (0.44 × credit) + (0.23 × curve) + (0.17 × momentum) + (0.16 × volatility)
-              <br />
-              <span className="text-stealth-500">// Stored as stress score (0-100, higher = worse), direction=-1 inverts during normalization</span>
-            </div>
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Rationale:</strong> Bond markets are leading indicators of systemic stress. 
-            Credit spreads widen before equity crashes, yield curves invert before recessions, and Treasury volatility spikes during 
-            liquidity crises. This composite captures bond market dislocations that precede broader market turmoil.
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Typical Ranges (Stress Score):</strong> 
-            <span className="ml-2 text-emerald-400">LOW: 0-35</span> (stable credit, normal curves, low vol) · 
-            <span className="ml-2 text-yellow-400">MODERATE: 35-65</span> (widening spreads, curve flattening) · 
-            <span className="ml-2 text-red-400">HIGH: 65-100</span> (credit stress, inversions, volatility spikes)
-          </div>
-        </div>
-      </div>
-
-      {/* Liquidity Proxy Indicator */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mt-6">
-        <h4 className="text-lg font-semibold mb-3 text-stealth-100">Liquidity Proxy Indicator</h4>
-        <div className="space-y-3 text-sm">
-          <p className="text-stealth-300">
-            <strong className="text-stealth-200">Weight: 1.6</strong> · Measures systemic liquidity by combining money supply growth, 
-            Fed balance sheet changes, and reverse repo usage.
-          </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 space-y-2">
-            <div className="font-mono text-xs text-stealth-300">
-              <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
-              <div className="ml-3 space-y-1">
-                <div>• <span className="text-purple-400">M2 Money Supply</span>: Year-over-year % growth</div>
-                <div>• <span className="text-purple-400">Fed Balance Sheet</span>: Month-over-month delta (QE/QT)</div>
-                <div>• <span className="text-purple-400">Reverse Repo (RRP)</span>: Daily usage level (inverse indicator)</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
-              liquidity_proxy = z_score(M2_YoY) + z_score(Δ_FedBS) - z_score(RRP_level)
-              <br />
-              stress_score = 50 - (liquidity_proxy × 15) → clipped to [0, 100]
-              <br />
-              <span className="text-stealth-500">// Stored as stress score (0-100, higher = worse liquidity), direction=-1 inverts</span>
-            </div>
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Rationale:</strong> Liquidity is the lifeblood of markets. When M2 grows and the 
-            Fed expands its balance sheet (QE), asset prices rise across the board. When the Fed tightens (QT) and RRP usage surges 
-            (indicating idle reserves), liquidity drains from markets, causing broad-based sell-offs. This indicator captures the 
-            liquidity regime driving all asset classes.
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Typical Ranges (Stress Score):</strong> 
-            <span className="ml-2 text-emerald-400">LOW: 0-30</span> (M2 growth, QE, low RRP = abundant liquidity) · 
-            <span className="ml-2 text-yellow-400">MODERATE: 30-60</span> (slowing M2, neutral Fed, rising RRP) · 
-            <span className="ml-2 text-red-400">HIGH: 60-100</span> (M2 decline, aggressive QT, RRP peak = liquidity drought)
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Historical Context:</strong> 
-            2020-2021 QE era: <span className="text-emerald-400">LOW STRESS</span> (M2 +25%, Fed +$4T, RRP near zero) · 
-            2022 aggressive tightening: <span className="text-red-400">HIGH STRESS</span> (M2 declining, QT -$95B/month, RRP $2.5T) · 
-            2023-2024 recovery: <span className="text-yellow-400">MODERATE</span> (stabilizing M2, slowing QT, RRP declining)
-          </div>
-        </div>
-      </div>
-
-      {/* Consumer Health Index Composite */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mt-6">
-        <h4 className="text-lg font-semibold mb-3 text-stealth-100">Consumer Health Index</h4>
-        <div className="space-y-3 text-sm">
-          <p className="text-stealth-300">
-            <strong className="text-stealth-200">Weight: 1.4</strong> · Measures real consumer purchasing power by comparing income and spending growth against inflation.
-          </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 space-y-2">
-            <div className="font-mono text-xs text-stealth-300">
-              <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
-              <div className="ml-3 space-y-1">
-                <div>• <span className="text-green-400">Personal Consumption Expenditures (PCE)</span>: Month-over-month % change</div>
-                <div>• <span className="text-green-400">Personal Income (PI)</span>: Month-over-month % change</div>
-                <div>• <span className="text-green-400">Consumer Price Index (CPI)</span>: Month-over-month % change (inflation baseline)</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
-              real_spending_capacity = (PCE_MoM% - CPI_MoM%) → PCE growth minus inflation
-              <br />
-              real_income_capacity = (PI_MoM% - CPI_MoM%) → Income growth minus inflation
-              <br />
-              consumer_health = real_spending_capacity + real_income_capacity
-              <br />
-              <span className="text-stealth-500">// Positive = real growth, Negative = inflation eroding purchasing power</span>
-              <br />
-              <span className="text-stealth-500">// Stored as spread value, direction=-1 means negative spread (stress) → low score (RED)</span>
-            </div>
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Rationale:</strong> Consumer spending drives ~70% of US GDP. When real incomes rise and 
-            consumers can afford to spend freely, economic growth accelerates. When inflation outpaces income/spending growth, consumers 
-            cut discretionary spending, causing economic contraction. This index measures the fundamental capacity of consumers to drive 
-            economic activity.
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Typical Ranges:</strong> 
-            <span className="ml-2 text-emerald-400">HEALTHY: +1% to +3%</span> (real growth in both income and spending) · 
-            <span className="ml-2 text-yellow-400">NEUTRAL: -0.5% to +1%</span> (keeping pace with inflation) · 
-            <span className="ml-2 text-red-400">STRESS: -3% to -0.5%</span> (inflation eroding purchasing power, demand destruction)
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Historical Context:</strong> 
-            2021 stimulus era: <span className="text-emerald-400">HEALTHY</span> (PI +15% YoY, strong PCE, moderate CPI) · 
-            2022 inflation shock: <span className="text-red-400">SEVERE STRESS</span> (CPI +9% YoY, real incomes declining) · 
-            2024 normalization: <span className="text-yellow-400">NEUTRAL</span> (CPI cooling to 3%, incomes catching up)
-          </div>
-        </div>
-      </div>
-
-      {/* Analyst Anxiety Composite */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mt-6">
-        <h4 className="text-lg font-semibold mb-3 text-stealth-100">Analyst Anxiety (Institutional Sentiment)</h4>
-        <div className="space-y-3 text-sm">
-          <p className="text-stealth-300">
-            <strong className="text-stealth-200">Weight: 1.7</strong> · Aggregates institutional fear indicators across equity volatility, 
-            rates volatility, and credit stress to measure professional investor anxiety.
-          </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 space-y-2">
-            <div className="font-mono text-xs text-stealth-300">
-              <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
-              <div className="ml-3 space-y-1">
-                <div>• <span className="text-red-400">VIX (Equity Volatility) - 40%</span>: CBOE Volatility Index, equity fear gauge</div>
-                <div>• <span className="text-red-400">MOVE Index (Rates Volatility) - 25%</span>: Bond market volatility (if available)</div>
-                <div>• <span className="text-red-400">HY OAS (Credit Stress) - 25%</span>: High-yield option-adjusted spread</div>
-                <div>• <span className="text-red-400">ERP Proxy (Risk Premium) - 10%</span>: BBB yield minus 10Y Treasury (if available)</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
-              // Each component normalized to z-score with 520-day lookback
-              <br />
-              // Includes momentum: z_blended = 0.75 × z_base + 0.25 × z_momentum (10-day ROC)
-              <br />
-              stress_score(component) = ((z_blended + 3) / 6) × 100 → [0, 100]
-              <br />
-              composite_stress = Σ(stress_score × weight) with dynamic weight redistribution if optional components unavailable
-              <br />
-              stability_score = 100 - composite_stress
-              <br />
-              <span className="text-stealth-500">// Stored as stability score, direction=-1 means low stability → low score (RED)</span>
-            </div>
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Rationale:</strong> Institutional investors manage trillions in assets and react quickly 
-            to perceived risks. When VIX spikes, MOVE rises, credit spreads widen, and equity risk premiums expand, it signals professionals 
-            are hedging aggressively and reducing risk exposure. These fear indicators typically precede retail panic and broader market 
-            dislocations. By blending volatility (VIX, MOVE), credit (HY OAS), and risk premium (ERP), this composite captures 
-            multi-dimensional institutional anxiety.
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
-            <span className="ml-2 text-emerald-400">CALM: 65-100</span> (VIX &lt;20, MOVE &lt;100, HY OAS &lt;400 bps, narrow risk premiums) · 
-            <span className="ml-2 text-yellow-400">ELEVATED: 35-65</span> (VIX 20-30, rising credit spreads, modest fear) · 
-            <span className="ml-2 text-red-400">ANXIOUS: 0-35</span> (VIX &gt;30, MOVE &gt;150, HY OAS &gt;600 bps, wide risk premiums = panic hedging)
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Historical Context:</strong> 
-            2019 pre-COVID: <span className="text-emerald-400">CALM</span> (VIX 12-16, HY OAS ~350 bps, low volatility regime) · 
-            March 2020 COVID crash: <span className="text-red-400">EXTREME ANXIETY</span> (VIX 80+, MOVE 200+, HY OAS 1000+ bps) · 
-            2024 soft landing: <span className="text-yellow-400">MODERATE</span> (VIX 15-18, normalized spreads, guarded optimism)
-          </div>
-        </div>
-      </div>
-
-      {/* Consumer & Corporate Sentiment Composite */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mt-6">
-        <h4 className="text-lg font-semibold mb-3 text-stealth-100">Consumer & Corporate Sentiment Composite</h4>
-        <div className="space-y-3 text-sm">
-          <p className="text-stealth-300">
-            <strong className="text-stealth-200">Weight: 1.6</strong> · Forward-looking confidence indicator combining consumer sentiment, 
-            small business optimism, manufacturing demand, and capital expenditure commitments.
-          </p>
-          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 space-y-2">
-            <div className="font-mono text-xs text-stealth-300">
-              <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
-              <div className="ml-3 space-y-1">
-                <div>• <span className="text-yellow-400">Michigan Consumer Sentiment - 30%</span>: How consumers feel about economy & finances</div>
-                <div>• <span className="text-yellow-400">NFIB Small Business Optimism - 30%</span>: Small business owner confidence & expectations</div>
-                <div>• <span className="text-yellow-400">ISM New Orders (Manufacturing) - 25%</span>: Forward demand indicator, orders today = production tomorrow</div>
-                <div>• <span className="text-yellow-400">CapEx Proxy (Capital Goods Orders) - 15%</span>: Corporate investment commitments (Nondefense ex-Aircraft)</div>
-              </div>
-            </div>
-            <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
-              // Each component normalized to z-score with 520-day lookback (monthly data)
-              <br />
-              confidence_score(component) = ((z + 3) / 6) × 100 → [0, 100]
-              <br />
-              composite_confidence = Σ(confidence_score × weight)
-              <br />
-              <span className="text-stealth-500">// Higher confidence = willingness to spend/invest/expand</span>
-              <br />
-              <span className="text-stealth-500">// Stored as confidence score, direction=-1 means low confidence → low score (RED)</span>
-              <br />
-              <span className="text-stealth-500">// Weights redistributed if optional components unavailable (Michigan always required)</span>
-            </div>
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Rationale:</strong> Economic activity is driven by confidence, not just fundamentals. 
-            When consumers feel optimistic, they make big purchases (homes, cars). When businesses are confident, they hire, expand, and 
-            invest in equipment. This composite captures the psychological willingness to spend and invest across all economic actors. 
-            New orders and CapEx are particularly forward-looking—they represent commitments made today that drive production and 
-            employment 3-12 months forward. Sentiment surveys predict recessions 6-12 months in advance.
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Typical Ranges (Confidence Score):</strong> 
-            <span className="ml-2 text-emerald-400">OPTIMISTIC: 65-100</span> (Michigan 90+, NFIB 100+, ISM new orders 55+, CapEx growing) · 
-            <span className="ml-2 text-yellow-400">CAUTIOUS: 35-65</span> (Michigan 70-90, NFIB 95-100, ISM 50-55, stable CapEx) · 
-            <span className="ml-2 text-red-400">PESSIMISTIC: 0-35</span> (Michigan &lt;70, NFIB &lt;95, ISM &lt;50 contraction, CapEx declining)
-          </div>
-          <div className="text-stealth-400">
-            <strong className="text-stealth-300">Historical Context:</strong> 
-            2018 tax cut optimism: <span className="text-emerald-400">VERY OPTIMISTIC</span> (Michigan 100+, NFIB 108, ISM 60+, CapEx surge) · 
-            2020 COVID shock: <span className="text-red-400">COLLAPSE</span> (Michigan 70s, NFIB crash, ISM 35, CapEx freeze) · 
-            2022 inflation shock: <span className="text-red-400">PESSIMISM</span> (Michigan hit 50-year low of 50.0, recession fears) · 
-            2024 recovery: <span className="text-yellow-400">CAUTIOUS</span> (Michigan 70s, moderate confidence, guarded expansion)
-          </div>
-        </div>
-      </div>
-
-      {/* Historical State Distribution Heatmap */}
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 mt-6">
-        <h3 className="text-xl font-semibold mb-4 text-stealth-100">Historical State Distribution (1 Year)</h3>
-        <p className="text-sm text-stealth-400 mb-4">Each row represents an indicator. Color shows state: Green (healthy), Yellow (caution), Red (stress)</p>
+      {/* Historical State Distribution Heatmap - Moved here */}
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Historical State Distribution (1 Year)</h3>
+        <p className="text-xs sm:text-sm text-stealth-400 mb-3 md:mb-4">Each row represents an indicator. Color shows state: Green (healthy), Yellow (caution), Red (stress)</p>
         
         <div className="overflow-x-auto">
           <div style={{ minWidth: '800px' }}>
@@ -873,24 +407,17 @@ export default function SystemBreakdown() {
                       {indicatorName}
                     </div>
                     <div className="flex-1 flex gap-0.5">
-                      {sampledPoints.map((point, idx) => {
-                        const color = 
-                          point.state === 'GREEN' ? '#10b981' :
-                          point.state === 'YELLOW' ? '#eab308' :
-                          '#ef4444';
-                        
-                        return (
-                          <div
-                            key={idx}
-                            className="flex-1 h-8 transition-opacity hover:opacity-75 cursor-pointer"
-                            style={{ 
-                              backgroundColor: color,
-                              minWidth: '2px',
-                            }}
-                            title={`${point.date}: ${point.state} (${point.score.toFixed(1)})`}
-                          />
-                        );
-                      })}
+                      {sampledPoints.map((point, idx) => (
+                        <div
+                          key={idx}
+                          className="flex-1 h-8 transition-opacity hover:opacity-75 cursor-pointer"
+                          style={{ 
+                            backgroundColor: getStateColor(point.state),
+                            minWidth: '2px',
+                          }}
+                          title={`${point.date}: ${point.state} (${point.score.toFixed(1)})`}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -910,20 +437,328 @@ export default function SystemBreakdown() {
             {/* Legend */}
             <div className="flex items-center gap-4 mt-4 justify-center text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10b981' }}></div>
-                <span className="text-stealth-300">Green (≥70)</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: getStateColor('GREEN') }}></div>
+                <span className="text-stealth-300">Green (≥{STABILITY_THRESHOLDS.YELLOW_MAX})</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#eab308' }}></div>
-                <span className="text-stealth-300">Yellow (40-69)</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: getStateColor('YELLOW') }}></div>
+                <span className="text-stealth-300">Yellow ({STABILITY_THRESHOLDS.RED_MAX}–{STABILITY_THRESHOLDS.YELLOW_MAX - 1})</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-                <span className="text-stealth-300">Red (&lt;40)</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: getStateColor('RED') }}></div>
+                <span className="text-stealth-300">Red (&lt;{STABILITY_THRESHOLDS.RED_MAX})</span>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Composite Score Calculation */}
+      <div className="collapsible-section" data-section="methodology">
+        <button
+          onClick={() => toggleSection('methodology')}
+          className="collapsible-header"
+        >
+          <h3 className="text-lg md:text-xl font-semibold text-stealth-100">Composite Score Calculation</h3>
+          <span className="text-stealth-400 text-xl">{expandedSections.has('methodology') ? '−' : '+'}</span>
+        </button>
+        {expandedSections.has('methodology') && (
+          <div className="collapsible-content">
+            <div className="space-y-4">
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <div className="text-sm font-mono text-cyan-400 mb-3">
+                  Composite Score = Σ (Indicator Score × Weight) / Σ Weights
+                </div>
+                <div className="text-xs text-stealth-300 space-y-2">
+                  <p><strong>Step 1:</strong> Each indicator is normalized to a 0-100 stability score where higher scores indicate better market stability.</p>
+                  <p><strong>Step 2:</strong> Individual scores are multiplied by their assigned weights to reflect importance.</p>
+                  <p><strong>Step 3:</strong> Weighted scores are summed and divided by total weight to produce the composite.</p>
+                  <p><strong>Step 4:</strong> The composite score is classified: GREEN (≥{STABILITY_THRESHOLDS.YELLOW_MAX}), YELLOW ({STABILITY_THRESHOLDS.RED_MAX}–{STABILITY_THRESHOLDS.YELLOW_MAX - 1}), or RED (&lt;{STABILITY_THRESHOLDS.RED_MAX}).</p>
+                </div>
+              </div>
+              
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <h4 className="text-sm font-semibold text-stealth-200 mb-2">Example Calculation</h4>
+                <div className="text-xs font-mono text-stealth-300 space-y-1">
+                  <div>VIX Score: 70 × Weight: 1.5 = 105.0</div>
+                  <div>SPY Score: 48 × Weight: 1.4 = 67.2</div>
+                  <div>DFF Score: 53 × Weight: 1.3 = 68.9</div>
+                  <div>T10Y2Y Score: 94 × Weight: 1.6 = 150.4</div>
+                  <div>UNRATE Score: 85 × Weight: 1.2 = 102.0</div>
+                  <div>CONSUMER_HEALTH Score: 62 × Weight: 1.4 = 86.8</div>
+                  <div>BOND_MARKET Score: 58 × Weight: 1.8 = 104.4</div>
+                  <div>LIQUIDITY Score: 71 × Weight: 1.6 = 113.6</div>
+                  <div>ANALYST_ANXIETY Score: 78 × Weight: 1.7 = 132.6</div>
+                  <div>SENTIMENT Score: 82 × Weight: 1.6 = 131.2</div>
+                  <div className="pt-2 border-t border-stealth-700 mt-2">Total Weighted: 1062.1 / Total Weight: 14.6 = <strong className="text-green-400">72.7 (GREEN)</strong></div>
+                  <div className="text-stealth-400 text-xs mt-2">Note: Score ≥70 indicates stable market conditions.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Indicator Weights & Configuration */}
+      <div className="collapsible-section" data-section="weights">
+        <button
+          onClick={() => toggleSection('weights')}
+          className="collapsible-header"
+        >
+          <h3 className="text-lg md:text-xl font-semibold text-stealth-100">Indicator Weights & Configuration</h3>
+          <span className="text-stealth-400 text-xl">{expandedSections.has('weights') ? '−' : '+'}</span>
+        </button>
+        {expandedSections.has('weights') && (
+          <div className="collapsible-content">
+            <p className="text-xs sm:text-sm text-stealth-300 mb-3 md:mb-4">
+              Each indicator is assigned a weight based on its historical significance in predicting market instability. 
+              Weights reflect how strongly each metric influences the composite score and overall system state.
+            </p>
+            <div className="space-y-3">
+              {metadata.map((meta) => {
+                const indicator = indicators?.find(i => i.code === meta.code);
+                const weightPercentage = ((meta.weight / totalWeight) * 100).toFixed(1);
+                
+                // Composite indicators with expandable details
+                const compositeIndicators = ['BOND_MARKET_STABILITY', 'LIQUIDITY_PROXY', 'CONSUMER_HEALTH', 'ANALYST_ANXIETY', 'SENTIMENT_COMPOSITE'];
+                const isComposite = compositeIndicators.includes(meta.code);
+                const isExpanded = expandedSections.has(`indicator_${meta.code}`);
+                
+                // Detailed descriptions for each indicator
+                const descriptions: Record<string, string> = {
+                  VIX: "CBOE Volatility Index - Market fear gauge. Higher values indicate increased expected volatility and investor anxiety. Real-time measure of equity market stress.",
+                  SPY: "S&P 500 ETF - 50-day EMA gap analysis. Measures momentum and trend strength of broad equity market. Negative gap (price below EMA) signals distribution and weakness.",
+                  DFF: "Federal Funds Rate - 6-month cumulative rate change tracks Fed monetary policy stance. Rising rates (tightening) signal restrictive policy and stress; falling rates (easing) indicate stability.",
+                  T10Y2Y: "10Y-2Y Treasury Spread - Yield curve indicator. Inversions (negative spread) historically precede recessions by 12-18 months. Key recession predictor.",
+                  UNRATE: "Unemployment Rate - 6-month unemployment change tracks labor market momentum. Rising unemployment (positive change) signals deteriorating conditions and stress; falling unemployment indicates economic strength.",
+                  CONSUMER_HEALTH: "Derived indicator combining Personal Consumption Expenditures, Personal Income, and CPI to assess real consumer purchasing power and spending capacity.",
+                  BOND_MARKET_STABILITY: "Composite of credit spreads (HY, IG), yield curve stress, rate momentum, and Treasury volatility. Captures systemic stress in fixed income markets.",
+                  LIQUIDITY_PROXY: "Combines M2 money supply growth, Fed balance sheet changes, and overnight reverse repo usage. Measures systemic liquidity availability and tightness.",
+                  ANALYST_ANXIETY: "Composite sentiment indicator aggregating VIX (equity vol), MOVE (rates vol), high-yield credit spreads, and equity risk premium. Captures institutional fear.",
+                  SENTIMENT_COMPOSITE: "Consumer & corporate confidence composite from Michigan Consumer Sentiment, NFIB Small Business Optimism, ISM New Orders, and CapEx commitments. Forward-looking demand indicator."
+                };
+                
+                return (
+                  <div key={meta.code} className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                    <div 
+                      className={`flex items-center justify-between mb-2 ${isComposite ? 'cursor-pointer hover:bg-stealth-800/50 -m-4 p-4 rounded-t' : ''}`}
+                      onClick={isComposite ? () => toggleSection(`indicator_${meta.code}`) : undefined}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="font-semibold text-stealth-100 min-w-[180px]">{meta.name}</div>
+                        <div className="text-sm text-stealth-400">
+                          Weight: <span className="text-stealth-200 font-mono">{meta.weight.toFixed(1)}</span> ({weightPercentage}%)
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {indicator && (
+                          <div className={`px-3 py-1 rounded font-semibold ${
+                            indicator.state === "GREEN" ? "bg-green-500/20 text-green-400" :
+                            indicator.state === "YELLOW" ? "bg-yellow-500/20 text-yellow-400" :
+                            "bg-red-500/20 text-red-400"
+                          }`}>
+                            {indicator.state}
+                          </div>
+                        )}
+                        {isComposite && (
+                          <span className="text-stealth-400 text-lg">{isExpanded ? '−' : '+'}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-stealth-400 mt-2">
+                      {descriptions[meta.code] || "Market stability indicator"}
+                    </div>
+                    
+                    {/* Expanded details for composite indicators */}
+                    {isComposite && isExpanded && meta.code === 'BOND_MARKET_STABILITY' && (
+                      <div className="mt-4 pt-4 border-t border-stealth-700 space-y-3 text-sm">
+                        <div className="bg-stealth-950 border border-stealth-600 rounded p-3 space-y-2">
+                          <div className="font-mono text-xs text-stealth-300">
+                            <div className="mb-2"><strong className="text-stealth-200">Components (Normalized to Stability Scores):</strong></div>
+                            <div className="ml-3 space-y-1">
+                              <div>• <span className="text-blue-400">Credit Spread Stability (44%)</span>: HY OAS + IG OAS z-scores, inverted (narrow spreads = high score)</div>
+                              <div>• <span className="text-blue-400">Yield Curve Stability (23%)</span>: 10Y-2Y, 10Y-3M, 30Y-5Y spreads, inverted (normal curve = high score)</div>
+                              <div>• <span className="text-blue-400">Rates Momentum Stability (17%)</span>: 3-month ROC of 2Y and 10Y yields, inverted (stable rates = high score)</div>
+                              <div>• <span className="text-blue-400">Treasury Volatility Stability (16%)</span>: 20-day rolling std dev of DGS10, inverted (low vol = high score)</div>
+                            </div>
+                          </div>
+                          <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
+                            composite_stability = (0.44 × credit_stability) + (0.23 × curve_stability) + (0.17 × momentum_stability) + (0.16 × volatility_stability)
+                            <br />
+                            <span className="text-stealth-500">// All components normalized so higher score = more stable bond markets</span>
+                          </div>
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Rationale:</strong> Bond markets are leading indicators of systemic stress. 
+                          Credit spreads widen before equity crashes, yield curves invert before recessions, and Treasury volatility spikes during 
+                          liquidity crises. This composite captures bond market health where higher scores indicate stable fixed income conditions.
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
+                          <span className="ml-2 text-emerald-400">HIGH: 70-100</span> (stable credit, normal curves, low vol) · 
+                          <span className="ml-2 text-yellow-400">MODERATE: 40-69</span> (widening spreads, curve flattening) · 
+                          <span className="ml-2 text-red-400">LOW: 0-39</span> (credit stress, inversions, volatility spikes)
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isComposite && isExpanded && meta.code === 'LIQUIDITY_PROXY' && (
+                      <div className="mt-4 pt-4 border-t border-stealth-700 space-y-3 text-sm">
+                        <div className="bg-stealth-950 border border-stealth-600 rounded p-3 space-y-2">
+                          <div className="font-mono text-xs text-stealth-300">
+                            <div className="mb-2"><strong className="text-stealth-200">Components (Normalized to Stability Scores):</strong></div>
+                            <div className="ml-3 space-y-1">
+                              <div>• <span className="text-purple-400">M2 Money Supply</span>: Year-over-year % growth (higher growth = more liquidity)</div>
+                              <div>• <span className="text-purple-400">Fed Balance Sheet</span>: Month-over-month delta (QE expansion = more liquidity)</div>
+                              <div>• <span className="text-purple-400">Reverse Repo (RRP)</span>: Daily usage level (lower usage = more market liquidity)</div>
+                            </div>
+                          </div>
+                          <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
+                            liquidity_z = z_score(M2_YoY) + z_score(Δ_FedBS) - z_score(RRP_level)
+                            <br />
+                            smoothed_liquidity = moving_average_30day(liquidity_z)
+                            <br />
+                            final_stability_score = normalize(smoothed_liquidity, direction=-1)
+                            <br />
+                            <span className="text-stealth-500">// Higher liquidity z-score → higher stability score (direction=-1 preserves positive values)</span>
+                          </div>
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Rationale:</strong> Liquidity is the lifeblood of markets. When M2 grows and the 
+                          Fed expands its balance sheet (QE), asset prices rise across the board. When the Fed tightens (QT) and RRP usage surges 
+                          (indicating idle reserves), liquidity drains from markets, causing broad-based sell-offs. Higher scores indicate abundant liquidity.
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
+                          <span className="ml-2 text-emerald-400">HIGH: 70-100</span> (M2 growth, QE, low RRP) · 
+                          <span className="ml-2 text-yellow-400">MODERATE: 40-69</span> (slowing M2, neutral Fed) · 
+                          <span className="ml-2 text-red-400">LOW: 0-39</span> (M2 decline, QT, RRP peak)
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isComposite && isExpanded && meta.code === 'CONSUMER_HEALTH' && (
+                      <div className="mt-4 pt-4 border-t border-stealth-700 space-y-3 text-sm">
+                        <div className="bg-stealth-950 border border-stealth-600 rounded p-3 space-y-2">
+                          <div className="font-mono text-xs text-stealth-300">
+                            <div className="mb-2"><strong className="text-stealth-200">Components:</strong></div>
+                            <div className="ml-3 space-y-1">
+                              <div>• <span className="text-green-400">Personal Consumption Expenditures (PCE)</span>: Month-over-month % change</div>
+                              <div>• <span className="text-green-400">Personal Income (PI)</span>: Month-over-month % change</div>
+                              <div>• <span className="text-green-400">Consumer Price Index (CPI)</span>: Month-over-month % change (inflation baseline)</div>
+                            </div>
+                          </div>
+                          <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
+                            real_spending = (PCE_MoM% - CPI_MoM%), real_income = (PI_MoM% - CPI_MoM%)
+                            <br />
+                            consumer_health = real_spending + real_income
+                            <br />
+                            <span className="text-stealth-500">// Positive = real growth (healthy), Negative = inflation eroding purchasing power</span>
+                            <br />
+                            <span className="text-stealth-500">// Normalized to stability score where higher = healthier consumers</span>
+                          </div>
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Rationale:</strong> Consumer spending drives ~70% of US GDP. When real incomes rise and 
+                          consumers can afford to spend freely, economic growth accelerates. When inflation outpaces income/spending growth, consumers 
+                          cut discretionary spending, causing economic contraction. Higher scores indicate stronger consumer health.
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
+                          <span className="ml-2 text-emerald-400">HEALTHY: 70-100</span> (real growth outpacing inflation) · 
+                          <span className="ml-2 text-yellow-400">NEUTRAL: 40-69</span> (keeping pace with inflation) · 
+                          <span className="ml-2 text-red-400">STRESS: 0-39</span> (inflation eroding power)
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isComposite && isExpanded && meta.code === 'ANALYST_ANXIETY' && (
+                      <div className="mt-4 pt-4 border-t border-stealth-700 space-y-3 text-sm">
+                        <div className="bg-stealth-950 border border-stealth-600 rounded p-3 space-y-2">
+                          <div className="font-mono text-xs text-stealth-300">
+                            <div className="mb-2"><strong className="text-stealth-200">Components (Normalized to Stability Scores):</strong></div>
+                            <div className="ml-3 space-y-1">
+                              <div>• <span className="text-red-400">VIX (Equity Volatility) - 40%</span>: CBOE Volatility Index (inverted: low VIX = high score)</div>
+                              <div>• <span className="text-red-400">MOVE Index (Rates Volatility) - 25%</span>: Bond market volatility (inverted: low MOVE = high score)</div>
+                              <div>• <span className="text-red-400">HY OAS (Credit Stress) - 25%</span>: High-yield spreads (inverted: narrow spreads = high score)</div>
+                              <div>• <span className="text-red-400">ERP Proxy (Risk Premium) - 10%</span>: BBB yield minus 10Y Treasury (inverted: low premium = high score)</div>
+                            </div>
+                          </div>
+                          <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
+                            component_stability = 100 - (((z_blended + 3) / 6) × 100)
+                            <br />
+                            composite_stability = Σ(component_stability × weight)
+                            <br />
+                            <span className="text-stealth-500">// Higher score = calm markets (low anxiety), Lower score = fearful markets (high anxiety)</span>
+                          </div>
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Rationale:</strong> Institutional investors manage trillions and react quickly 
+                          to perceived risks. When VIX spikes, MOVE rises, credit spreads widen, and equity risk premiums expand, it signals professionals 
+                          are hedging aggressively. These fear indicators typically precede retail panic. Higher scores indicate calm, confident markets.
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
+                          <span className="ml-2 text-emerald-400">CALM: 70-100</span> (VIX &lt;20, low spreads, confident) · 
+                          <span className="ml-2 text-yellow-400">ELEVATED: 40-69</span> (VIX 20-30, cautious) · 
+                          <span className="ml-2 text-red-400">ANXIOUS: 0-39</span> (VIX &gt;30, panic hedging)
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isComposite && isExpanded && meta.code === 'SENTIMENT_COMPOSITE' && (
+                      <div className="mt-4 pt-4 border-t border-stealth-700 space-y-3 text-sm">
+                        <div className="bg-stealth-950 border border-stealth-600 rounded p-3 space-y-2">
+                          <div className="font-mono text-xs text-stealth-300">
+                            <div className="mb-2"><strong className="text-stealth-200">Components (Normalized to Stability Scores):</strong></div>
+                            <div className="ml-3 space-y-1">
+                              <div>• <span className="text-yellow-400">Michigan Consumer Sentiment - 30%</span>: Consumer confidence (higher = more confident)</div>
+                              <div>• <span className="text-yellow-400">NFIB Small Business Optimism - 30%</span>: Business owner confidence (higher = more optimistic)</div>
+                              <div>• <span className="text-yellow-400">ISM New Orders (Manufacturing) - 25%</span>: Forward demand indicator (higher = more orders)</div>
+                              <div>• <span className="text-yellow-400">CapEx Proxy (Capital Goods Orders) - 15%</span>: Corporate investment (higher = more investment)</div>
+                            </div>
+                          </div>
+                          <div className="font-mono text-xs text-stealth-400 pt-2 border-t border-stealth-700">
+                            confidence_score(component) = ((z + 3) / 6) × 100 → [0, 100]
+                            <br />
+                            composite_confidence = Σ(confidence_score × weight)
+                            <br />
+                            <span className="text-stealth-500">// Higher confidence = willingness to spend/invest/expand = higher stability</span>
+                          </div>
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Rationale:</strong> Economic activity is driven by confidence. 
+                          When consumers feel optimistic, they make big purchases. When businesses are confident, they hire and invest. 
+                          New orders and CapEx represent commitments made today that drive production 3-12 months forward. Higher scores indicate stronger confidence.
+                        </div>
+                        <div className="text-stealth-400 text-xs">
+                          <strong className="text-stealth-300">Typical Ranges (Stability Score):</strong> 
+                          <span className="ml-2 text-emerald-400">OPTIMISTIC: 70-100</span> (Michigan 90+, NFIB 100+, strong CapEx) · 
+                          <span className="ml-2 text-yellow-400">CAUTIOUS: 40-69</span> (Michigan 70-90, moderate activity) · 
+                          <span className="ml-2 text-red-400">PESSIMISTIC: 0-39</span> (Michigan &lt;70, contraction signals)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 pt-4 border-t border-stealth-600">
+              <div className="text-sm text-stealth-400 mb-2">
+                Total Weight: <span className="text-stealth-200 font-mono">{totalWeight.toFixed(1)}</span>
+              </div>
+              <div className="text-xs text-stealth-500">
+                Note: Weights are calibrated based on historical correlation with market downturns and systemic crises. 
+                Bond Market Stability receives highest weight (1.8) as fixed income dysfunction typically precedes equity crashes. 
+                Sentiment indicators (Analyst Anxiety 1.7, Sentiment Composite 1.6) capture forward-looking confidence shifts.
+                All indicators output stability scores where higher values indicate better market conditions.
+                <br /><br />
+                <strong className="text-stealth-400">Tip:</strong> Click on any composite indicator (Bond Market Stability, Liquidity Proxy, Consumer Health, 
+                Analyst Anxiety, or Consumer & Corporate Sentiment) to view detailed component breakdowns, calculation formulas, and historical context.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

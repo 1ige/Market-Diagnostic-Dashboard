@@ -13,6 +13,7 @@ import {
 import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { calculateMovingAverage } from "../../utils/componentUtils";
 import { commonXAxisProps, commonYAxisProps, commonGridProps, commonTooltipStyle } from "../../utils/chartUtils";
+import { getStateFromScore, STABILITY_THRESHOLDS } from "../../utils/stabilityConstants";
 
 interface SystemStatus {
   state: string;
@@ -75,7 +76,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           mockHistory.push({
             timestamp: timestamp.toISOString(),
             composite_score: score,
-            state: score < 40 ? "GREEN" : score < 70 ? "YELLOW" : "RED"
+            state: getStateFromScore(score)
           });
         }
         
@@ -186,9 +187,9 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           <div className="relative h-2 bg-stealth-900 rounded-full overflow-hidden">
             <div
               className={`absolute left-0 top-0 h-full transition-all duration-500 ${
-                data.composite_score < 40
+                data.composite_score >= STABILITY_THRESHOLDS.YELLOW_MAX
                   ? "bg-green-500"
-                  : data.composite_score < 70
+                  : data.composite_score >= STABILITY_THRESHOLDS.RED_MAX
                   ? "bg-yellow-500"
                   : "bg-red-500"
               }`}

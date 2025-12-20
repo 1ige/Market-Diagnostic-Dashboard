@@ -27,3 +27,16 @@ body {
   width: 100%;
   height: 100vh;
 }
+
+/* Collapsible sections styling */
+.collapsible-section {
+  @apply bg-stealth-800 border border-stealth-700 rounded-lg mb-4 md:mb-6;
+}
+
+.collapsible-header {
+  @apply w-full p-4 md:p-6 flex items-center justify-between text-left hover:bg-stealth-750 transition-colors rounded-lg;
+}
+
+.collapsible-content {
+  @apply px-4 md:px-6 pb-4 md:pb-6;
+}

@@ -517,9 +517,12 @@ export default function IndicatorDetail() {
             </div>
           </div>
 
-          {/* Component Stress Scores Chart */}
+          {/* Component Stress Levels Chart - Internal Metrics */}
           <div className="h-80 mb-6">
-            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Stress Scores Over Time</h4>
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Component Stress Levels Over Time (Internal Metrics)</h4>
+            <p className="text-xs text-stealth-400 mb-2">
+              Note: These are intermediate stress calculations. Lower component stress contributes to higher final stability scores.
+            </p>
             {(() => {
               const { data, dateRange } = processComponentData(bondComponents, chartRange.days);
               
@@ -533,19 +536,22 @@ export default function IndicatorDetail() {
                     { dataKey: "treasury_volatility_stress.stress_score", name: "Treasury Volatility", stroke: "#a855f7" }
                   ]}
                   referenceLines={[
-                    { y: 65, stroke: "#ef4444", label: "HIGH STRESS", labelFill: "#ef4444" },
-                    { y: 35, stroke: "#10b981", label: "LOW STRESS", labelFill: "#10b981" }
+                    { y: 65, stroke: "#ef4444", label: "HIGH", labelFill: "#ef4444" },
+                    { y: 35, stroke: "#10b981", label: "LOW", labelFill: "#10b981" }
                   ]}
-                  yAxisLabel="Stress Score (0-100)"
+                  yAxisLabel="Stress Level (0-100, inverted for final score)"
                   dateRange={dateRange}
                 />
               );
             })()}
           </div>
 
-          {/* Composite Stress Score Chart */}
+          {/* Composite Stress Calculation - Internal Metric */}
           <div className="h-80">
-            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Stress Score</h4>
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Composite Stress Score (Internal Calculation)</h4>
+            <p className="text-xs text-stealth-400 mb-2">
+              Note: This intermediate stress score is inverted to produce the final stability score (higher stress here = lower stability score).
+            </p>
             {(() => {
               const { data, dateRange } = processComponentData(bondComponents, chartRange.days);
               
@@ -573,7 +579,7 @@ export default function IndicatorDetail() {
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
-            Liquidity Proxy = z(M2 YoY%) + z(Fed BS Delta) - z(RRP Usage) → Stress Score
+            Liquidity Proxy = z(M2 YoY%) + z(Fed BS Delta) - z(RRP Usage) → Smoothed → Stability Score
           </p>
           
           {/* Latest Component Values */}
@@ -642,11 +648,11 @@ export default function IndicatorDetail() {
             })()}
           </div>
 
-          {/* Liquidity Stress Score Chart */}
+          {/* Liquidity Stability Score Chart */}
           <div className="h-80">
-            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Liquidity Stress Score</h4>
+            <h4 className="text-sm font-semibold mb-2 text-stealth-200">Liquidity Stability Score (30-day smoothed)</h4>
             <p className="text-xs text-stealth-400 mb-2">
-              Lower stress = abundant liquidity (QE, M2 growth) | Higher stress = liquidity drought (QT, RRP peak)
+              Higher score = abundant liquidity (QE, M2 growth) | Lower score = liquidity drought (QT, RRP peak)
             </p>
             {(() => {
               const { data, dateRange } = processComponentData(liquidityComponents, chartRange.days);
@@ -676,7 +682,7 @@ export default function IndicatorDetail() {
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
             Analyst Anxiety measures institutional market fear through volatility and credit stress indicators. 
-            Stability Score = 100 - Weighted Composite Stress.
+            Higher stability scores indicate calm markets with low anxiety.
           </p>
           
           {/* Latest Component Values */}

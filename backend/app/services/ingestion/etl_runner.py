@@ -466,20 +466,21 @@ class ETLRunner:
             # Higher M2 growth and Fed balance sheet = higher liquidity
             liquidity_proxy = z_m2_yoy + z_fed_delta - z_rrp
             
-            # Store as stress score (0-100, where higher = worse liquidity conditions)
-            # High liquidity z-score (good) should map to low stress score
-            # Low liquidity z-score (bad) should map to high stress score
-            # direction=-1 in indicator config will invert this during normalization
-            # so that high stress → low final score (RED) and low stress → high final score (GREEN)
-            liquidity_stress = 50 - (liquidity_proxy * 15)  # Scale z-scores to reasonable range
-            liquidity_stress = np.clip(liquidity_stress, 0, 100)
+            # Apply 30-day smoothing to reduce noise from mixed data frequencies
+            # Liquidity is structural and shouldn't flip daily
+            window = 30
+            smoothed_liquidity = np.convolve(liquidity_proxy, np.ones(window)/window, mode='same')
+            
+            # Store the composite liquidity z-score (positive = more liquid = good)
+            # direction=-1 will keep positive values positive (high liquidity = high score = GREEN)
+            # negative values stay negative (low liquidity = low score = RED)
             
             # Update series with actual dates and values
-            series = [{"date": common_dates[i], "value": liquidity_stress[i]} for i in range(len(common_dates))]
+            series = [{"date": common_dates[i], "value": smoothed_liquidity[i]} for i in range(len(common_dates))]
             clean_values = series  # All values are valid
-            raw_series = liquidity_stress.tolist()
+            raw_series = smoothed_liquidity.tolist()
             
-            # Normalize for consistency
+            # Normalize for consistency - direction=-1 means high liquidity → high score
             normalized_series = normalize_series(
                 raw_series,
                 direction=ind.direction,
@@ -857,27 +858,69 @@ class ETLRunner:
                 lookback=ind.lookback_days_for_z,
             )
         elif code == "DFF":
-            # CRITICAL: For DFF, we store the ABSOLUTE RATE but score based on RATE-OF-CHANGE
-            # This allows charts to show meaningful data (e.g., 3.64%) while scoring measures momentum
-            # Rationale: Market stress comes from rate CHANGES, not absolute levels
-            # A 5% rate that's stable is less stressful than a 3% rate rising rapidly
+            # CRITICAL: For DFF, we store the ABSOLUTE RATE but score based on 6-MONTH RATE CHANGE
+            # This captures the policy cycle (tightening vs easing) rather than day-to-day noise
+            # Rationale: Market stress comes from sustained rate changes, not daily fluctuations
             
-            # Calculate rate of change for normalization (difference between consecutive points)
-            roc_series = []
-            for i in range(1, len(raw_series)):
-                change = raw_series[i] - raw_series[i-1]
-                roc_series.append(change)
+            import numpy as np
+            
+            # Calculate 6-month (126 trading days) cumulative rate change
+            lookback_period = 126  # ~6 months of trading days
+            rate_change_series = []
+            
+            for i in range(len(raw_series)):
+                if i < lookback_period:
+                    # Not enough history, use shorter lookback
+                    lookback_idx = 0
+                else:
+                    lookback_idx = i - lookback_period
+                
+                # Cumulative change over period
+                rate_change = raw_series[i] - raw_series[lookback_idx]
+                rate_change_series.append(rate_change)
             
             # Store absolute rates in database (raw_series unchanged)
-            # But normalize based on rate-of-change for scoring
-            # Positive ROC = rates rising = tightening = stress
-            # With direction=-1, this becomes: falling rates = positive score = stability (GREEN)
-            
-            # Pad roc_series with 0 at the beginning to match raw_series length
-            roc_series_padded = [0.0] + roc_series
+            # But normalize based on 6-month rate change for scoring
+            # Positive change = rates rising = tightening = stress
+            # With direction=1, rising rates → negative z-score (after inversion) → low stability score (RED)
+            # Falling rates → positive z-score → high stability score (GREEN)
             
             normalized_series = normalize_series(
-                roc_series_padded,
+                rate_change_series,
+                direction=ind.direction,
+                lookback=ind.lookback_days_for_z,
+            )
+        elif code == "UNRATE":
+            # CRITICAL: For UNRATE, we store ABSOLUTE RATE but score based on 6-MONTH CHANGE
+            # This captures employment trend deterioration/improvement rather than absolute level
+            # Rationale: Market stress comes from unemployment RISING, not the absolute rate
+            # Rising unemployment (positive change) = deteriorating conditions = stress
+            
+            import numpy as np
+            
+            # Calculate 6-month change (unemployment is monthly data)
+            # For monthly data, 6 months = 6 data points, but since we get daily fills, use ~126 days
+            lookback_period = min(126, len(raw_series) - 1)  # ~6 months
+            
+            unemp_change_series = []
+            for i in range(len(raw_series)):
+                if i < lookback_period:
+                    # Not enough history, use shorter lookback
+                    lookback_idx = 0
+                else:
+                    lookback_idx = i - lookback_period
+                
+                # Change over period (positive = unemployment rising = bad)
+                change = raw_series[i] - raw_series[lookback_idx]
+                unemp_change_series.append(change)
+            
+            # Store absolute unemployment rates in database (raw_series unchanged)
+            # But normalize based on 6-month change for scoring
+            # Positive change = unemployment rising = stress
+            # With direction=1, rising unemployment → inverted to low stability score (RED)
+            
+            normalized_series = normalize_series(
+                unemp_change_series,
                 direction=ind.direction,
                 lookback=ind.lookback_days_for_z,
             )

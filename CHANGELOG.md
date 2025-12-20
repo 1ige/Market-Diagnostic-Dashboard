@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Stability Score Invariant Enforcement** (2025-12-20)
+  - **CRITICAL**: Fixed direction inversion logic in analytics_stub.py - direction=1 now correctly inverts z-scores (was backwards)
+  - **CRITICAL**: Fixed 3 indicators with wrong direction values (DFF, BOND_MARKET_STABILITY, LIQUIDITY_PROXY changed from -1 to 1)
+  - Changed DFF to use 6-month cumulative rate change instead of daily ROC (eliminates saturation at 0/100, shows policy cycles)
+  - Changed UNRATE to use 6-month unemployment change instead of daily ROC (tracks labor market momentum, not absolute level)
+  - Added 30-day smoothing to LIQUIDITY_PROXY (reduced noise from mixed data frequencies)
+  - Standardized all indicator thresholds to 40/70 (RED <40, YELLOW 40-69, GREEN ≥70)
+  - Updated all frontend text to consistently use "stability score (higher = better)" semantics
+  - Created centralized stabilityConstants.ts for threshold management
+  - Removed direction field from frontend UI (backend normalization detail)
+  - Updated SystemBreakdown.tsx with corrected composite indicator descriptions and formulas
+  - Updated IndicatorDetail.tsx to clarify intermediate stress calculations vs final stability scores
+  - See docs/STABILITY_SCORE_ENFORCEMENT.md and docs/INDICATOR_TRANSFORMATION_VERIFICATION.md for complete details
+
 - **Project Structure Reorganization** (2025-12-19)
   - Created `docs/` folder and moved all documentation files (IMPLEMENTATION_STATUS.md, INDICATOR_FIXES.md, REFACTORING_SUMMARY.md)
   - Created `scripts/` folder and moved all launcher scripts (launch.ps1, launch.sh, install_market_stability_env.sh)

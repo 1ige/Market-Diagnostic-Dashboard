@@ -35,10 +35,10 @@ INDICATORS = [
         "source": "yahoo",
         "source_symbol": "^VIX",
         "category": "volatility",
-        "direction": 1,  # high VIX = stress
+        "direction": 1,  # high VIX = stress → inverted to stability score by backend
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.5,
     },
     {
@@ -47,10 +47,10 @@ INDICATORS = [
         "source": "yahoo",
         "source_symbol": "SPY",
         "category": "equity",
-        "direction": -1,  # price below EMA = stress
+        "direction": -1,  # price below EMA = stress → inverted to stability score by backend
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.4,
     },
     {
@@ -59,13 +59,12 @@ INDICATORS = [
         "source": "fred",
         "source_symbol": "DFF",
         "category": "rates",
-        # CRITICAL: direction=-1 because we store RATE-OF-CHANGE, not absolute rate
-        # Positive ROC = rates rising = tightening = stress (needs inversion)
-        # Negative ROC = rates falling = easing = stability (becomes positive score after inversion)
-        "direction": -1,
+        # Backend stores rate-of-change: rising rates = tightening = stress
+        # Direction=1 inverts positive ROC (stress) to low stability score
+        "direction": 1,
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.3,
     },
     {
@@ -74,10 +73,10 @@ INDICATORS = [
         "source": "fred",
         "source_symbol": "T10Y2Y",
         "category": "rates",
-        "direction": -1,  # inverted curve = stress
+        "direction": -1,  # inverted curve = stress → inverted to stability score by backend
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.6,
     },
     {
@@ -86,10 +85,10 @@ INDICATORS = [
         "source": "fred",
         "source_symbol": "UNRATE",
         "category": "employment",
-        "direction": 1,  # high unemployment = stress
+        "direction": 1,  # high unemployment = stress → inverted to stability score by backend
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.2,
     },
     {
@@ -98,10 +97,10 @@ INDICATORS = [
         "source": "DERIVED",
         "source_symbol": "CONSUMER_COMPOSITE",
         "category": "consumer",
-        "direction": -1,  # negative spread = stress
+        "direction": -1,  # negative spread = stress → inverted to stability score by backend
         "lookback_days_for_z": 252,
-        "threshold_green_max": 30,
-        "threshold_yellow_max": 60,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.4,
     },
     {
@@ -110,10 +109,10 @@ INDICATORS = [
         "source": "DERIVED",
         "source_symbol": "BOND_COMPOSITE",
         "category": "bonds",
-        "direction": -1,  # high score = healthy bond market, low = stress
+        "direction": 1,  # Backend outputs stress score (high = stress, low = healthy) → invert to stability
         "lookback_days_for_z": 252,
-        "threshold_green_max": 65,
-        "threshold_yellow_max": 35,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.8,
     },
     {
@@ -122,10 +121,10 @@ INDICATORS = [
         "source": "DERIVED",
         "source_symbol": "LIQUIDITY_COMPOSITE",
         "category": "liquidity",
-        "direction": -1,  # high liquidity = stability, low liquidity = stress
+        "direction": -1,  # Backend outputs liquidity z-score (high = more liquid = stable)
         "lookback_days_for_z": 252,
-        "threshold_green_max": 60,
-        "threshold_yellow_max": 30,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.6,
     },
     {
@@ -134,10 +133,10 @@ INDICATORS = [
         "source": "DERIVED",
         "source_symbol": "ANALYST_ANXIETY_COMPOSITE",
         "category": "sentiment",
-        "direction": -1,  # high composite score = calm/stable, low score = anxious/stress
+        "direction": -1,  # Backend outputs stability score (high = calm/stable, low = anxious)
         "lookback_days_for_z": 520,
-        "threshold_green_max": 35,
-        "threshold_yellow_max": 65,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.7,
     },
     {
@@ -146,10 +145,10 @@ INDICATORS = [
         "source": "DERIVED",
         "source_symbol": "SENTIMENT_COMPOSITE",
         "category": "sentiment",
-        "direction": -1,  # high sentiment = confidence/stability, low = retrenchment
+        "direction": -1,  # Backend outputs stability score (high sentiment = high score)
         "lookback_days_for_z": 520,
-        "threshold_green_max": 35,
-        "threshold_yellow_max": 65,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
         "weight": 1.6,
     },
 ]
