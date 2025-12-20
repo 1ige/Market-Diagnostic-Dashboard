@@ -840,8 +840,8 @@ export default function IndicatorDetail() {
                         dot={false}
                       />
                     )}
-                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
-                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
+                    <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
+                    <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
                   </LineChart>
                 </ResponsiveContainer>
               );
@@ -915,8 +915,8 @@ export default function IndicatorDetail() {
                       strokeWidth={3}
                       dot={false}
                     />
-                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
-                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
+                    <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
+                    <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
                   </LineChart>
                 </ResponsiveContainer>
               );
@@ -1092,8 +1092,8 @@ export default function IndicatorDetail() {
                         dot={false}
                       />
                     )}
-                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
-                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
+                    <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN', position: 'right', fill: '#10b981' }} />
+                    <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED', position: 'right', fill: '#ef4444' }} />
                   </LineChart>
                 </ResponsiveContainer>
               );
@@ -1167,8 +1167,8 @@ export default function IndicatorDetail() {
                       strokeWidth={3}
                       dot={false}
                     />
-                    <ReferenceLine y={65} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
-                    <ReferenceLine y={35} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
+                    <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" label={{ value: 'GREEN Threshold', position: 'insideTopRight', fill: '#10b981', fontSize: 11 }} />
+                    <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" label={{ value: 'RED Threshold', position: 'insideBottomRight', fill: '#ef4444', fontSize: 11 }} />
                   </LineChart>
                 </ResponsiveContainer>
               );

@@ -312,8 +312,8 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
                     new Date(label).toLocaleDateString()
                   }
                 />
-                <ReferenceLine y={40} stroke="#10b981" strokeDasharray="3 3" opacity={0.3} />
-                <ReferenceLine y={70} stroke="#eab308" strokeDasharray="3 3" opacity={0.3} />
+                <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" opacity={0.3} />
+                <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
                 <Line
                   type="monotone"
                   dataKey="composite_score"
