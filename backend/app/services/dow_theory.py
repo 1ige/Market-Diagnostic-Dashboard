@@ -81,21 +81,22 @@ class DowTheoryCalculator:
         
         return ema
     
-    def calculate_historical(self) -> List[Dict]:
+    def calculate_historical(self, days: int = 90) -> List[Dict]:
         """Calculate historical Dow Theory metrics for charting."""
+        # Fetch enough history to cover the requested date range + lookback
+        fetch_days = max(days + self.trend_length + 10, 120)
         # Fetch index data with actual dates
-        dji_data, dji_dates = self.fetch_data("^DJI", return_dates=True)
-        djt_data, djt_dates = self.fetch_data("^DJT", return_dates=True)
-        dju_data, dju_dates = self.fetch_data("^DJU", return_dates=True)
+        dji_data, dji_dates = self.fetch_data("^DJI", days=fetch_days, return_dates=True)
+        djt_data, djt_dates = self.fetch_data("^DJT", days=fetch_days, return_dates=True)
+        dju_data, dju_dates = self.fetch_data("^DJU", days=fetch_days, return_dates=True)
         
         if any(d is None for d in [dji_data, djt_data, dju_data]):
             return []
         
-        # Calculate for last 90 data points (or available data)
         history = []
-        num_points = min(90, len(dji_data) - self.trend_length)
-        start_idx = len(dji_data) - num_points
-        
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        start_idx = self.trend_length
+
         for i in range(start_idx, len(dji_data)):
             dia_roc = self.compute_roc(dji_data[:i+1])
             djt_roc = self.compute_roc(djt_data[:i+1])
@@ -108,9 +109,13 @@ class DowTheoryCalculator:
             
             # Use actual date from the data
             timestamp = dji_dates[i].to_pydatetime()
-            
+            timestamp_naive = timestamp.replace(tzinfo=None)
+
+            if timestamp_naive < cutoff:
+                continue
+
             history.append({
-                "timestamp": timestamp.isoformat(),
+                "timestamp": timestamp_naive.isoformat(),
                 "market_direction": round(dir_raw, 2),
             })
         
@@ -303,10 +308,10 @@ def get_dow_theory_data() -> Dict:
     return _calculator.calculate()
 
 
-def get_dow_theory_history() -> List[Dict]:
+def get_dow_theory_history(days: int = 90) -> List[Dict]:
     """Get historical Dow Theory metrics for charting."""
     global _calculator
     if _calculator is None:
         _calculator = DowTheoryCalculator()
     
-    return _calculator.calculate_historical()
+    return _calculator.calculate_historical(days=days)

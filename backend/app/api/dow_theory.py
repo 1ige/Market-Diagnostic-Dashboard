@@ -30,10 +30,10 @@ async def get_dow_theory():
 
 
 @router.get("/history")
-async def get_dow_theory_hist():
+async def get_dow_theory_hist(days: int = 90):
     """
     Get historical Dow Theory market direction for charting.
     
-    Returns 90 days of market direction data points.
+    Returns market direction data points for the requested range.
     """
-    return get_dow_theory_history()
+    return get_dow_theory_history(days=days)

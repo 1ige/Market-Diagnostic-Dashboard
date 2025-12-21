@@ -78,18 +78,24 @@ function IndicatorRow({ indicator }: { indicator: IndicatorStatus }) {
   const { data: history } = useApi<IndicatorHistoryPoint[]>(
     `/indicators/${indicator.code}/history?days=60`
   );
+  const displayName =
+    indicator.code === "ANALYST_ANXIETY" ? "Analyst Confidence" : indicator.name;
+  const routeCode =
+    indicator.code === "ANALYST_ANXIETY" ? "ANALYST_CONFIDENCE" : indicator.code;
+  const displayCode =
+    indicator.code === "ANALYST_ANXIETY" ? "ANALYST_CONFIDENCE" : indicator.code;
 
   return (
     <tr className="border-t border-stealth-700">
       <td className="px-4 py-3">
         <Link
-          to={`/indicators/${indicator.code}`}
+          to={`/indicators/${routeCode}`}
           className="text-accent-yellow hover:underline"
         >
-          {indicator.code}
+          {displayCode}
         </Link>
       </td>
-      <td className="px-4 py-3">{indicator.name}</td>
+      <td className="px-4 py-3">{displayName}</td>
       <td className="px-4 py-3">{indicator.score}</td>
       <td className="px-4 py-3">{indicator.state}</td>
       <td className="px-4 py-3">
@@ -103,14 +109,20 @@ function IndicatorCard({ indicator }: { indicator: IndicatorStatus }) {
   const { data: history } = useApi<IndicatorHistoryPoint[]>(
     `/indicators/${indicator.code}/history?days=60`
   );
+  const displayName =
+    indicator.code === "ANALYST_ANXIETY" ? "Analyst Confidence" : indicator.name;
+  const routeCode =
+    indicator.code === "ANALYST_ANXIETY" ? "ANALYST_CONFIDENCE" : indicator.code;
+  const displayCode =
+    indicator.code === "ANALYST_ANXIETY" ? "ANALYST_CONFIDENCE" : indicator.code;
 
   return (
-    <Link to={`/indicators/${indicator.code}`}>
+    <Link to={`/indicators/${routeCode}`}>
       <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-3 hover:bg-stealth-750 transition">
         <div className="flex items-start justify-between mb-2">
           <div>
-            <div className="text-accent-yellow font-semibold text-sm">{indicator.code}</div>
-            <div className="text-stealth-300 text-xs mt-0.5">{indicator.name}</div>
+            <div className="text-accent-yellow font-semibold text-sm">{displayCode}</div>
+            <div className="text-stealth-300 text-xs mt-0.5">{displayName}</div>
           </div>
           <div className={getStateBadgeClass(indicator.state)}>
             {indicator.state}

@@ -37,7 +37,11 @@ interface HistoryPoint {
   market_direction: number;
 }
 
-const DowTheoryWidget = () => {
+interface DowTheoryWidgetProps {
+  trendPeriod?: number;
+}
+
+const DowTheoryWidget = ({ trendPeriod = 90 }: DowTheoryWidgetProps) => {
   const [data, setData] = useState<DowTheoryData | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,9 +52,12 @@ const DowTheoryWidget = () => {
     const fetchData = async () => {
       try {
         const apiUrl = getLegacyApiUrl();
+        const historyUrl = trendPeriod
+          ? `${apiUrl}/dow-theory/history?days=${trendPeriod}`
+          : `${apiUrl}/dow-theory/history`;
         const [currentResponse, historyResponse] = await Promise.all([
           fetch(`${apiUrl}/dow-theory`),
-          fetch(`${apiUrl}/dow-theory/history`),
+          fetch(historyUrl),
         ]);
         
         if (!currentResponse.ok) throw new Error("Failed to fetch Dow Theory data");
@@ -73,7 +80,7 @@ const DowTheoryWidget = () => {
     const interval = setInterval(fetchData, 60000); // Refresh every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [trendPeriod]);
 
   if (loading) {
     return (

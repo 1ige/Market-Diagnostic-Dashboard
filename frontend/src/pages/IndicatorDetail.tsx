@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { IndicatorHistoryPoint } from "../types";
 import StateSparkline from "../components/widgets/StateSparkline";
@@ -180,9 +180,20 @@ interface AnalystAnxietyComponentData {
 }
 
 export default function IndicatorDetail() {
-  const { code } = useParams();
+  const { code: routeCode } = useParams();
+  const navigate = useNavigate();
+  const normalizedCode = routeCode?.toUpperCase();
+  const apiCode =
+    normalizedCode === "ANALYST_CONFIDENCE" ? "ANALYST_ANXIETY" : normalizedCode;
+  const isAnalystConfidence = apiCode === "ANALYST_ANXIETY";
   const [isRefetching, setIsRefetching] = React.useState(false);
   const [refetchMessage, setRefetchMessage] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (normalizedCode === "ANALYST_ANXIETY") {
+      navigate("/indicators/ANALYST_CONFIDENCE", { replace: true });
+    }
+  }, [normalizedCode, navigate]);
   
   // Determine appropriate lookback period based on data freshness
   const getHistoryDays = () => {
@@ -191,30 +202,43 @@ export default function IndicatorDetail() {
     return 730;
   };
   
-  const { data: meta } = useApi<IndicatorDetailResponse>(`/indicators/${code}`);
+  const { data: meta } = useApi<IndicatorDetailResponse>(
+    apiCode ? `/indicators/${apiCode}` : ""
+  );
   const { data: history, refetch: refetchHistory } = useApi<IndicatorHistoryPoint[]>(
-    `/indicators/${code}/history?days=${getHistoryDays()}`
+    apiCode ? `/indicators/${apiCode}/history?days=${getHistoryDays()}` : ""
   );
   const { data: components, refetch: refetchComponents } = useApi<ComponentData[]>(
-    code === "CONSUMER_HEALTH" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+    apiCode === "CONSUMER_HEALTH"
+      ? `/indicators/${apiCode}/components?days=${getHistoryDays()}`
+      : ""
   );
   const { data: bondComponents, refetch: refetchBondComponents } = useApi<BondComponentData[]>(
-    code === "BOND_MARKET_STABILITY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+    apiCode === "BOND_MARKET_STABILITY"
+      ? `/indicators/${apiCode}/components?days=${getHistoryDays()}`
+      : ""
   );
   const { data: liquidityComponents, refetch: refetchLiquidityComponents } = useApi<LiquidityComponentData[]>(
-    code === "LIQUIDITY_PROXY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+    apiCode === "LIQUIDITY_PROXY"
+      ? `/indicators/${apiCode}/components?days=${getHistoryDays()}`
+      : ""
   );
   const { data: analystAnxietyComponents, refetch: refetchAnalystAnxietyComponents } = useApi<AnalystAnxietyComponentData[]>(
-    code === "ANALYST_ANXIETY" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+    apiCode === "ANALYST_ANXIETY"
+      ? `/indicators/${apiCode}/components?days=${getHistoryDays()}`
+      : ""
   );
   const { data: sentimentCompositeComponents, refetch: refetchSentimentCompositeComponents } = useApi<SentimentCompositeComponentData[]>(
-    code === "SENTIMENT_COMPOSITE" ? `/indicators/${code}/components?days=${getHistoryDays()}` : ""
+    apiCode === "SENTIMENT_COMPOSITE"
+      ? `/indicators/${apiCode}/components?days=${getHistoryDays()}`
+      : ""
   );
 
   const handleClearAndRefetch = async () => {
-    if (!code) return;
+    if (!apiCode) return;
     
-    if (!confirm(`Are you sure you want to clear and refetch all data for ${code}? This will delete all existing records and fetch fresh data (365 days).`)) {
+    const confirmLabel = isAnalystConfidence ? "Analyst Confidence" : apiCode;
+    if (!confirm(`Are you sure you want to clear and refetch all data for ${confirmLabel}? This will delete all existing records and fetch fresh data (365 days).`)) {
       return;
     }
     
@@ -223,7 +247,7 @@ export default function IndicatorDetail() {
     
     try {
       const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
-      const response = await fetch(`${apiUrl}/admin/clear-refetch/${code}?days=365`, {
+      const response = await fetch(`${apiUrl}/admin/clear-refetch/${apiCode}?days=365`, {
         method: 'POST'
       });
       
@@ -259,7 +283,11 @@ export default function IndicatorDetail() {
     }
   };
 
-  if (!code) return <div className="p-3 md:p-6 text-gray-200">No code provided.</div>;
+  if (!apiCode) {
+    return <div className="p-3 md:p-6 text-gray-200">No indicator code provided.</div>;
+  }
+
+  const displayName = isAnalystConfidence ? "Analyst Confidence" : meta?.name ?? apiCode;
   
   // Check if data is stale and needs extended view
   const getChartRange = () => {
@@ -296,7 +324,7 @@ export default function IndicatorDetail() {
   return (
     <div className="p-3 md:p-6 text-gray-200 max-w-7xl mx-auto">
       <h2 className="text-2xl sm:text-3xl font-bold mb-4 md:mb-6">
-        {meta?.name ?? code}
+        {displayName}
       </h2>
 
       {/* Metadata Section */}
@@ -332,7 +360,7 @@ export default function IndicatorDetail() {
       )}
 
       {/* Component Breakdown for Consumer Health */}
-      {code === "CONSUMER_HEALTH" && components && components.length > 0 && (
+      {apiCode === "CONSUMER_HEALTH" && components && components.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-2">
@@ -341,6 +369,21 @@ export default function IndicatorDetail() {
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 font-mono break-all">
             Consumer Health = [(PCE Growth - CPI Growth) + (PI Growth - CPI Growth)] / 2
           </p>
+          <button
+            className="mb-4 px-3 py-1 bg-blue-900 text-blue-200 rounded hover:bg-blue-800 text-xs"
+            onClick={() => {
+              // Debug: log the latest component object
+              if (components && components.length > 0) {
+                // eslint-disable-next-line no-console
+                console.log('DEBUG: Latest Consumer Health component:', components[components.length - 1]);
+              } else {
+                // eslint-disable-next-line no-console
+                console.log('DEBUG: No components loaded');
+              }
+            }}
+          >
+            Debug Components
+          </button>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-2 md:p-3 mb-4 md:mb-6">
             <p className="text-xs text-stealth-300">
               <span className="text-green-400">Positive values</span> indicate spending and income are outpacing inflation (healthy consumer capacity). 
@@ -455,7 +498,7 @@ export default function IndicatorDetail() {
       )}
 
       {/* Component Breakdown for Bond Market Stability */}
-      {code === "BOND_MARKET_STABILITY" && bondComponents && bondComponents.length > 0 && (
+      {apiCode === "BOND_MARKET_STABILITY" && bondComponents && bondComponents.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
@@ -575,7 +618,7 @@ export default function IndicatorDetail() {
       )}
 
       {/* Component Breakdown for Liquidity Proxy */}
-      {code === "LIQUIDITY_PROXY" && liquidityComponents && liquidityComponents.length > 0 && (
+      {apiCode === "LIQUIDITY_PROXY" && liquidityComponents && liquidityComponents.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
@@ -677,7 +720,7 @@ export default function IndicatorDetail() {
       )}
 
       {/* Component Breakdown for Analyst Confidence */}
-      {code === "ANALYST_ANXIETY" && analystAnxietyComponents && analystAnxietyComponents.length > 0 && (
+      {apiCode === "ANALYST_ANXIETY" && analystAnxietyComponents && analystAnxietyComponents.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">
@@ -926,7 +969,7 @@ export default function IndicatorDetail() {
       )}
 
       {/* Component Breakdown for Sentiment Composite */}
-      {code === "SENTIMENT_COMPOSITE" && sentimentCompositeComponents && sentimentCompositeComponents.length > 0 && (
+      {apiCode === "SENTIMENT_COMPOSITE" && sentimentCompositeComponents && sentimentCompositeComponents.length > 0 && (
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
           <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">Component Breakdown</h3>
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 break-all">

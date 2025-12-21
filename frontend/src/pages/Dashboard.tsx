@@ -167,11 +167,11 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6 mb-3 md:mb-6">
         <SystemOverviewWidget trendPeriod={trendPeriod} />
-        <DowTheoryWidget />
+        <DowTheoryWidget trendPeriod={trendPeriod} />
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
         {indicators?.map((i) => (
           <IndicatorCard key={i.code} indicator={i} />
         ))}

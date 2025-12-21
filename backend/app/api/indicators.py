@@ -3,7 +3,7 @@ from typing import List
 
 from app.models.indicator import Indicator
 from app.models.indicator_value import IndicatorValue
-from app.services.indicator_metadata import get_indicator_metadata
+from app.services.indicator_metadata import get_indicator_metadata, normalize_indicator_code
 from app.utils.db_helpers import get_db_session
 from app.utils.response_helpers import (
     format_indicator_basic,
@@ -25,10 +25,11 @@ def list_indicators():
 @router.get("/indicators/{code}")
 def get_indicator_detail(code: str):
     """Return metadata + latest value for a single indicator."""
+    canonical_code = normalize_indicator_code(code)
     with get_db_session() as db:
         ind: Indicator | None = (
             db.query(Indicator)
-            .filter(Indicator.code == code)
+            .filter(Indicator.code == canonical_code)
             .first()
         )
 
@@ -42,7 +43,7 @@ def get_indicator_detail(code: str):
             .first()
         )
 
-        metadata = get_indicator_metadata(code)
+        metadata = get_indicator_metadata(canonical_code)
         
         return format_indicator_detail(ind, latest, metadata)
 
@@ -52,10 +53,11 @@ def get_indicator_history(code: str, days: int = 365):
     """Return time-series history for a single indicator (raw + score + state)."""
     from datetime import datetime, timedelta
 
+    canonical_code = normalize_indicator_code(code)
     with get_db_session() as db:
         ind: Indicator | None = (
             db.query(Indicator)
-            .filter(Indicator.code == code)
+            .filter(Indicator.code == canonical_code)
             .first()
         )
 
@@ -440,7 +442,7 @@ async def get_analyst_anxiety_components(days: int = 365):
     common_dates = sorted(required_dates)
     
     if len(common_dates) < 30:
-        raise HTTPException(status_code=500, detail="Insufficient data for Analyst Anxiety components")
+        raise HTTPException(status_code=500, detail="Insufficient data for Analyst Confidence components")
     
     # Forward fill optional components
     def forward_fill_to_dates(data_dict, target_dates):
@@ -590,6 +592,12 @@ async def get_analyst_anxiety_components(days: int = 365):
     result = [r for r in result if r["date"] >= cutoff_date]
     
     return result
+
+
+@router.get("/indicators/ANALYST_CONFIDENCE/components")
+async def get_analyst_confidence_components(days: int = 365):
+    """Alias route for Analyst Confidence composite components."""
+    return await get_analyst_anxiety_components(days=days)
 
 
 @router.get("/indicators/SENTIMENT_COMPOSITE/components")
@@ -774,7 +782,8 @@ async def get_indicator_components(code: str, days: int = 365):
     from datetime import datetime, timedelta
     from app.services.ingestion.fred_client import FredClient
     
-    if code != "CONSUMER_HEALTH":
+    canonical_code = normalize_indicator_code(code)
+    if canonical_code != "CONSUMER_HEALTH":
         raise HTTPException(
             status_code=400, 
             detail=f"Component breakdown not available for {code}"

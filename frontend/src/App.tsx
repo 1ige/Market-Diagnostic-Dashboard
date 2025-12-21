@@ -3,7 +3,7 @@ import Topbar from "./components/layout/Topbar";
 import Dashboard from "./pages/Dashboard";
 import Indicators from "./pages/Indicators";
 import Alerts from "./pages/Alerts";
-import AnalystConfidenceDetail from "./pages/AnalystConfidenceDetail";
+import IndicatorDetail from "./pages/IndicatorDetail";
 import SystemBreakdown from "./pages/SystemBreakdown";
 import MarketMap from "./pages/MarketMap";
 
@@ -16,7 +16,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/indicators" element={<Indicators />} />
-          <Route path="/indicators/:code" element={<AnalystConfidenceDetail />} />
+          <Route path="/indicators/:code" element={<IndicatorDetail />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/system-breakdown" element={<SystemBreakdown />} />
           <Route path="/market-map" element={<MarketMap />} />

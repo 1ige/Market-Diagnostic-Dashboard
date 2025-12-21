@@ -8,6 +8,7 @@ from datetime import datetime
 from app.models.indicator import Indicator
 from app.models.indicator_value import IndicatorValue
 from app.models.alert import Alert
+from app.services.indicator_metadata import get_display_indicator_name
 
 
 def format_indicator_basic(indicator: Indicator) -> Dict[str, Any]:
@@ -20,9 +21,10 @@ def format_indicator_basic(indicator: Indicator) -> Dict[str, Any]:
     Returns:
         Dictionary with basic indicator metadata
     """
+    display_name = get_display_indicator_name(indicator.code, indicator.name)
     return {
         "code": indicator.code,
-        "name": indicator.name,
+        "name": display_name,
         "source": indicator.source,
         "source_symbol": indicator.source_symbol,
         "category": indicator.category,
@@ -163,10 +165,11 @@ def format_indicator_status(indicator: Indicator, value: Optional[IndicatorValue
     Returns:
         Dictionary with indicator status
     """
+    display_name = get_display_indicator_name(indicator.code, indicator.name)
     if not value:
         return {
             "code": indicator.code,
-            "name": indicator.name,
+            "name": display_name,
             "raw_value": None,
             "score": None,
             "state": "UNKNOWN",
@@ -175,7 +178,7 @@ def format_indicator_status(indicator: Indicator, value: Optional[IndicatorValue
     
     return {
         "code": indicator.code,
-        "name": indicator.name,
+        "name": display_name,
         "raw_value": value.raw_value,
         "score": value.score,
         "state": value.state,

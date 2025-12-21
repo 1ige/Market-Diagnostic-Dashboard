@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.services.ingestion.etl_runner import ETLRunner
+from app.services.indicator_metadata import normalize_indicator_code, get_display_indicator_name
 
 router = APIRouter()
 etl = ETLRunner()
@@ -24,10 +25,12 @@ async def run_all_indicators():
 async def run_single_indicator(code: str):
     """Trigger ingestion for a single indicator."""
     try:
-        result = await etl.ingest_indicator(code)
+        canonical_code = normalize_indicator_code(code)
+        result = await etl.ingest_indicator(canonical_code)
         status = etl.update_system_status()
+        display_label = get_display_indicator_name(canonical_code, canonical_code)
         return {
-            "message": f"Ingestion completed for {code}",
+            "message": f"Ingestion completed for {display_label}",
             "result": result,
             "system_status": status
         }
@@ -80,8 +83,10 @@ async def clear_and_refetch_indicator(code: str, days: int = 365):
     try:
         db = SessionLocal()
         
+        canonical_code = normalize_indicator_code(code)
+        display_label = get_display_indicator_name(canonical_code, canonical_code)
         # Find the indicator
-        indicator = db.query(Indicator).filter(Indicator.code == code).first()
+        indicator = db.query(Indicator).filter(Indicator.code == canonical_code).first()
         if not indicator:
             db.close()
             raise HTTPException(status_code=404, detail=f"Indicator {code} not found")
@@ -95,11 +100,11 @@ async def clear_and_refetch_indicator(code: str, days: int = 365):
         db.close()
         
         # Refetch the data
-        result = await etl.ingest_indicator(code, backfill_days=days)
+        result = await etl.ingest_indicator(canonical_code, backfill_days=days)
         status = etl.update_system_status()
         
         return {
-            "message": f"Cleared {deleted_count} records and refetched {code}",
+            "message": f"Cleared {deleted_count} records and refetched {display_label}",
             "deleted_records": deleted_count,
             "result": result,
             "system_status": status

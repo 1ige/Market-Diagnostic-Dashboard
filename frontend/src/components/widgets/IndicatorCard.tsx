@@ -83,10 +83,15 @@ export default function IndicatorCard({ indicator }: Props) {
     </svg>
   );
 
+  const displayName =
+    indicator.code === "ANALYST_ANXIETY" ? "Analyst Confidence" : indicator.name;
+  const routeCode =
+    indicator.code === "ANALYST_ANXIETY" ? "ANALYST_CONFIDENCE" : indicator.code;
+
   return (
-    <Link to={`/indicators/${indicator.code}`}>
+    <Link to={`/indicators/${routeCode}`}>
       <div className="bg-stealth-800 rounded p-4 shadow hover:bg-stealth-700 transition">
-        <div className="text-gray-300 text-sm">{indicator.name}</div>
+        <div className="text-gray-300 text-sm">{displayName}</div>
         <div className="text-2xl font-semibold mt-2">
           {formatValue(indicator.raw_value, 2)}
         </div>

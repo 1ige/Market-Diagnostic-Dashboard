@@ -396,7 +396,8 @@ INDICATOR_METADATA = {
 
 def get_indicator_metadata(code: str) -> dict:
     """Get metadata for an indicator."""
-    return INDICATOR_METADATA.get(code, {
+    normalized_code = normalize_indicator_code(code)
+    return INDICATOR_METADATA.get(normalized_code, {
         "name": code,
         "description": "No description available.",
         "relevance": "Not specified.",
@@ -410,3 +411,22 @@ def get_indicator_metadata(code: str) -> dict:
 def get_all_metadata() -> dict:
     """Get metadata for all indicators."""
     return INDICATOR_METADATA
+
+
+ALIAS_TO_CANONICAL = {
+    "ANALYST_CONFIDENCE": "ANALYST_ANXIETY",
+}
+
+DISPLAY_NAME_OVERRIDES = {
+    "ANALYST_ANXIETY": "Analyst Confidence",
+}
+
+
+def normalize_indicator_code(code: str) -> str:
+    """Map alias codes to their canonical indicator codes."""
+    return ALIAS_TO_CANONICAL.get(code, code)
+
+
+def get_display_indicator_name(code: str, name: str) -> str:
+    """Return a display-friendly name for an indicator code."""
+    return DISPLAY_NAME_OVERRIDES.get(code, name)

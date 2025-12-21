@@ -42,6 +42,9 @@ interface IndicatorMetadata {
   // All scores displayed are stability scores (higher = better)
 }
 
+const getIndicatorDisplayName = (code: string, name: string) =>
+  code === "ANALYST_ANXIETY" ? "Analyst Confidence" : name;
+
 export default function SystemBreakdown() {
   const { data: indicators } = useApi<IndicatorStatus[]>("/indicators");
   const [metadata, setMetadata] = useState<IndicatorMetadata[]>([]);
@@ -73,7 +76,7 @@ export default function SystemBreakdown() {
         // Use hardcoded weights (TODO: fetch from backend)
         const metaWithWeights: IndicatorMetadata[] = indicatorData.map((ind: IndicatorStatus) => ({
           code: ind.code,
-          name: ind.name,
+          name: getIndicatorDisplayName(ind.code, ind.name),
           weight: getIndicatorWeight(ind.code),
         }));
         
@@ -121,7 +124,12 @@ export default function SystemBreakdown() {
         const historyPoints: SystemHistoryPoint[] = [];
         
         // Get indicator names for heatmap
-        const indicatorNames = new Map(indicatorData.map((ind: IndicatorStatus) => [ind.code, ind.name]));
+        const indicatorNames = new Map(
+          indicatorData.map((ind: IndicatorStatus) => [
+            ind.code,
+            getIndicatorDisplayName(ind.code, ind.name),
+          ])
+        );
         
         // Process each date
         const sortedDates = Array.from(dateIndicatorMap.keys()).sort();
@@ -488,7 +496,7 @@ export default function SystemBreakdown() {
                   <div>CONSUMER_HEALTH Score: 62 × Weight: 1.4 = 86.8</div>
                   <div>BOND_MARKET Score: 58 × Weight: 1.8 = 104.4</div>
                   <div>LIQUIDITY Score: 71 × Weight: 1.6 = 113.6</div>
-                  <div>ANALYST_ANXIETY Score: 78 × Weight: 1.7 = 132.6</div>
+                  <div>Analyst Confidence Score: 78 × Weight: 1.7 = 132.6</div>
                   <div>SENTIMENT Score: 82 × Weight: 1.6 = 131.2</div>
                   <div className="pt-2 border-t border-stealth-700 mt-2">Total Weighted: 1062.1 / Total Weight: 14.6 = <strong className="text-green-400">72.7 (GREEN)</strong></div>
                   <div className="text-stealth-400 text-xs mt-2">Note: Score ≥70 indicates stable market conditions.</div>
@@ -534,7 +542,7 @@ export default function SystemBreakdown() {
                   CONSUMER_HEALTH: "Derived indicator combining Personal Consumption Expenditures, Personal Income, and CPI to assess real consumer purchasing power and spending capacity.",
                   BOND_MARKET_STABILITY: "Composite of credit spreads (HY, IG), yield curve stress, rate momentum, and Treasury volatility. Captures systemic stress in fixed income markets.",
                   LIQUIDITY_PROXY: "Combines M2 money supply growth, Fed balance sheet changes, and overnight reverse repo usage. Measures systemic liquidity availability and tightness.",
-                  ANALYST_ANXIETY: "Composite sentiment indicator aggregating VIX (equity vol), MOVE (rates vol), high-yield credit spreads, and equity risk premium. Captures institutional fear.",
+                  ANALYST_ANXIETY: "Composite sentiment indicator aggregating VIX (equity vol), MOVE (rates vol), high-yield credit spreads, and equity risk premium. Captures institutional confidence.",
                   SENTIMENT_COMPOSITE: "Consumer & corporate confidence composite from Michigan Consumer Sentiment, NFIB Small Business Optimism, ISM New Orders, and CapEx commitments. Forward-looking demand indicator."
                 };
                 
