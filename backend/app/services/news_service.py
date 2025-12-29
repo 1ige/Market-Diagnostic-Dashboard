@@ -1,7 +1,10 @@
 import calendar
+import json
 import logging
+import os
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Dict, Iterable, List, Optional
 
 import feedparser
@@ -20,6 +23,11 @@ MAX_ITEMS_PER_TICKER = 10
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; MarketDashboardNews/1.0; +https://example.local/)"
 }
+
+# Static presets for index-wide ticker lists loaded from JSON.
+PRESET_TICKERS_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "ticker_presets.json")
+)
 
 # Seed list for the ticker cache when no rows exist yet.
 DEFAULT_TICKERS: Dict[str, List[str]] = {
@@ -40,6 +48,57 @@ DEFAULT_TICKERS: Dict[str, List[str]] = {
 
 def normalize_symbol(symbol: str) -> str:
     return symbol.strip().upper()
+
+
+@lru_cache(maxsize=1)
+def _load_ticker_presets() -> List[Dict[str, object]]:
+    try:
+        with open(PRESET_TICKERS_PATH, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        logger.warning("Ticker preset file missing: %s", PRESET_TICKERS_PATH)
+        return []
+    except Exception as exc:
+        logger.warning("Failed to load ticker presets: %s", exc)
+        return []
+
+    presets = payload.get("presets")
+    if isinstance(presets, list):
+        return presets
+    return []
+
+
+def list_news_presets() -> List[Dict[str, object]]:
+    presets = _load_ticker_presets()
+    results: List[Dict[str, object]] = []
+
+    for preset in presets:
+        preset_id = preset.get("id")
+        label = preset.get("label") or preset_id
+        sectors = preset.get("sectors") or {}
+        tickers: List[Dict[str, str]] = []
+
+        if not preset_id:
+            continue
+
+        for sector, symbols in sectors.items():
+            sector_name = str(sector).strip() or "GENERAL"
+            for symbol in symbols or []:
+                if not symbol:
+                    continue
+                tickers.append({
+                    "symbol": normalize_symbol(str(symbol)),
+                    "sector": sector_name,
+                })
+
+        results.append({
+            "id": preset_id,
+            "label": label,
+            "count": len(tickers),
+            "tickers": tickers,
+        })
+
+    return results
 
 
 def ensure_default_tickers(db) -> None:

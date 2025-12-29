@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useApi } from "../hooks/useApi";
 import { buildApiUrl } from "../utils/apiUtils";
 import { EmptyState, ErrorState, LoadingState } from "../utils/componentUtils";
@@ -22,6 +22,17 @@ interface NewsTicker {
 interface NewsTickerResponse {
   count: number;
   tickers: NewsTicker[];
+}
+
+interface NewsTickerPreset {
+  id: string;
+  label: string;
+  count: number;
+  tickers: NewsTicker[];
+}
+
+interface NewsTickerPresetResponse {
+  presets: NewsTickerPreset[];
 }
 
 const HOURS_OPTIONS = [
@@ -82,7 +93,9 @@ export default function MarketNews() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTickerOpen, setIsTickerOpen] = useState(true);
   const [selectedTicker, setSelectedTicker] = useState("ALL");
+  const [selectedPreset, setSelectedPreset] = useState("custom");
   const [tickerDraft, setTickerDraft] = useState("");
+  const [customDraft, setCustomDraft] = useState("");
   const [tickerMessage, setTickerMessage] = useState<string | null>(null);
   const [draftInitialized, setDraftInitialized] = useState(false);
 
@@ -100,14 +113,24 @@ export default function MarketNews() {
     refetch: refetchTickers,
   } = useApi<NewsTickerResponse>("/news/tickers");
 
+  const { data: presetData } = useApi<NewsTickerPresetResponse>(
+    "/news/ticker-presets"
+  );
+
   useEffect(() => {
     if (!draftInitialized && tickerData?.tickers) {
-      setTickerDraft(formatTickerEditor(tickerData.tickers));
+      const formatted = formatTickerEditor(tickerData.tickers);
+      setCustomDraft(formatted);
+      if (selectedPreset === "custom") {
+        setTickerDraft(formatted);
+      }
       setDraftInitialized(true);
     }
-  }, [draftInitialized, tickerData]);
+  }, [draftInitialized, selectedPreset, tickerData]);
 
-  // Build the dropdown options from cached articles so filtering stays in sync.
+  const presetOptions = presetData?.presets ?? [];
+
+  // Build the dropdown options from cached articles to stay in sync with the cache.
   const availableTickers = Array.from(
     new Set((articles ?? []).map((article) => article.symbol))
   ).sort();
@@ -124,6 +147,32 @@ export default function MarketNews() {
       ? articles
       : (articles ?? []).filter((article) => article.symbol === selectedTicker);
 
+  const handlePresetChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextPreset = event.target.value;
+    setSelectedPreset(nextPreset);
+    setTickerMessage(null);
+
+    if (nextPreset === "custom") {
+      const fallback =
+        customDraft ||
+        (tickerData?.tickers ? formatTickerEditor(tickerData.tickers) : "");
+      setTickerDraft(fallback);
+      if (!customDraft && tickerData?.tickers) {
+        setCustomDraft(fallback);
+      }
+      return;
+    }
+
+    const preset = presetOptions.find((option) => option.id === nextPreset);
+    if (!preset) {
+      setTickerMessage("Preset not available.");
+      return;
+    }
+
+    setTickerDraft(formatTickerEditor(preset.tickers));
+    setTickerMessage("Preset loaded. Click Save Tickers to apply.");
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setTickerMessage(null);
@@ -134,7 +183,8 @@ export default function MarketNews() {
       if (!response.ok) {
         throw new Error("Failed to refresh news.");
       }
-      refetch();
+      await response.json();
+      window.location.reload();
     } catch (refreshError) {
       console.error(refreshError);
     } finally {
@@ -162,8 +212,11 @@ export default function MarketNews() {
       }
 
       const data: NewsTickerResponse = await response.json();
-      setTickerDraft(formatTickerEditor(data.tickers));
+      const formatted = formatTickerEditor(data.tickers);
+      setTickerDraft(formatted);
+      setCustomDraft(formatted);
       setDraftInitialized(true);
+      setSelectedPreset("custom");
       setTickerMessage("Ticker list saved.");
       refetchTickers();
     } catch (saveError) {
@@ -227,7 +280,7 @@ export default function MarketNews() {
         </div>
       </div>
 
-      {/* Collapsible editor for the cached ticker list */}
+      {/* Collapsible editor for the cached ticker list (presets load into this editor). */}
       <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div>
@@ -237,6 +290,22 @@ export default function MarketNews() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-stealth-900 border border-stealth-700 rounded-lg px-2 py-1">
+              <span className="text-xs text-stealth-400">Preset</span>
+              <select
+                value={selectedPreset}
+                onChange={handlePresetChange}
+                className="bg-stealth-900 text-stealth-100 text-xs sm:text-sm rounded px-2 py-1 border border-stealth-700 focus:outline-none focus:border-stealth-500"
+              >
+                <option value="custom">Custom</option>
+                {presetOptions.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                    {preset.count ? ` (${preset.count})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               onClick={() => setIsTickerOpen((prev) => !prev)}
               className="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-stealth-700 text-stealth-200 hover:bg-stealth-600 transition"
@@ -260,7 +329,13 @@ export default function MarketNews() {
             {!tickersLoading && !tickersError && (
               <textarea
                 value={tickerDraft}
-                onChange={(event) => setTickerDraft(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setTickerDraft(value);
+                  if (selectedPreset === "custom") {
+                    setCustomDraft(value);
+                  }
+                }}
                 rows={6}
                 className="w-full bg-stealth-900 border border-stealth-700 rounded-lg p-3 text-xs sm:text-sm text-stealth-100 focus:outline-none focus:border-stealth-500"
               />

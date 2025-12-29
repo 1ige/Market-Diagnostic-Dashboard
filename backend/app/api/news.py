@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from app.models.news_article import NewsArticle
 from app.services.news_service import (
     ensure_default_tickers,
+    list_news_presets,
     list_news_tickers,
     replace_news_tickers,
     refresh_news_cache,
@@ -55,6 +56,12 @@ def update_news_tickers(payload: NewsTickerList):
         }
 
 
+@router.get("/news/ticker-presets")
+def get_news_ticker_presets():
+    """Return available preset ticker lists."""
+    return {"presets": list_news_presets()}
+
+
 @router.post("/news/refresh")
 def refresh_news(symbol: Optional[str] = None, sector: Optional[str] = None):
     """Fetch latest news and update the cache."""
@@ -73,7 +80,13 @@ def list_news(
     """Return cached news articles."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
     with get_db_session() as db:
+        ensure_default_tickers(db)
+        cached_symbols = {ticker.symbol for ticker in list_news_tickers(db)}
+        if not cached_symbols:
+            return []
         query = db.query(NewsArticle).filter(NewsArticle.published_at >= cutoff)
+
+        query = query.filter(NewsArticle.symbol.in_(cached_symbols))
 
         if symbol:
             query = query.filter(NewsArticle.symbol == symbol.strip().upper())
