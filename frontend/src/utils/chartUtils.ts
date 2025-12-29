@@ -1,3 +1,5 @@
+import { formatDateTime } from "./styleUtils";
+
 /**
  * Chart Configuration Utilities
  * 
@@ -17,6 +19,13 @@ export const CHART_COLORS = {
   green: "#10b981",
   yellow: "#eab308",
   red: "#ef4444",
+} as const;
+
+export const CHART_MARGIN = {
+  top: 10,
+  right: 0,
+  bottom: 20,
+  left: 0,
 } as const;
 
 /**
@@ -96,14 +105,7 @@ export function formatPercentage(value: number): string {
  */
 export function formatTooltipTimestamp(timestamp: string): string {
   try {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return formatDateTime(timestamp);
   } catch {
     return timestamp;
   }

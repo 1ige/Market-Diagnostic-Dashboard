@@ -9,11 +9,11 @@ A real-time market stability monitoring system that tracks key financial indicat
   - **Composite Indicators**: Consumer Health, Bond Market Stability (4-component weighted), Liquidity Proxy (3-component)
   - **Automatic Seeding**: All indicators automatically seeded on container startup
 - **Dow Theory Market Strain Analysis**: Advanced market direction and strain calculations based on Dow Theory principles
-- **System Overview Dashboard**: Composite scoring system with historical trends, alert notifications, and purpose description
+- **System Overview Dashboard**: Composite scoring system with historical trends, recent news highlights, and purpose description
 - **Manual Refresh Button**: One-click data refresh on dashboard to fetch latest market data
 - **Data Freshness Indicators**: Visual icons and tooltips showing data recency and update frequency
 - **Automated Data Ingestion**: Scheduled ETL pipeline (4-hour intervals) pulling from FRED API and Yahoo Finance, with 365-day backfill capability
-- **Alert System**: Configurable threshold-based alerting for market condition changes
+- **Market News**: Cached Seeking Alpha headlines, editable ticker list, and per-ticker filtering
 - **Docker Support**: Full containerized deployment for both Mac (ARM64) and Windows (x86_64) with automatic startup
 - **Advanced Technical Analysis**: 
   - SPY uses distance from 50-day EMA to capture trend strength
@@ -147,8 +147,10 @@ VITE_API_URL=http://localhost:8000
 
 ### Data Management
 - `POST /admin/backfill` - Backfill historical data (365 days)
-- `GET /alerts` - Recent alerts (configurable timeframe)
-- `POST /alerts/check` - Manually trigger alert condition check
+- `GET /news` - Cached news entries (filter by hours/symbol/sector)
+- `POST /news/refresh` - Refresh cached news for all or specific tickers
+- `GET /news/tickers` - Read the cached ticker list
+- `PUT /news/tickers` - Replace the cached ticker list
 
 ### Market Analysis
 - `GET /dow-theory` - Current Dow Theory market metrics
@@ -237,6 +239,7 @@ docker-compose logs -f
   - Frequency badges on each indicator card
   - Smart detection of stale vs. waiting-for-source-data states
 - **Improved Error Handling**: Better logging and error messages for ETL failures
+- **Market News Integration**: Added cached headlines with a ticker editor and dropdown filter in the News tab
 
 ## License
 

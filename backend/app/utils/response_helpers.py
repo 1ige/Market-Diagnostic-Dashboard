@@ -8,6 +8,8 @@ from datetime import datetime
 from app.models.indicator import Indicator
 from app.models.indicator_value import IndicatorValue
 from app.models.alert import Alert
+from app.models.news_article import NewsArticle
+from app.models.news_ticker import NewsTicker
 from app.services.indicator_metadata import get_display_indicator_name
 
 
@@ -124,6 +126,32 @@ def format_alert(alert: Alert) -> Dict[str, Any]:
         "type": alert.type,
         "message": alert.message,
         "affected_indicators": alert.affected_indicators,
+    }
+
+
+def format_news_article(article: NewsArticle) -> Dict[str, Any]:
+    """
+    Format a NewsArticle model for API responses.
+    """
+    return {
+        "id": article.id,
+        "symbol": article.symbol,
+        "sector": article.sector,
+        "title": article.title,
+        "link": article.link,
+        "source": article.source,
+        "published_at": article.published_at.isoformat() if article.published_at else None,
+        "created_at": article.created_at.isoformat() if article.created_at else None,
+    }
+
+
+def format_news_ticker(ticker: NewsTicker) -> Dict[str, Any]:
+    """
+    Format a NewsTicker model for API responses.
+    """
+    return {
+        "symbol": ticker.symbol,
+        "sector": ticker.sector,
     }
 
 

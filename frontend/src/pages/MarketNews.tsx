@@ -1,0 +1,321 @@
+import { useEffect, useState } from "react";
+import { useApi } from "../hooks/useApi";
+import { buildApiUrl } from "../utils/apiUtils";
+import { EmptyState, ErrorState, LoadingState } from "../utils/componentUtils";
+import { BUTTON_STYLES, formatDateTimeWithWeekday } from "../utils/styleUtils";
+
+interface NewsArticle {
+  id: number;
+  symbol: string;
+  sector?: string | null;
+  title: string;
+  link: string;
+  source: string;
+  published_at: string;
+}
+
+interface NewsTicker {
+  symbol: string;
+  sector: string;
+}
+
+interface NewsTickerResponse {
+  count: number;
+  tickers: NewsTicker[];
+}
+
+const HOURS_OPTIONS = [
+  { label: "24h", value: 24 },
+  { label: "7d", value: 168 },
+  { label: "30d", value: 720 },
+];
+
+const formatTickerEditor = (tickers: NewsTicker[]) => {
+  const grouped = new Map<string, string[]>();
+  tickers.forEach((ticker) => {
+    const sector = ticker.sector || "GENERAL";
+    if (!grouped.has(sector)) {
+      grouped.set(sector, []);
+    }
+    grouped.get(sector)?.push(ticker.symbol);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([sector, symbols]) => `${sector}: ${symbols.join(", ")}`)
+    .join("\n");
+};
+
+const parseTickerEditor = (text: string): NewsTicker[] => {
+  const results: NewsTicker[] = [];
+  const seen = new Set<string>();
+
+  text.split("\n").forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      return;
+    }
+
+    const [left, right] = line.split(":");
+    const hasSector = right !== undefined;
+    const sector = (hasSector ? left : "GENERAL").trim() || "GENERAL";
+    const symbolsText = hasSector ? right : left;
+
+    symbolsText
+      .split(/[,\s]+/)
+      .map((symbol) => symbol.trim().toUpperCase())
+      .filter(Boolean)
+      .forEach((symbol) => {
+        const key = `${sector}:${symbol}`;
+        if (seen.has(key)) {
+          return;
+        }
+        seen.add(key);
+        results.push({ symbol, sector });
+      });
+  });
+
+  return results;
+};
+
+export default function MarketNews() {
+  const [hours, setHours] = useState(168);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTickerOpen, setIsTickerOpen] = useState(true);
+  const [selectedTicker, setSelectedTicker] = useState("ALL");
+  const [tickerDraft, setTickerDraft] = useState("");
+  const [tickerMessage, setTickerMessage] = useState<string | null>(null);
+  const [draftInitialized, setDraftInitialized] = useState(false);
+
+  const {
+    data: articles,
+    loading,
+    error,
+    refetch,
+  } = useApi<NewsArticle[]>(`/news?hours=${hours}&limit=200`);
+
+  const {
+    data: tickerData,
+    loading: tickersLoading,
+    error: tickersError,
+    refetch: refetchTickers,
+  } = useApi<NewsTickerResponse>("/news/tickers");
+
+  useEffect(() => {
+    if (!draftInitialized && tickerData?.tickers) {
+      setTickerDraft(formatTickerEditor(tickerData.tickers));
+      setDraftInitialized(true);
+    }
+  }, [draftInitialized, tickerData]);
+
+  // Build the dropdown options from cached articles so filtering stays in sync.
+  const availableTickers = Array.from(
+    new Set((articles ?? []).map((article) => article.symbol))
+  ).sort();
+
+  useEffect(() => {
+    if (selectedTicker !== "ALL" && !availableTickers.includes(selectedTicker)) {
+      setSelectedTicker("ALL");
+    }
+  }, [availableTickers, selectedTicker]);
+
+  // Apply client-side ticker filter on the cached data.
+  const filteredArticles =
+    selectedTicker === "ALL"
+      ? articles
+      : (articles ?? []).filter((article) => article.symbol === selectedTicker);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setTickerMessage(null);
+    try {
+      const response = await fetch(buildApiUrl("/news/refresh"), {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to refresh news.");
+      }
+      refetch();
+    } catch (refreshError) {
+      console.error(refreshError);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleSaveTickers = async () => {
+    const parsed = parseTickerEditor(tickerDraft);
+    if (parsed.length === 0) {
+      setTickerMessage("Add at least one ticker before saving.");
+      return;
+    }
+
+    try {
+      setTickerMessage(null);
+      const response = await fetch(buildApiUrl("/news/tickers"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tickers: parsed }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save tickers.");
+      }
+
+      const data: NewsTickerResponse = await response.json();
+      setTickerDraft(formatTickerEditor(data.tickers));
+      setDraftInitialized(true);
+      setTickerMessage("Ticker list saved.");
+      refetchTickers();
+    } catch (saveError) {
+      console.error(saveError);
+      setTickerMessage("Failed to save tickers.");
+    }
+  };
+
+  return (
+    <div className="p-3 md:p-6 text-gray-200 space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold">News</h2>
+          <p className="text-sm text-stealth-400 mt-1">
+            Cached Seeking Alpha headlines for your portfolio tickers.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 bg-stealth-800 border border-stealth-700 rounded-lg p-1">
+            {HOURS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setHours(option.value)}
+                className={`flex-1 px-3 py-1 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap ${
+                  hours === option.value
+                    ? "bg-stealth-600 text-stealth-100"
+                    : "text-stealth-400 hover:text-stealth-200"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 bg-stealth-800 border border-stealth-700 rounded-lg px-3 py-2">
+            <span className="text-xs text-stealth-400">Ticker</span>
+            <select
+              value={selectedTicker}
+              onChange={(event) => setSelectedTicker(event.target.value)}
+              className="bg-stealth-900 text-stealth-100 text-xs sm:text-sm rounded px-2 py-1 border border-stealth-700 focus:outline-none focus:border-stealth-500"
+            >
+              <option value="ALL">All</option>
+              {availableTickers.map((ticker) => (
+                <option key={ticker} value={ticker}>
+                  {ticker}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition ${
+              isRefreshing ? BUTTON_STYLES.disabled : BUTTON_STYLES.primary
+            }`}
+          >
+            {isRefreshing ? "Refreshing..." : "Refresh News"}
+          </button>
+        </div>
+      </div>
+
+      {/* Collapsible editor for the cached ticker list */}
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-stealth-100">Ticker Cache</h3>
+            <p className="text-xs text-stealth-400 mt-1">
+              Edit the cached tickers below (format: SECTOR: TICKER, TICKER).
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsTickerOpen((prev) => !prev)}
+              className="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-stealth-700 text-stealth-200 hover:bg-stealth-600 transition"
+            >
+              {isTickerOpen ? "Hide" : "Show"}
+            </button>
+            <button
+              onClick={handleSaveTickers}
+              className="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-stealth-700 text-stealth-200 hover:bg-stealth-600 transition"
+            >
+              Save Tickers
+            </button>
+          </div>
+        </div>
+
+        {isTickerOpen && (
+          <>
+            {tickersLoading && <LoadingState message="Loading tickers..." />}
+            {tickersError && <ErrorState message={tickersError} />}
+
+            {!tickersLoading && !tickersError && (
+              <textarea
+                value={tickerDraft}
+                onChange={(event) => setTickerDraft(event.target.value)}
+                rows={6}
+                className="w-full bg-stealth-900 border border-stealth-700 rounded-lg p-3 text-xs sm:text-sm text-stealth-100 focus:outline-none focus:border-stealth-500"
+              />
+            )}
+
+            {tickerMessage && (
+              <div className="mt-3 text-xs text-stealth-300">{tickerMessage}</div>
+            )}
+          </>
+        )}
+      </div>
+
+      {loading && <LoadingState message="Loading news..." />}
+      {error && <ErrorState message={error} />}
+      {!loading && !error && filteredArticles && filteredArticles.length === 0 && (
+        <EmptyState
+          message={
+            selectedTicker === "ALL"
+              ? "No cached news for this window yet. Click Refresh News to fetch."
+              : `No cached news for ${selectedTicker} in this window.`
+          }
+        />
+      )}
+
+      {filteredArticles && filteredArticles.length > 0 && (
+        <div className="space-y-3">
+          {filteredArticles.map((article) => (
+            <a
+              key={article.id}
+              href={article.link}
+              target="_blank"
+              rel="noreferrer"
+              className="block bg-stealth-800 border border-stealth-700 rounded-lg p-4 hover:bg-stealth-750 transition"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-stealth-400">
+                    {article.symbol}
+                    {article.sector ? ` | ${article.sector}` : ""}
+                    {article.source ? ` | ${article.source}` : ""}
+                  </div>
+                  <div className="text-sm sm:text-base font-semibold text-stealth-100 mt-1">
+                    {article.title}
+                  </div>
+                  <div className="text-xs text-stealth-500 mt-2">
+                    {formatDateTimeWithWeekday(article.published_at)}
+                  </div>
+                </div>
+                <span className="text-xs text-stealth-400">Open</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+}

@@ -12,7 +12,8 @@ import {
 } from "recharts";
 import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { calculateMovingAverage } from "../../utils/componentUtils";
-import { commonXAxisProps, commonYAxisProps, commonGridProps, commonTooltipStyle } from "../../utils/chartUtils";
+import { formatDateTime, formatTime } from "../../utils/styleUtils";
+import { CHART_MARGIN, commonXAxisProps, commonYAxisProps, commonGridProps, commonTooltipStyle } from "../../utils/chartUtils";
 import { getStateFromScore, STABILITY_THRESHOLDS } from "../../utils/stabilityConstants";
 
 interface SystemStatus {
@@ -29,12 +30,14 @@ interface SystemHistoryPoint {
   state: string;
 }
 
-interface Alert {
+interface NewsArticle {
   id: number;
-  timestamp: string;
-  type: string;
-  message: string;
-  affected_indicators: string[];
+  symbol: string;
+  sector?: string | null;
+  title: string;
+  link: string;
+  source: string;
+  published_at: string;
 }
 
 interface Props {
@@ -44,7 +47,7 @@ interface Props {
 const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   const [data, setData] = useState<SystemStatus | null>(null);
   const [history, setHistory] = useState<SystemHistoryPoint[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,22 +55,22 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
     const fetchData = async () => {
       try {
         const apiUrl = getLegacyApiUrl();
-        const [statusResponse, historyResponse, alertsResponse] = await Promise.all([
+        const [statusResponse, historyResponse, newsResponse] = await Promise.all([
           fetch(`${apiUrl}/system`),
           fetch(`${apiUrl}/system/history?days=${trendPeriod}`),
-          fetch(`${apiUrl}/alerts?hours=24`),
+          fetch(`${apiUrl}/news?hours=24&limit=50`),
         ]);
         
         if (!statusResponse.ok) throw new Error("Failed to fetch system status");
         if (!historyResponse.ok) throw new Error("Failed to fetch system history");
-        if (!alertsResponse.ok) throw new Error("Failed to fetch alerts");
+        if (!newsResponse.ok) throw new Error("Failed to fetch news");
         
         const statusData = await statusResponse.json();
         const historyData = await historyResponse.json();
-        const alertsData = await alertsResponse.json();
+        const newsData = await newsResponse.json();
         
         setData(statusData);
-        setAlerts(alertsData);
+        setNews(newsData);
         
         // Use real historical data from backend
         if (Array.isArray(historyData) && historyData.length > 0) {
@@ -132,8 +135,8 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
 
   const compositePercentage = Math.min(100, data.composite_score || 0);
 
-  // Get recent alerts (last 3)
-  const recentAlerts = alerts.slice(0, 3);
+  // Get recent news (last 3)
+  const recentNews = news.slice(0, 3);
 
   // Calculate trend (last 7 days vs previous 7 days average)
   const last7 = history.slice(-7);
@@ -163,7 +166,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
             <span className="text-xs text-stealth-500">→ View Breakdown</span>
           </div>
           <span className="text-xs text-stealth-400">
-            {data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'N/A'}
+            {data.timestamp ? formatTime(data.timestamp) : 'N/A'}
           </span>
         </div>
 
@@ -237,32 +240,32 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           </span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700">
-          <span className="text-xs text-stealth-400">Active Alerts:</span>
+          <span className="text-xs text-stealth-400">News (24h):</span>
           <span className="text-xs font-semibold text-cyan-400">
-            {alerts.length}
+            {news.length}
           </span>
         </div>
       </div>
 
-      {/* Recent Alerts */}
-      {recentAlerts.length > 0 && (
+      {/* Recent News */}
+      {recentNews.length > 0 && (
         <div className="pt-3 border-t border-stealth-700">
           <h4 className="text-sm font-semibold text-stealth-200 mb-2">
-            Recent Alerts (24h)
+            Recent Market News
           </h4>
           <div className="space-y-2">
-            {recentAlerts.map((alert) => (
+            {recentNews.map((item) => (
               <div
-                key={alert.id}
+                key={item.id}
                 className="flex items-start gap-2 p-2 bg-stealth-900 rounded border border-stealth-700"
               >
-                <span className="text-xs text-orange-400 mt-0.5">⚠</span>
+                <span className="text-xs text-sky-400 mt-0.5">{item.symbol}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-stealth-200 truncate">
-                    {alert.message}
+                    {item.title}
                   </p>
                   <p className="text-xs text-stealth-400 mt-0.5">
-                    {new Date(alert.timestamp).toLocaleString()}
+                    {formatDateTime(item.published_at)}
                   </p>
                 </div>
               </div>
@@ -279,7 +282,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           </h4>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history}>
+              <LineChart data={history} margin={CHART_MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                 <XAxis
                   dataKey="timestamp"

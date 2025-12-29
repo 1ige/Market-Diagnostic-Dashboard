@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { getDaysAgo, formatRelativeDate, isWeekend, formatValue } from "../../utils/componentUtils";
+import { CHART_MARGIN } from "../../utils/chartUtils";
 
 interface Props {
   indicator: IndicatorStatus;
@@ -98,9 +99,9 @@ export default function IndicatorCard({ indicator }: Props) {
         
         {/* Mini Sparkline Chart */}
         {chartData.length > 0 && (
-          <div className="mt-2" style={{ height: '30px' }}>
+          <div className="mt-2" style={{ height: '60px' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={chartData} margin={CHART_MARGIN}>
                 <Line
                   type="monotone"
                   dataKey="value"

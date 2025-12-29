@@ -8,6 +8,7 @@ from app.api.health import router as health_router
 from app.api.status import router as status_router
 from app.api.indicators import router as indicators_router
 from app.api.alerts import router as alerts_router
+from app.api.news import router as news_router
 from app.api.dow_theory import router as dow_theory_router
 from app.api.market_map import router as market_map_router
 
@@ -70,6 +71,8 @@ app.include_router(health_router, prefix="/health", tags=["Health"])
 app.include_router(status_router, tags=["Status"])
 app.include_router(indicators_router, tags=["Indicators"])
 app.include_router(alerts_router, tags=["Alerts"])
+# Market news endpoints backed by the cached ticker list.
+app.include_router(news_router, tags=["News"])
 app.include_router(dow_theory_router, tags=["DowTheory"])
 app.include_router(market_map_router, tags=["MarketMap"])
 

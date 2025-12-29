@@ -6,16 +6,18 @@ import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
 import { getLegacyApiUrl } from "../utils/apiUtils";
 import { BUTTON_STYLES } from "../utils/styleUtils";
 
-interface Alert {
+interface NewsArticle {
   id: number;
-  timestamp: string;
-  type: string;
-  message: string;
-  affected_indicators: string[];
+  symbol: string;
+  sector?: string | null;
+  title: string;
+  link: string;
+  source: string;
+  published_at: string;
 }
 
 export default function Dashboard() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [news, setNews] = useState<NewsArticle[]>([]);
   const [indicators, setIndicators] = useState<IndicatorStatus[] | null>(null);
   const [trendPeriod, setTrendPeriod] = useState<90 | 180 | 365>(90);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -29,14 +31,14 @@ export default function Dashboard() {
       .then(data => setIndicators(data))
       .catch(() => setIndicators(null));
 
-    // Fetch active alerts from last 24 hours
-    fetch(`${apiUrl}/alerts?hours=24`)
+    // Fetch cached news from last 24 hours
+    fetch(`${apiUrl}/news?hours=24&limit=200`)
       .then(res => res.json())
-      .then(data => setAlerts(data))
-      .catch(() => setAlerts([])  );
+      .then(data => setNews(data))
+      .catch(() => setNews([])  );
   }, [refreshKey]);
 
-  const activeAlertCount = alerts.length;
+  const newsCount = news.length;
 
   // Manual refresh function - triggers ETL ingestion for all indicators
   const handleRefresh = async () => {
@@ -63,19 +65,19 @@ export default function Dashboard() {
 
   return (
     <div className="p-3 md:p-6 text-gray-200">
-      {/* Header with Alert Badge */}
+      {/* Header with News Badge */}
       <div className="flex flex-col mb-4 md:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 sm:gap-4">
             <h2 className="text-xl sm:text-2xl font-bold">Dashboard</h2>
-            {activeAlertCount > 0 && (
-              <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/50 rounded-full px-2 sm:px-3 py-1">
+            {newsCount > 0 && (
+              <div className="flex items-center gap-2 bg-sky-500/20 border border-sky-500/50 rounded-full px-2 sm:px-3 py-1">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-red-400">
-                  {activeAlertCount} Alert{activeAlertCount !== 1 ? 's' : ''}
+                <span className="text-xs sm:text-sm font-semibold text-sky-300">
+                  {newsCount} News Item{newsCount !== 1 ? 's' : ''}
                 </span>
               </div>
             )}
@@ -146,23 +148,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* System Description */}
-        <div className="bg-stealth-850/50 border border-stealth-700/50 rounded-lg p-3 md:p-4">
-          <p className="text-xs sm:text-sm text-stealth-300 leading-relaxed">
-            Comprehensive market diagnostic system monitoring <strong className="text-stealth-100">10 critical indicators</strong> across 
-            <strong className="text-stealth-100"> volatility</strong> (VIX), 
-            <strong className="text-stealth-100"> equities</strong> (SPY), 
-            <strong className="text-stealth-100"> interest rates</strong> (DFF, T10Y2Y), 
-            <strong className="text-stealth-100"> employment</strong> (UNRATE), 
-            <strong className="text-stealth-100"> consumer health</strong> (Consumer Health Index), 
-            <strong className="text-stealth-100"> bond markets</strong> (Bond Market Stability), 
-            <strong className="text-stealth-100"> liquidity</strong> (Liquidity Proxy), 
-            <strong className="text-stealth-100"> institutional sentiment</strong> (Analyst Confidence), and 
-            <strong className="text-stealth-100"> forward sentiment</strong> (Consumer & Corporate Sentiment). 
-            Each indicator is statistically normalized and weighted to detect early signs of market stress, regime shifts, 
-            and systemic risks before they cascade into broader crises.
-          </p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6 mb-3 md:mb-6">

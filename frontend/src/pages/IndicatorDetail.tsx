@@ -7,6 +7,8 @@ import { ComponentChart } from "../components/widgets/ComponentChart";
 import { ComponentCard } from "../components/widgets/ComponentCard";
 import { processComponentData, calculateDateRange, extendStaleData, filterByDateRange } from "../utils/chartDataUtils";
 import { prepareExtendedComponentData } from "../utils/indicatorDetailHelpers";
+import { formatDateTime } from "../utils/styleUtils";
+import { CHART_MARGIN } from "../utils/chartUtils";
 import {
   LineChart,
   Line,
@@ -812,7 +814,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={deduplicatedData7}>
+                  <LineChart data={deduplicatedData7} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -832,7 +834,9 @@ export default function IndicatorDetail() {
                       domain={[0, 100]}
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Stability Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Stability Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -915,7 +919,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={deduplicatedData8}>
+                  <LineChart data={deduplicatedData8} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -935,7 +939,9 @@ export default function IndicatorDetail() {
                       domain={[0, 100]}
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Stability Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Stability Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1062,7 +1068,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={deduplicatedData9}>
+                  <LineChart data={deduplicatedData9} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -1082,7 +1088,9 @@ export default function IndicatorDetail() {
                       domain={[0, 100]}
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Confidence Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Confidence Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1167,7 +1175,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={deduplicatedData10}>
+                  <LineChart data={deduplicatedData10} margin={CHART_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="dateNum"
@@ -1187,7 +1195,9 @@ export default function IndicatorDetail() {
                       domain={[0, 100]}
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Confidence Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Confidence Score', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1270,7 +1280,7 @@ export default function IndicatorDetail() {
               {meta.latest.state}
             </div>
             <div className="text-xs text-stealth-400 mt-2">
-              {new Date(meta.latest.timestamp).toLocaleString()}
+              {formatDateTime(meta.latest.timestamp)}
             </div>
           </div>
         </div>
@@ -1360,7 +1370,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                  <LineChart data={chartData} margin={{ ...CHART_MARGIN, right: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="timestampNum"
@@ -1380,7 +1390,9 @@ export default function IndicatorDetail() {
                       yAxisId="left"
                       tick={{ fill: "#a4a4b0", fontSize: 12 }}
                       stroke="#555560"
-                      label={{ value: 'Raw Value', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Raw Value', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -1467,7 +1479,7 @@ export default function IndicatorDetail() {
               
               return (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                  <LineChart data={chartData} margin={{ ...CHART_MARGIN, right: 30 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                     <XAxis
                       dataKey="timestampNum"
@@ -1483,12 +1495,14 @@ export default function IndicatorDetail() {
                     tick={{ fill: "#a4a4b0", fontSize: 12 }}
                     stroke="#555560"
                   />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fill: "#a4a4b0", fontSize: 12 }}
-                    stroke="#555560"
-                    label={{ value: 'Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0' }}
-                  />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Score (0-100)', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
+                    />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#161619",

@@ -1,4 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { CHART_MARGIN } from "../../utils/chartUtils";
 
 interface ChartLine {
   dataKey: string;
@@ -36,9 +37,18 @@ export function ComponentChart({
   height = '100%',
   dateRange
 }: ComponentChartProps) {
+  const yAxisWidth = yAxisLabel ? 72 : undefined;
+  const yAxisLabelProps = yAxisLabel ? {
+    value: yAxisLabel,
+    angle: -90,
+    position: 'insideLeft',
+    fill: '#a4a4b0',
+    offset: 12
+  } : undefined;
+
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data}>
+      <LineChart data={data} margin={CHART_MARGIN}>
         <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
         <XAxis
           dataKey="dateNum"
@@ -58,12 +68,9 @@ export function ComponentChart({
           domain={yAxisDomain || ['auto', 'auto']}
           tick={{ fill: "#a4a4b0", fontSize: 12 }}
           stroke="#555560"
-          label={yAxisLabel ? { 
-            value: yAxisLabel, 
-            angle: -90, 
-            position: 'insideLeft', 
-            fill: '#a4a4b0' 
-          } : undefined}
+          width={yAxisWidth}
+          tickMargin={8}
+          label={yAxisLabelProps}
         />
         <Tooltip
           contentStyle={{

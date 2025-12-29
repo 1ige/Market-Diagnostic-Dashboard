@@ -9,7 +9,7 @@ export default function Sidebar() {
         <Link to="/" className="hover:text-accent-yellow">Dashboard</Link>
         <Link to="/indicators" className="hover:text-accent-yellow">Indicators</Link>
         <Link to="/market-map" className="hover:text-accent-yellow">Market Map</Link>
-        <Link to="/alerts" className="hover:text-accent-yellow">Alerts</Link>
+        <Link to="/news" className="hover:text-accent-yellow">News</Link>
       </nav>
     </div>
   );

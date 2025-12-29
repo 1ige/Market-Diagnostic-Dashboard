@@ -35,8 +35,10 @@
  * @since 2025-12-18
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { formatDateTimeWithWeekday } from "../utils/styleUtils";
+import { CHART_MARGIN } from "../utils/chartUtils";
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -83,6 +85,16 @@ interface IntradayData {
   pct_change: number;  // % change from day's open
   hour: number;        // Hour of trading day (9-16)
   index: string;       // Index identifier: 'SPY', 'DJI', or 'RTY'
+}
+
+/**
+ * Combined intraday data point for charting multiple indices together
+ */
+interface IntradaySeriesPoint {
+  timestamp: string;
+  SPY?: number;
+  DJI?: number;
+  RTY?: number;
 }
 
 /**
@@ -161,6 +173,69 @@ const MarketMap = () => {
     const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
     return () => clearInterval(interval);
   }, []);
+
+  const intradaySeries = useMemo<IntradaySeriesPoint[]>(() => {
+    if (!intradayData.length) return [];
+
+    const byTimestamp = new Map<string, IntradaySeriesPoint>();
+    intradayData.forEach((point) => {
+      const existing = byTimestamp.get(point.timestamp) ?? { timestamp: point.timestamp };
+      if (point.index === "SPY") {
+        existing.SPY = point.pct_change;
+      } else if (point.index === "DJI") {
+        existing.DJI = point.pct_change;
+      } else if (point.index === "RTY") {
+        existing.RTY = point.pct_change;
+      }
+      byTimestamp.set(point.timestamp, existing);
+    });
+
+    return Array.from(byTimestamp.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }, [intradayData]);
+
+  const orderedWeekPerformance = useMemo<WeekPerformance[]>(() => {
+    if (!data?.week_performance?.length) return [];
+
+    const sorted = [...data.week_performance].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return sorted.length > 5 ? sorted.slice(-5) : sorted;
+  }, [data]);
+
+  const lastCommonTimestampMs = useMemo(() => {
+    if (!intradayData.length) return null;
+
+    const latestByIndex: Record<string, number> = {
+      SPY: 0,
+      DJI: 0,
+      RTY: 0
+    };
+
+    intradayData.forEach((point) => {
+      const time = new Date(point.timestamp).getTime();
+      if (point.index in latestByIndex && time > latestByIndex[point.index]) {
+        latestByIndex[point.index] = time;
+      }
+    });
+
+    const latestTimes = Object.values(latestByIndex).filter((time) => time > 0);
+    if (latestTimes.length < 3) {
+      return null;
+    }
+
+    return Math.min(...latestTimes);
+  }, [intradayData]);
+
+  const intradaySeriesAligned = useMemo<IntradaySeriesPoint[]>(() => {
+    if (!intradaySeries.length) return [];
+    if (!lastCommonTimestampMs) return intradaySeries;
+    return intradaySeries.filter(
+      (point) => new Date(point.timestamp).getTime() <= lastCommonTimestampMs
+    );
+  }, [intradaySeries, lastCommonTimestampMs]);
 
   /**
    * Manual refresh handler - forces immediate data reload
@@ -277,9 +352,9 @@ const MarketMap = () => {
         <h2 className="text-base md:text-lg font-semibold text-stealth-200 mb-2">Major Indices Intraday (5 min)</h2>
         <p className="text-stealth-400 text-xs mb-3 md:mb-4">SPY (S&P 500), DJI (Dow Jones), RTY (Russell 2000)</p>
         <div className="h-48 sm:h-64">
-          {intradayData.length > 0 ? (
+          {intradaySeriesAligned.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart>
+              <LineChart data={intradaySeriesAligned} margin={CHART_MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                 <XAxis
                   dataKey="timestamp"
@@ -301,16 +376,7 @@ const MarketMap = () => {
                   }}
                   labelStyle={{ color: "#a4a4b0", fontSize: 11 }}
                   itemStyle={{ fontSize: 11 }}
-                  labelFormatter={(timestamp: string) => {
-                    const date = new Date(timestamp);
-                    return date.toLocaleString(undefined, { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    });
-                  }}
+                  labelFormatter={(timestamp: string) => formatDateTimeWithWeekday(timestamp)}
                   formatter={(value: number, name: string) => {
                     const indexNames: Record<string, string> = {
                       'SPY': 'S&P 500',
@@ -325,17 +391,18 @@ const MarketMap = () => {
                 
                 {/* Vertical day dividers - Add reference lines at start of each trading day */}
                 {(() => {
-                  const uniqueDays = new Set<string>();
                   const dayStartTimestamps: string[] = [];
-                  intradayData.forEach(point => {
-                    const date = new Date(point.timestamp);
-                    const dayKey = date.toDateString();
-                    if (!uniqueDays.has(dayKey)) {
-                      uniqueDays.add(dayKey);
-                      dayStartTimestamps.push(point.timestamp);
+                  let lastDay = "";
+                  intradaySeriesAligned.forEach((point) => {
+                    const dayKey = new Date(point.timestamp).toDateString();
+                    if (dayKey !== lastDay) {
+                      if (lastDay) {
+                        dayStartTimestamps.push(point.timestamp);
+                      }
+                      lastDay = dayKey;
                     }
                   });
-                  return dayStartTimestamps.slice(1).map(timestamp => (
+                  return dayStartTimestamps.map(timestamp => (
                     <ReferenceLine 
                       key={timestamp}
                       x={timestamp} 
@@ -349,8 +416,7 @@ const MarketMap = () => {
                 {/* SPY Line - Green */}
                 <Line
                   type="monotone"
-                  dataKey="pct_change"
-                  data={intradayData.filter(d => d.index === 'SPY')}
+                  dataKey="SPY"
                   name="SPY"
                   stroke="#10B981"
                   strokeWidth={2}
@@ -361,8 +427,7 @@ const MarketMap = () => {
                 {/* DJI Line - Blue */}
                 <Line
                   type="monotone"
-                  dataKey="pct_change"
-                  data={intradayData.filter(d => d.index === 'DJI')}
+                  dataKey="DJI"
                   name="DJI"
                   stroke="#3B82F6"
                   strokeWidth={2}
@@ -373,8 +438,7 @@ const MarketMap = () => {
                 {/* RTY Line - Orange */}
                 <Line
                   type="monotone"
-                  dataKey="pct_change"
-                  data={intradayData.filter(d => d.index === 'RTY')}
+                  dataKey="RTY"
                   name="RTY"
                   stroke="#F59E0B"
                   strokeWidth={2}
@@ -392,7 +456,7 @@ const MarketMap = () => {
         
         {/* Daily Summary Cards - Aligned with chart sections */}
         <div className="flex gap-0 mt-3 md:mt-4" style={{ paddingLeft: '40px' }}>
-          {data.week_performance.map((day, idx) => (
+          {orderedWeekPerformance.map((day, idx) => (
             <div
               key={day.date}
               className="flex-1 text-center p-1.5 sm:p-2 bg-stealth-900 border-t border-b border-stealth-700"

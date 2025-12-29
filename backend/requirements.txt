@@ -6,6 +6,8 @@ pydantic-settings
 alembic
 python-dotenv
 requests
+feedparser
+python-dateutil
 httpx
 yfinance
 numpy

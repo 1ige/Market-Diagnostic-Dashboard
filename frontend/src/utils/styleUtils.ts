@@ -4,6 +4,62 @@
  * Centralized definitions for colors, styles, and formatting utilities.
  */
 
+const EASTERN_TIMEZONE = "America/New_York";
+const TIMEZONE_SUFFIX_RE = /(Z|[+-]\d{2}:?\d{2})$/i;
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: EASTERN_TIMEZONE,
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+const TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: EASTERN_TIMEZONE,
+  hour: "numeric",
+  minute: "2-digit",
+});
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: EASTERN_TIMEZONE,
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const WEEKDAY_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: EASTERN_TIMEZONE,
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+const parseTimestamp = (dateInput: string | Date): Date => {
+  if (dateInput instanceof Date) {
+    return dateInput;
+  }
+
+  const trimmed = dateInput.trim();
+  if (!trimmed) {
+    return new Date(NaN);
+  }
+
+  const normalized = trimmed.includes(" ") ? trimmed.replace(" ", "T") : trimmed;
+
+  if (DATE_ONLY_RE.test(normalized)) {
+    const [year, month, day] = normalized.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  }
+
+  const hasTimezone = TIMEZONE_SUFFIX_RE.test(normalized);
+  if (hasTimezone) {
+    return new Date(normalized);
+  }
+
+  return new Date(`${normalized}Z`);
+};
+
 /**
  * State color configurations for indicators
  */
@@ -86,17 +142,27 @@ export function formatNumber(value: number | null | undefined, decimals: number 
  * Format a date string for display
  */
 export function formatDate(dateString: string | Date | null | undefined): string {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
   
   try {
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const date = typeof dateString === 'string' ? parseTimestamp(dateString) : dateString;
+    return DATE_FORMATTER.format(date);
   } catch {
-    return "—";
+    return "-";
+  }
+}
+
+/**
+ * Format a time string for display (Eastern Time, HH:MM)
+ */
+export function formatTime(dateString: string | Date | null | undefined): string {
+  if (!dateString) return "-";
+
+  try {
+    const date = typeof dateString === 'string' ? parseTimestamp(dateString) : dateString;
+    return TIME_FORMATTER.format(date);
+  } catch {
+    return "-";
   }
 }
 
@@ -104,18 +170,26 @@ export function formatDate(dateString: string | Date | null | undefined): string
  * Format a date string for display with time
  */
 export function formatDateTime(dateString: string | Date | null | undefined): string {
-  if (!dateString) return "—";
+  if (!dateString) return "-";
   
   try {
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    const date = typeof dateString === 'string' ? parseTimestamp(dateString) : dateString;
+    return DATE_TIME_FORMATTER.format(date);
   } catch {
-    return "—";
+    return "-";
+  }
+}
+
+/**
+ * Format a date string with weekday and time (Eastern Time)
+ */
+export function formatDateTimeWithWeekday(dateString: string | Date | null | undefined): string {
+  if (!dateString) return "-";
+
+  try {
+    const date = typeof dateString === 'string' ? parseTimestamp(dateString) : dateString;
+    return WEEKDAY_TIME_FORMATTER.format(date);
+  } catch {
+    return "-";
   }
 }

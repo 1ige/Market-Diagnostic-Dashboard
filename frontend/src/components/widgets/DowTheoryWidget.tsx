@@ -10,7 +10,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import { getLegacyApiUrl } from "../../utils/apiUtils";
-import { commonXAxisProps, commonYAxisProps, commonGridProps } from "../../utils/chartUtils";
+import { CHART_MARGIN, commonXAxisProps, commonYAxisProps, commonGridProps } from "../../utils/chartUtils";
+import { formatTime } from "../../utils/styleUtils";
 
 interface DowTheoryData {
   timestamp: string;
@@ -134,6 +135,12 @@ const DowTheoryWidget = ({ trendPeriod = 90 }: DowTheoryWidgetProps) => {
     WEAK: "text-gray-500",
   }[data.signal_strength];
 
+  const utilitySpread = data.components
+    ? data.components.dju_roc - data.components.dji_roc
+    : 0;
+  const utilitySpreadClass =
+    utilitySpread > 0 ? "text-green-400" : utilitySpread < 0 ? "text-red-400" : "text-stealth-200";
+
   // Direction gauge visual
   const directionPercentage = Math.max(
     0,
@@ -150,7 +157,7 @@ const DowTheoryWidget = ({ trendPeriod = 90 }: DowTheoryWidgetProps) => {
           Dow Theory Market Strain
         </h3>
         <span className="text-xs text-stealth-400">
-          {new Date(data.timestamp).toLocaleTimeString()}
+          {formatTime(data.timestamp)}
         </span>
       </div>
 
@@ -272,9 +279,9 @@ const DowTheoryWidget = ({ trendPeriod = 90 }: DowTheoryWidgetProps) => {
           </div>
         </div>
         <div>
-          <div className="text-xs text-stealth-400 mb-1">Utility Risk</div>
-          <div className="text-sm font-semibold text-stealth-200">
-            {data.util_outperformance}
+          <div className="text-xs text-stealth-400 mb-1">Utility Spread (DJU - DJI)</div>
+          <div className={`text-sm font-semibold ${utilitySpreadClass}`}>
+            {utilitySpread > 0 ? "+" : ""}{utilitySpread.toFixed(2)}%
           </div>
         </div>
       </div>
@@ -323,7 +330,7 @@ const DowTheoryWidget = ({ trendPeriod = 90 }: DowTheoryWidgetProps) => {
           </h4>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history}>
+              <LineChart data={history} margin={CHART_MARGIN}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                 <XAxis
                   dataKey="timestamp"

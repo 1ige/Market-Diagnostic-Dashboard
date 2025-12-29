@@ -9,7 +9,7 @@ export default function Topbar() {
     { path: "/", label: "Dashboard" },
     { path: "/indicators", label: "Indicators" },
     { path: "/market-map", label: "Market Map" },
-    { path: "/alerts", label: "Alerts" },
+    { path: "/news", label: "News" },
     { path: "/system-breakdown", label: "System Breakdown" },
   ];
 
