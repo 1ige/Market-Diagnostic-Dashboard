@@ -176,9 +176,14 @@ export default function MarketNews() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setTickerMessage(null);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(buildApiUrl("/news/refresh"), {
         method: "POST",
+        signal: controller.signal,
       });
       if (!response.ok) {
         throw new Error("Failed to refresh news.");
@@ -187,7 +192,13 @@ export default function MarketNews() {
       window.location.reload();
     } catch (refreshError) {
       console.error(refreshError);
+      if (refreshError instanceof DOMException && refreshError.name === "AbortError") {
+        setTickerMessage("Refresh timed out. Please try again.");
+      } else {
+        setTickerMessage("Failed to refresh news.");
+      }
     } finally {
+      window.clearTimeout(timeoutId);
       setIsRefreshing(false);
     }
   };
