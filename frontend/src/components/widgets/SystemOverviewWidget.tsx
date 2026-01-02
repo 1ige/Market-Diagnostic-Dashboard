@@ -282,6 +282,8 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           timestampNum: new Date(item.timestamp).getTime()
         }));
         
+        console.log('SystemOverview chart data sample:', chartData.slice(0, 3), 'total:', chartData.length);
+        
         return (
           <div className="pt-4 border-t border-stealth-700">
             <h4 className="text-sm font-semibold text-stealth-200 mb-3">
@@ -296,6 +298,7 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
                     type="number"
                     domain={['dataMin', 'dataMax']}
                     scale="time"
+                    tickCount={5}
                     tickFormatter={(v: number) =>
                       new Date(v).toLocaleDateString(undefined, {
                         month: "short",
