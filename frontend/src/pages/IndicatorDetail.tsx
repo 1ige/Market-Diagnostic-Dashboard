@@ -1288,6 +1288,146 @@ export default function IndicatorDetail() {
 
       {/* Historical Charts */}
       <div className="space-y-6">
+        {/* Raw Value History Chart - Hidden as it's redundant with Stability Score
+        <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-stealth-100">
+              Raw Value History ({chartRange.label})
+            </h3>
+            <div className="flex items-center gap-3">
+              {refetchMessage && (
+                <span className={`text-sm ${refetchMessage.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>
+                  {refetchMessage}
+                </span>
+              )}
+              <button
+                onClick={handleClearAndRefetch}
+                disabled={isRefetching}
+                className="px-2 py-1 text-stealth-400 hover:text-stealth-200 disabled:text-stealth-600 disabled:cursor-not-allowed text-xs transition-colors flex items-center gap-1.5"
+                title="Clear all data for this indicator and fetch fresh data from source"
+              >
+                {isRefetching ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="opacity-70">refetching...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="opacity-70">refetch</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="h-80">
+            {history && history.length > 0 ? (() => {
+              const today = new Date();
+              today.setHours(23, 59, 59, 999);
+              const daysBack = new Date(today);
+              daysBack.setDate(today.getDate() - chartRange.days);
+              daysBack.setHours(0, 0, 0, 0);
+              
+              const lastPoint = history[history.length - 1];
+              const lastDate = new Date(lastPoint.timestamp);
+              
+              const intermediatePoints = [];
+              const currentDate = new Date(lastDate);
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              currentDate.setDate(1);
+              
+              while (currentDate <= today) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: currentDate.toISOString(),
+                  timestampNum: currentDate.getTime()
+                });
+                currentDate.setMonth(currentDate.getMonth() + 1);
+              }
+              
+              if (intermediatePoints.length === 0 || intermediatePoints[intermediatePoints.length - 1].timestampNum < today.getTime()) {
+                intermediatePoints.push({
+                  ...lastPoint,
+                  timestamp: today.toISOString(),
+                  timestampNum: today.getTime()
+                });
+              }
+              
+              const chartData = [
+                ...history.map(item => ({
+                  ...item,
+                  timestampNum: new Date(item.timestamp).getTime()
+                })),
+                ...intermediatePoints
+              ].filter(item => item.timestampNum >= daysBack.getTime());
+              
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ ...CHART_MARGIN, right: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                    <XAxis
+                      dataKey="timestampNum"
+                      type="number"
+                      domain={[daysBack.getTime(), today.getTime()]}
+                      scale="time"
+                      tickFormatter={(v: number) =>
+                        new Date(v).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      tick={{ fill: "#a4a4b0", fontSize: 12 }}
+                      stroke="#555560"
+                      width={72}
+                      tickMargin={8}
+                      label={{ value: 'Raw Value', angle: -90, position: 'insideLeft', fill: '#a4a4b0', offset: 12 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        borderColor: "#555560",
+                        borderRadius: "8px",
+                        padding: "12px",
+                      }}
+                      labelStyle={{ color: "#a4a4b0", marginBottom: "8px" }}
+                      itemStyle={{ color: "#ffffff" }}
+                      formatter={(value: number) => [value.toFixed(2), "Value"]}
+                      labelFormatter={(label: string | number) =>
+                        new Date(label).toLocaleDateString()
+                      }
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="raw_value"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      animationDuration={300}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })() : (
+              <div className="flex items-center justify-center h-full text-stealth-400">
+                No history available
+              </div>
+            )}
+          </div>
+        </div>
+        */}
+        
         <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-semibold text-stealth-100">
