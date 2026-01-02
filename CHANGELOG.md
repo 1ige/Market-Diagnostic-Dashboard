@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2026-01-02] AWS Deployment Configuration
+
+### Added
+- **AWS Deployment Support**: Added configurable environment-based deployment for AWS EC2
+- **Proxy Mode**: Vite dev server now proxies API requests to avoid CORS and port issues
+- **Environment-Based CORS**: Backend CORS configuration now reads from `CORS_ORIGINS` environment variable
+- **Flexible API URL**: Frontend API URL configurable via `VITE_API_URL` environment variable
+- **AWS Documentation**: Added comprehensive AWS deployment guides
+  - `AWS_DEPLOYMENT.md` - Complete deployment guide with troubleshooting
+  - `AWS_QUICK_FIX.md` - Quick reference for common issues
+  - `configure_aws.sh` - Interactive configuration script for AWS deployments
+
+### Changed
+- **Backend CORS**: Now configurable via `CORS_ORIGINS` environment variable (supports comma-separated origins or `*`)
+- **Frontend API**: Uses `/api` prefix by default for proxy mode, configurable via environment
+- **Code Organization**: Created `src/utils/apiUtils.ts` for centralized API URL management
+
+### Fixed
+- **Mobile Network Issues**: Proxy mode eliminates mobile browser port blocking issues
+- **Environment Isolation**: Environment files properly separated for different deployment contexts
+
 ## [2025-12-20] Analyst Confidence & CORS Overhaul
 
 ### Changed

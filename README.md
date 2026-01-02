@@ -117,26 +117,45 @@ pnpm dev
 
 ### Environment Variables
 
-The environment files should already exist in `devops/env/`. Update `devops/env/backend.env` with your FRED API key:
+The environment files are located in `devops/env/`. 
+
+#### Backend Configuration (`devops/env/backend.env`):
 ```env
 DATABASE_URL=postgresql://market_user:market_pass@db:5432/market_db
 FRED_API_KEY=your_fred_api_key_here  # Get free key from https://fred.stlouisfed.org/
 PYTHONUNBUFFERED=1
+CORS_ORIGINS=*  # Comma-separated origins or * for all
 ```
 
 **Important**: Replace `your_fred_api_key_here` with your actual FRED API key before launching.
 
-Create `devops/env/db.env`:
+#### Database Configuration (`devops/env/db.env`):
 ```env
 POSTGRES_USER=market_user
 POSTGRES_PASSWORD=market_pass
-POSTGRES_DB=marketdb
+POSTGRES_DB=market_db
 ```
 
-Create `devops/env/frontend.env`:
+#### Frontend Configuration (`devops/env/frontend.env`):
 ```env
-VITE_API_URL=http://localhost:8000
+# For local development with Docker
+VITE_API_URL=/api
+
+# For AWS deployment (direct mode)
+# VITE_API_URL=http://YOUR_AWS_IP:8000
 ```
+
+### AWS Deployment
+
+For AWS EC2 deployment, see `AWS_DEPLOYMENT.md` for comprehensive instructions, or use the interactive configuration script:
+
+```bash
+./configure_aws.sh
+```
+
+The script supports two modes:
+- **Proxy Mode** (recommended): All traffic through port 5173, only requires one security group rule
+- **Direct Mode**: Separate ports for frontend (5173) and backend (8000)
 
 ## API Endpoints
 
@@ -226,20 +245,24 @@ docker-compose logs -f
 
 ## Recent Improvements
 
+### January 2026 Updates
+- **AWS Deployment Support**: Added flexible configuration for AWS EC2 deployments with proxy mode and direct mode options
+- **Environment-Based Configuration**: CORS and API URLs now fully configurable via environment variables
+- **Interactive Setup Script**: Added `configure_aws.sh` for easy AWS deployment configuration
+- **Comprehensive Documentation**: New AWS deployment guides (`AWS_DEPLOYMENT.md`, `AWS_QUICK_FIX.md`)
+- **Mobile Compatibility**: Proxy mode eliminates mobile browser port blocking issues
+
 ### December 2025 Updates
-- **Project Structure Cleanup**: Organized repository with dedicated `docs/` and `scripts/` folders for better maintainability
-- **Fixed Federal Funds Rate Direction**: Now correctly stores rate-of-change instead of absolute rate, with proper directional scoring (falling rates = GREEN, rising rates = RED)
-- **Fixed SPY Calculation**: Now stores EMA gap percentage instead of absolute price for better trend analysis
-- **Automatic Indicator Seeding**: Backend automatically seeds all indicators on startup - no manual intervention needed
-- **One-Command Launcher**: Added `launch.ps1` (Windows) and `launch.sh` (Mac/Linux) scripts for complete automated setup
-- **Manual Refresh Button**: Added dashboard refresh button to manually trigger data updates
-- **Data Freshness Indicators**: 
-  - Visual icons showing data recency (green check, gray clock, yellow warning)
-  - Hover tooltips explaining update frequencies (Real-time, Daily, Weekly, Monthly)
-  - Frequency badges on each indicator card
-  - Smart detection of stale vs. waiting-for-source-data states
-- **Improved Error Handling**: Better logging and error messages for ETL failures
-- **Market News Integration**: Added cached headlines with a ticker editor and dropdown filter in the News tab
+- **Renamed "Analyst Anxiety" to "Analyst Confidence"**: Updated all user-facing text for clarity
+- **Stability Score Invariant Enforcement**: Fixed direction inversion logic and standardized all thresholds to 40/70
+- **Project Structure Cleanup**: Organized repository with dedicated `docs/` and `scripts/` folders
+- **Fixed Federal Funds Rate Direction**: Now correctly tracks rate-of-change with proper directional scoring
+- **Fixed SPY Calculation**: Now uses EMA gap percentage for better trend analysis
+- **Automatic Indicator Seeding**: Backend automatically seeds all indicators on startup
+- **One-Command Launcher**: Added automated setup scripts for Windows and Mac/Linux
+- **Manual Refresh Button**: Dashboard refresh button for on-demand data updates
+- **Data Freshness Indicators**: Visual icons and tooltips showing data recency and update frequencies
+- **Market News Integration**: Cached headlines with ticker editor and filtering
 
 ## License
 

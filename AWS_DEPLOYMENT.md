@@ -20,7 +20,7 @@ VITE_API_URL=http://YOUR_AWS_PUBLIC_IP:8000
 
 Edit `devops/env/backend.env`:
 ```bash
-DATABASE_URL=postgresql://market_user:market_pass@db:5432/marketdb
+DATABASE_URL=postgresql://market_user:market_pass@db:5432/market_db
 FRED_API_KEY=6f12b75f50396346d15aa95aac7beaef
 CORS_ORIGINS=http://YOUR_AWS_PUBLIC_IP:5173
 ```
@@ -35,7 +35,7 @@ VITE_API_URL=/api
 
 Edit `devops/env/backend.env`:
 ```bash
-DATABASE_URL=postgresql://market_user:market_pass@db:5432/marketdb
+DATABASE_URL=postgresql://market_user:market_pass@db:5432/market_db
 FRED_API_KEY=6f12b75f50396346d15aa95aac7beaef
 CORS_ORIGINS=*
 ```
