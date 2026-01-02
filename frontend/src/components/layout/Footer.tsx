@@ -40,12 +40,8 @@ export default function Footer() {
             href="https://www.paypal.com/donate/?hosted_button_id=UMTL4BWY2HAEA" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="bg-stealth-100 hover:bg-white text-stealth-900 px-4 py-1.5 rounded-md transition-colors flex items-center gap-2 font-medium"
+            className="bg-stealth-100 hover:bg-blue-600 text-stealth-900 hover:text-white px-4 py-1.5 rounded-md transition-colors font-medium"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 00-.794.68l-.04.22-.63 3.993-.028.15a.805.805 0 01-.794.679H7.72a.483.483 0 01-.477-.558L7.418 21h1.518l.95-6.02h1.385c4.678 0 7.75-2.203 8.796-6.502z"/>
-              <path d="M2.379 0C1.84 0 1.385.426 1.311.957L.042 11.367a.711.711 0 00.702.814h4.155l1.044-6.616L6.5 1.728C6.578 1.195 7.033.77 7.573.77h8.34c1.053 0 1.99.178 2.77.548.102.048.201.1.297.155a5.427 5.427 0 011.913 1.998c.168.346.296.716.382 1.106l.033.16c-.49-2.654-2.703-3.966-5.975-3.966H7.573c-.54 0-.995.426-1.073.958L5.25 11.816H2.379z"/>
-            </svg>
             Donate
           </a>
         </div>
