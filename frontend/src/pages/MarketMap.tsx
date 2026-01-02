@@ -142,7 +142,7 @@ const MarketMap = () => {
    */
   const fetchData = async () => {
     try {
-      const apiUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const apiUrl = '/api';
       const [mapResponse, spyResponse] = await Promise.all([
         fetch(`${apiUrl}/market-map/data?days=5`),
         fetch(`${apiUrl}/market-map/spy-intraday`)
