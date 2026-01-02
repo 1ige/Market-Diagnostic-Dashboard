@@ -2,6 +2,8 @@
 
 A real-time market stability monitoring system that tracks key financial indicators and provides comprehensive market analysis.
 
+[![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/donate/?hosted_button_id=UMTL4BWY2HAEA)
+
 ## Features
 
 - **10-Indicator Monitoring System**: 
