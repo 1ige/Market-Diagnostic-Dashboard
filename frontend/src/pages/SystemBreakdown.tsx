@@ -487,21 +487,21 @@ export default function SystemBreakdown() {
         >
           <div className="flex items-center gap-2">
             <h3 className="text-lg md:text-xl font-semibold text-stealth-100">Composite Score Calculation</h3>
-            <div className="group relative">
-              <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-850 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-100 shadow-xl z-10">
-                Indicator state thresholds are derived from rolling historical distributions rather than fixed absolute levels, reducing sensitivity to long-term structural drift.
-              </div>
-            </div>
           </div>
           <span className="text-stealth-400 text-xl">{expandedSections.has('methodology') ? '−' : '+'}</span>
         </button>
         {expandedSections.has('methodology') && (
           <div className="collapsible-content">
             <div className="space-y-4">
-              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4 relative">
+                <div className="group absolute top-4 right-4">
+                  <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="invisible group-hover:visible absolute right-6 top-0 w-80 bg-stealth-850 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-100 shadow-xl z-10">
+                    Indicator state thresholds are derived from rolling historical distributions rather than fixed absolute levels, reducing sensitivity to long-term structural drift.
+                  </div>
+                </div>
                 <div className="text-sm font-mono text-cyan-400 mb-3">
                   Composite Score = Σ (Indicator Score × Weight) / Σ Weights
                 </div>
