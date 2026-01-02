@@ -1,7 +1,7 @@
 import { IndicatorStatus, IndicatorHistoryPoint } from "../../types";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getLegacyApiUrl } from "../../utils/apiUtils";
+import { buildApiUrl } from "../../utils/apiUtils";
 import { getDaysAgo, formatRelativeDate, isWeekend, formatValue } from "../../utils/componentUtils";
 import StateSparkline from "./StateSparkline";
 
@@ -35,9 +35,9 @@ export default function IndicatorCard({ indicator }: Props) {
   const [history, setHistory] = useState<IndicatorHistoryPoint[]>([]);
 
   useEffect(() => {
-    const apiUrl = getLegacyApiUrl();
-    // Fetch last 60 days of history for sparkline (matches StateSparkline display)
-    fetch(`${apiUrl}/indicators/${indicator.code}/history?days=60`)
+    // Use buildApiUrl to respect proxy configuration
+    const url = buildApiUrl(`/indicators/${indicator.code}/history?days=60`);
+    fetch(url)
       .then(res => res.json())
       .then(data => setHistory(data))
       .catch(() => setHistory([]));
