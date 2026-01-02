@@ -248,7 +248,17 @@ export default function SystemBreakdown() {
 
       {/* Overview Section */}
       <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">
-        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100">System Overview</h3>
+        <div className="flex items-center gap-2 mb-3 md:mb-4">
+          <h3 className="text-lg md:text-xl font-semibold text-stealth-100">System Overview</h3>
+          <div className="group relative">
+            <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-950 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-300 shadow-xl z-10">
+              Several indicators capture overlapping aspects of risk appetite (e.g., equity prices, breadth, liquidity). This redundancy is intentional, reflecting the empirical tendency for equity stress to propagate rapidly across financial conditions. Weights are capped to prevent any single domain from dominating the composite.
+            </div>
+          </div>
+        </div>
         <p className="text-xs sm:text-sm text-stealth-300 leading-relaxed mb-3 md:mb-4">
           This Market Diagnostic Dashboard provides a comprehensive, real-time assessment of market stability by monitoring 
           and analyzing <strong>ten critical indicators</strong> across six domains: <strong>volatility</strong> (VIX), 
@@ -467,7 +477,17 @@ export default function SystemBreakdown() {
           onClick={() => toggleSection('methodology')}
           className="collapsible-header"
         >
-          <h3 className="text-lg md:text-xl font-semibold text-stealth-100">Composite Score Calculation</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg md:text-xl font-semibold text-stealth-100">Composite Score Calculation</h3>
+            <div className="group relative">
+              <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-950 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-300 shadow-xl z-10">
+                Indicator state thresholds are derived from rolling historical distributions rather than fixed absolute levels, reducing sensitivity to long-term structural drift.
+              </div>
+            </div>
+          </div>
           <span className="text-stealth-400 text-xl">{expandedSections.has('methodology') ? '−' : '+'}</span>
         </button>
         {expandedSections.has('methodology') && (
@@ -500,6 +520,29 @@ export default function SystemBreakdown() {
                   <div>SENTIMENT Score: 82 × Weight: 1.6 = 131.2</div>
                   <div className="pt-2 border-t border-stealth-700 mt-2">Total Weighted: 1062.1 / Total Weight: 14.6 = <strong className="text-green-400">72.7 (GREEN)</strong></div>
                   <div className="text-stealth-400 text-xs mt-2">Note: Score ≥70 indicates stable market conditions.</div>
+                </div>
+              </div>
+              
+              <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                <h4 className="text-sm font-semibold text-stealth-200 mb-2">Data Timing & Lag Note</h4>
+                <div className="text-xs text-stealth-300 leading-relaxed">
+                  Several inputs (e.g., CPI, sentiment surveys) update with known reporting lags and revisions. 
+                  The system reflects currently available information, not final historical values, and should be 
+                  interpreted as a contemporaneous risk snapshot rather than a hindsight-optimized measure.
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-start gap-2">
+                      <span className="text-stealth-500">•</span>
+                      <span><strong className="text-stealth-400">Monthly indicators</strong> (CPI, PCE, Unemployment): ~2-4 week publication lag</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-stealth-500">•</span>
+                      <span><strong className="text-stealth-400">Sentiment surveys</strong> (Michigan, NFIB, ISM): Released monthly with 1-2 week delay</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-stealth-500">•</span>
+                      <span><strong className="text-stealth-400">Market data</strong> (VIX, SPY, yields): Real-time or 1-day lag</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -767,6 +810,58 @@ export default function SystemBreakdown() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Known Limitations */}
+      <div className="bg-gradient-to-br from-red-950/20 to-stealth-850 border border-red-900/30 rounded-lg p-4 md:p-6 mt-4 md:mt-6">
+        <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100 flex items-center gap-2">
+          <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          Known Limitations
+        </h3>
+        <div className="space-y-3">
+          <div className="bg-stealth-900/50 border border-stealth-700 rounded p-3">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <div className="text-sm font-semibold text-stealth-200 mb-1">Exogenous Shock Risk</div>
+                <div className="text-xs text-stealth-400">Does not capture geopolitical events, sudden policy announcements, or black swan events that can rapidly shift market conditions outside historical patterns.</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-stealth-900/50 border border-stealth-700 rounded p-3">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <div className="text-sm font-semibold text-stealth-200 mb-1">Macro Indicator Lag</div>
+                <div className="text-xs text-stealth-400">Economic indicators (CPI, employment, sentiment) update monthly and may lag rapid market repricing by days or weeks during high-volatility periods.</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-stealth-900/50 border border-stealth-700 rounded p-3">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <div className="text-sm font-semibold text-stealth-200 mb-1">Daily Context Only</div>
+                <div className="text-xs text-stealth-400">Designed for daily strategic context and risk assessment, not intraday signal generation or high-frequency trading decisions.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 p-3 bg-stealth-900/30 border border-stealth-700 rounded">
+          <p className="text-xs text-stealth-400 leading-relaxed">
+            <strong className="text-stealth-300">Important:</strong> This dashboard is a decision support tool, not a trading signal. 
+            Always combine quantitative metrics with fundamental analysis, risk management, and professional judgment. 
+            Past statistical patterns do not guarantee future market behavior.
+          </p>
+        </div>
       </div>
     </div>
   );
