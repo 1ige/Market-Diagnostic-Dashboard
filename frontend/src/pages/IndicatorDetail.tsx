@@ -372,20 +372,6 @@ export default function IndicatorDetail() {
             Consumer Health = [(PCE Growth - CPI Growth) + (PI Growth - CPI Growth)] / 2
           </p>
           <button
-            className="mb-4 px-3 py-1 bg-blue-900 text-blue-200 rounded hover:bg-blue-800 text-xs"
-            onClick={() => {
-              // Debug: log the latest component object
-              if (components && components.length > 0) {
-                // eslint-disable-next-line no-console
-                console.log('DEBUG: Latest Consumer Health component:', components[components.length - 1]);
-              } else {
-                // eslint-disable-next-line no-console
-                console.log('DEBUG: No components loaded');
-              }
-            }}
-          >
-            Debug Components
-          </button>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-2 md:p-3 mb-4 md:mb-6">
             <p className="text-xs text-stealth-300">
               <span className="text-green-400">Positive values</span> indicate spending and income are outpacing inflation (healthy consumer capacity). 
