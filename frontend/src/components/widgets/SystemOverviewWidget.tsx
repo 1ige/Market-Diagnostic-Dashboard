@@ -275,61 +275,72 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
       )}
 
       {/* Composite Score Chart */}
-      {history.length > 0 && (
-        <div className="pt-4 border-t border-stealth-700">
-          <h4 className="text-sm font-semibold text-stealth-200 mb-3">
-            Composite Score Trend
-          </h4>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history} margin={CHART_MARGIN}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
-                <XAxis
-                  dataKey="timestamp"
-                  tickFormatter={(v: string) =>
-                    new Date(v).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }
-                  tick={{ fill: "#6b7280", fontSize: 10 }}
-                  stroke="#555560"
-                />
-                <YAxis
-                  tick={{ fill: "#6b7280", fontSize: 10 }}
-                  stroke="#555560"
-                  domain={['dataMin - 5', 'dataMax + 5']}
-                  scale="linear"
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#161619",
-                    borderColor: "#555560",
-                    borderRadius: "6px",
-                    padding: "8px",
-                  }}
-                  labelStyle={{ color: "#a4a4b0", fontSize: 11 }}
-                  itemStyle={{ color: "#ffffff", fontSize: 11 }}
-                  formatter={(value: number) => [`${value.toFixed(1)}`, "Score"]}
-                  labelFormatter={(label: string) =>
-                    new Date(label).toLocaleDateString()
-                  }
-                />
-                <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" opacity={0.3} />
-                <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
-                <Line
-                  type="monotone"
-                  dataKey="composite_score"
-                  stroke="#60a5fa"
-                  strokeWidth={2}
-                  dot={false}
-                  animationDuration={300}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+      {history.length > 0 && (() => {
+        // Convert timestamps to numeric values and ensure unique dates
+        const chartData = history.map(item => ({
+          ...item,
+          timestampNum: new Date(item.timestamp).getTime()
+        }));
+        
+        return (
+          <div className="pt-4 border-t border-stealth-700">
+            <h4 className="text-sm font-semibold text-stealth-200 mb-3">
+              Composite Score Trend
+            </h4>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={CHART_MARGIN}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
+                  <XAxis
+                    dataKey="timestampNum"
+                    type="number"
+                    domain={['dataMin', 'dataMax']}
+                    scale="time"
+                    tickFormatter={(v: number) =>
+                      new Date(v).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    }
+                    tick={{ fill: "#6b7280", fontSize: 10 }}
+                    stroke="#555560"
+                  />
+                  <YAxis
+                    tick={{ fill: "#6b7280", fontSize: 10 }}
+                    stroke="#555560"
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                    scale="linear"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#161619",
+                      borderColor: "#555560",
+                      borderRadius: "6px",
+                      padding: "8px",
+                    }}
+                    labelStyle={{ color: "#a4a4b0", fontSize: 11 }}
+                    itemStyle={{ color: "#ffffff", fontSize: 11 }}
+                    formatter={(value: number) => [`${value.toFixed(1)}`, "Score"]}
+                    labelFormatter={(label: string | number) =>
+                      new Date(label).toLocaleDateString()
+                    }
+                  />
+                  <ReferenceLine y={70} stroke="#10b981" strokeDasharray="3 3" opacity={0.3} />
+                  <ReferenceLine y={40} stroke="#ef4444" strokeDasharray="3 3" opacity={0.3} />
+                  <Line
+                    type="monotone"
+                    dataKey="composite_score"
+                    stroke="#60a5fa"
+                    strokeWidth={2}
+                    dot={false}
+                    animationDuration={300}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-3 pt-3 border-t border-stealth-700">
