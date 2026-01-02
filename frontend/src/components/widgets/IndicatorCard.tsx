@@ -36,7 +36,12 @@ export default function IndicatorCard({ indicator }: Props) {
 
   useEffect(() => {
     // Use buildApiUrl to respect proxy configuration
-    const url = buildApiUrl(`/indicators/${indicator.code}/history?days=60`);
+    // Fetch more history for monthly indicators to ensure we have enough data points
+    const metadata = DATA_FREQUENCY[indicator.code];
+    const isMonthlyIndicator = metadata?.frequency === "Monthly";
+    const days = isMonthlyIndicator ? 365 : 60; // Monthly indicators need full year
+    
+    const url = buildApiUrl(`/indicators/${indicator.code}/history?days=${days}`);
     fetch(url)
       .then(res => res.json())
       .then(data => setHistory(data))
