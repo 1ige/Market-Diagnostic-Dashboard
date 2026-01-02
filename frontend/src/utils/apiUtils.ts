@@ -26,10 +26,11 @@ export function buildApiUrl(endpoint: string): string {
 
 /**
  * Get the legacy direct API URL (for backward compatibility)
- * Uses port 8000 directly
+ * Routes through proxy to avoid HTTPS/port issues
  */
 export function getLegacyApiUrl(): string {
-  return `${window.location.protocol}//${window.location.hostname}:8000`;
+  // Always use the proxy path to avoid mixed content and SSL issues
+  return '/api';
 }
 
 /**
