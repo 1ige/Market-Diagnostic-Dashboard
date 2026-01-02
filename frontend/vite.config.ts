@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    allowedHosts: [
+      'marketdiagnostictool.com',
+      'www.marketdiagnostictool.com',
+      '100.49.90.221',
+    ],
     proxy: {
       '/api': {
         target: 'http://market_backend:8000',
