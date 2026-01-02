@@ -1,10 +1,9 @@
 import { IndicatorStatus, IndicatorHistoryPoint } from "../../types";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { getDaysAgo, formatRelativeDate, isWeekend, formatValue } from "../../utils/componentUtils";
-import { CHART_MARGIN } from "../../utils/chartUtils";
+import StateSparkline from "./StateSparkline";
 
 interface Props {
   indicator: IndicatorStatus;
@@ -32,28 +31,17 @@ const colorMap = {
   RED: "text-accent-red",
 };
 
-const stateColorMap = {
-  GREEN: "#10b981",
-  YELLOW: "#eab308",
-  RED: "#ef4444",
-};
-
 export default function IndicatorCard({ indicator }: Props) {
   const [history, setHistory] = useState<IndicatorHistoryPoint[]>([]);
 
   useEffect(() => {
     const apiUrl = getLegacyApiUrl();
-    // Fetch last 30 days of history for sparkline
-    fetch(`${apiUrl}/indicators/${indicator.code}/history?days=30`)
+    // Fetch last 60 days of history for sparkline (matches StateSparkline display)
+    fetch(`${apiUrl}/indicators/${indicator.code}/history?days=60`)
       .then(res => res.json())
       .then(data => setHistory(data))
       .catch(() => setHistory([]));
   }, [indicator.code]);
-
-  const chartData = history.map(point => ({
-    value: point.score,
-    timestamp: new Date(point.timestamp).getTime()
-  }));
 
   const lastUpdated = new Date(indicator.timestamp);
   const daysAgo = getDaysAgo(lastUpdated);
@@ -97,23 +85,10 @@ export default function IndicatorCard({ indicator }: Props) {
           {formatValue(indicator.raw_value, 2)}
         </div>
         
-        {/* Mini Sparkline Chart */}
-        {chartData.length > 0 && (
-          <div className="mt-2" style={{ height: '60px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={CHART_MARGIN}>
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={stateColorMap[indicator.state]}
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        {/* State Trend Sparkline - matches indicator detail pages */}
+        <div className="mt-3">
+          <StateSparkline history={history} width={200} height={24} />
+        </div>
         
         <div className="flex justify-between items-center mt-2">
           <span className="text-sm text-gray-400">Score: {indicator.score}</span>
