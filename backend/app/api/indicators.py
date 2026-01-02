@@ -332,13 +332,16 @@ async def get_liquidity_proxy_components(days: int = 365):
             delta = fed_bs_vals[i] - fed_bs_vals[i - mom_window]
             fed_bs_delta.append(delta)
     
-    # Helper: compute z-score
+    # Helper: compute z-score with NaN/Inf handling
     def compute_z_score(vals):
         mean = np.mean(vals)
         std = np.std(vals)
-        if std == 0:
+        if std == 0 or np.isnan(std) or np.isinf(std):
             return np.zeros_like(vals)
-        return (vals - mean) / std
+        z_scores = (vals - mean) / std
+        # Replace any NaN or Inf values with 0
+        z_scores = np.nan_to_num(z_scores, nan=0.0, posinf=0.0, neginf=0.0)
+        return z_scores
     
     # Compute z-scores
     z_m2_yoy = compute_z_score(np.array(m2_yoy))
@@ -354,25 +357,31 @@ async def get_liquidity_proxy_components(days: int = 365):
     # Build result
     result = []
     for i, date in enumerate(common_dates):
+        # Ensure all float values are JSON-compliant (no NaN or Inf)
+        def safe_float(val):
+            if np.isnan(val) or np.isinf(val):
+                return 0.0
+            return float(val)
+        
         result.append({
             "date": date,
             "m2_money_supply": {
-                "value": m2_vals[i],
-                "yoy_pct": m2_yoy[i],
-                "z_score": float(z_m2_yoy[i]),
+                "value": safe_float(m2_vals[i]),
+                "yoy_pct": safe_float(m2_yoy[i]),
+                "z_score": safe_float(z_m2_yoy[i]),
             },
             "fed_balance_sheet": {
-                "value": fed_bs_vals[i],
-                "delta": fed_bs_delta[i],
-                "z_score": float(z_fed_delta[i]),
+                "value": safe_float(fed_bs_vals[i]),
+                "delta": safe_float(fed_bs_delta[i]),
+                "z_score": safe_float(z_fed_delta[i]),
             },
             "reverse_repo": {
-                "value": rrp_vals[i],
-                "z_score": float(z_rrp[i]),
+                "value": safe_float(rrp_vals[i]),
+                "z_score": safe_float(z_rrp[i]),
             },
             "composite": {
-                "liquidity_proxy": float(liquidity_proxy[i]),
-                "stress_score": float(liquidity_stress[i]),
+                "liquidity_proxy": safe_float(liquidity_proxy[i]),
+                "stress_score": safe_float(liquidity_stress[i]),
             }
         })
     
