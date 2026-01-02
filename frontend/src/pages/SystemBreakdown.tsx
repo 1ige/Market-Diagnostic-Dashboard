@@ -254,7 +254,7 @@ export default function SystemBreakdown() {
             <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
-            <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-950 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-300 shadow-xl z-10">
+            <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-850 border border-stealth-500 rounded-lg p-3 text-xs text-stealth-100 shadow-2xl z-10">
               Several indicators capture overlapping aspects of risk appetite (e.g., equity prices, breadth, liquidity). This redundancy is intentional, reflecting the empirical tendency for equity stress to propagate rapidly across financial conditions. Weights are capped to prevent any single domain from dominating the composite.
             </div>
           </div>
@@ -342,13 +342,6 @@ export default function SystemBreakdown() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#161619",
-                    borderColor: "#555560",
-                    borderRadius: "8px",
-                  }}
-                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -483,7 +476,7 @@ export default function SystemBreakdown() {
               <svg className="w-4 h-4 text-stealth-400 hover:text-stealth-200 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
-              <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-950 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-300 shadow-xl z-10">
+              <div className="invisible group-hover:visible absolute left-6 top-0 w-80 bg-stealth-850 border border-stealth-600 rounded-lg p-3 text-xs text-stealth-100 shadow-xl z-10">
                 Indicator state thresholds are derived from rolling historical distributions rather than fixed absolute levels, reducing sensitivity to long-term structural drift.
               </div>
             </div>
