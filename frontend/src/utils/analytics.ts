@@ -15,7 +15,7 @@ export function initializeAnalytics(): void {
   }
 
   // Google Analytics Measurement ID
-  const GA_ID = 'G-XXXXXXXXXX'; // Replace with your actual GA4 measurement ID
+  const GA_ID = 'G-50NDCBKGYM';
 
   // Load Google Analytics script
   const script = document.createElement('script');
