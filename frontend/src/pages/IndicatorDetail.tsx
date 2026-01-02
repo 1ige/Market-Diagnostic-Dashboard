@@ -371,7 +371,7 @@ export default function IndicatorDetail() {
           <p className="text-xs md:text-sm text-stealth-400 mb-3 md:mb-4 font-mono break-all">
             Consumer Health = [(PCE Growth - CPI Growth) + (PI Growth - CPI Growth)] / 2
           </p>
-          <button
+          
           <div className="bg-stealth-900 border border-stealth-600 rounded p-2 md:p-3 mb-4 md:mb-6">
             <p className="text-xs text-stealth-300">
               <span className="text-green-400">Positive values</span> indicate spending and income are outpacing inflation (healthy consumer capacity). 
