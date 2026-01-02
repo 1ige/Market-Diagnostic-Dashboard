@@ -4,6 +4,26 @@ import { Link } from "react-router-dom";
 import StateSparkline from "../components/widgets/StateSparkline";
 import { getStateBadgeClass } from "../utils/styleUtils";
 
+// Data frequency metadata to determine appropriate history fetch period
+const DATA_FREQUENCY: Record<string, { frequency: string }> = {
+  VIX: { frequency: "Real-time" },
+  SPY: { frequency: "Daily" },
+  DFF: { frequency: "Daily" },
+  T10Y2Y: { frequency: "Daily" },
+  UNRATE: { frequency: "Monthly" },
+  CONSUMER_HEALTH: { frequency: "Monthly" },
+  BOND_MARKET_STABILITY: { frequency: "Daily" },
+  LIQUIDITY_PROXY: { frequency: "Weekly" },
+  ANALYST_ANXIETY: { frequency: "Daily" },
+  SENTIMENT_COMPOSITE: { frequency: "Monthly" },
+};
+
+// Helper to get appropriate history days based on indicator frequency
+const getHistoryDays = (indicatorCode: string): number => {
+  const metadata = DATA_FREQUENCY[indicatorCode];
+  return metadata?.frequency === "Monthly" ? 365 : 60;
+};
+
 export default function Indicators() {
   const { data, loading, error } = useApi<IndicatorStatus[]>("/indicators");
 
@@ -75,8 +95,9 @@ export default function Indicators() {
 }
 
 function IndicatorRow({ indicator }: { indicator: IndicatorStatus }) {
+  const days = getHistoryDays(indicator.code);
   const { data: history } = useApi<IndicatorHistoryPoint[]>(
-    `/indicators/${indicator.code}/history?days=60`
+    `/indicators/${indicator.code}/history?days=${days}`
   );
   const displayName =
     indicator.code === "ANALYST_ANXIETY" ? "Analyst Confidence" : indicator.name;
@@ -106,8 +127,9 @@ function IndicatorRow({ indicator }: { indicator: IndicatorStatus }) {
 }
 
 function IndicatorCard({ indicator }: { indicator: IndicatorStatus }) {
+  const days = getHistoryDays(indicator.code);
   const { data: history } = useApi<IndicatorHistoryPoint[]>(
-    `/indicators/${indicator.code}/history?days=60`
+    `/indicators/${indicator.code}/history?days=${days}`
   );
   const displayName =
     indicator.code === "ANALYST_ANXIETY" ? "Analyst Confidence" : indicator.name;
