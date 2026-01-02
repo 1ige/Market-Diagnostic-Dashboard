@@ -16,26 +16,85 @@ def get_system_status():
 
 @router.get("/system/history")
 def get_system_history(days: int = 365):
-    """Return time-series history of composite system scores."""
+    """
+    Return time-series history of composite system scores.
+    Calculates scores dynamically from indicator history to support arbitrary date ranges.
+    """
     with get_db_session() as db:
         cutoff = datetime.utcnow() - timedelta(days=days)
-        history = (
-            db.query(SystemStatus)
-            .filter(SystemStatus.timestamp >= cutoff)
-            .order_by(SystemStatus.timestamp.asc())
+        
+        # Get all indicators with their weights
+        indicators = db.query(Indicator).all()
+        indicator_map = {ind.id: ind for ind in indicators}
+        
+        # Get historical values for all indicators within date range
+        values = (
+            db.query(IndicatorValue)
+            .filter(IndicatorValue.timestamp >= cutoff)
+            .order_by(IndicatorValue.timestamp.asc())
             .all()
         )
         
-        return [
-            {
-                "timestamp": status.timestamp.isoformat(),
-                "composite_score": status.composite_score,
-                "state": status.state,
-                "red_count": status.red_count,
-                "yellow_count": status.yellow_count,
-            }
-            for status in history
-        ]
+        # Group values by date (day granularity)
+        from collections import defaultdict
+        date_values = defaultdict(list)
+        for val in values:
+            date_key = val.timestamp.date()
+            date_values[date_key].append(val)
+        
+        # Calculate composite score for each date
+        history = []
+        for date_key in sorted(date_values.keys()):
+            day_values = date_values[date_key]
+            
+            # Get the latest value for each indicator on this date
+            latest_per_indicator = {}
+            for val in day_values:
+                if val.indicator_id not in latest_per_indicator:
+                    latest_per_indicator[val.indicator_id] = val
+                elif val.timestamp > latest_per_indicator[val.indicator_id].timestamp:
+                    latest_per_indicator[val.indicator_id] = val
+            
+            # Calculate weighted composite score
+            total_weighted_score = 0
+            total_weight = 0
+            red_count = 0
+            yellow_count = 0
+            
+            for indicator_id, val in latest_per_indicator.items():
+                if indicator_id in indicator_map:
+                    weight = indicator_map[indicator_id].weight
+                    total_weighted_score += val.score * weight
+                    total_weight += weight
+                    
+                    if val.state == "RED":
+                        red_count += 1
+                    elif val.state == "YELLOW":
+                        yellow_count += 1
+            
+            if total_weight > 0:
+                composite_score = total_weighted_score / total_weight
+                
+                # Determine system state based on composite score
+                if composite_score >= 70:
+                    state = "GREEN"
+                elif composite_score >= 40:
+                    state = "YELLOW"
+                else:
+                    state = "RED"
+                
+                # Use end of day for timestamp
+                timestamp = datetime.combine(date_key, datetime.max.time())
+                
+                history.append({
+                    "timestamp": timestamp.isoformat(),
+                    "composite_score": round(composite_score, 1),
+                    "state": state,
+                    "red_count": red_count,
+                    "yellow_count": yellow_count,
+                })
+        
+        return history
 
 @router.get("/indicators")
 def get_indicator_status():
