@@ -54,10 +54,13 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('SystemOverview fetching data with trendPeriod:', trendPeriod);
         const apiUrl = getLegacyApiUrl();
+        const historyUrl = `${apiUrl}/system/history?days=${trendPeriod}`;
+        console.log('SystemOverview history URL:', historyUrl);
         const [statusResponse, historyResponse, newsResponse] = await Promise.all([
           fetch(`${apiUrl}/system`),
-          fetch(`${apiUrl}/system/history?days=${trendPeriod}`),
+          fetch(historyUrl),
           fetch(`${apiUrl}/news?hours=24&limit=50`),
         ]);
         
