@@ -4,10 +4,10 @@ A real-time market stability monitoring system that tracks key financial indicat
 
 ## Features
 
-- **8-Indicator Monitoring System**: 
+- **10-Indicator Monitoring System**: 
   - **Core Indicators**: VIX, SPY (50-day EMA gap), Federal Funds Rate (rate-of-change), Treasury Yield Curve (10Y-2Y), Unemployment Rate
-  - **Composite Indicators**: Consumer Health, Bond Market Stability (4-component weighted), Liquidity Proxy (3-component)
-  - **Automatic Seeding**: All indicators automatically seeded on container startup
+  - **Composite Indicators**: Consumer Health, Bond Market Stability (4-component weighted), Liquidity Proxy (3-component), Analyst Confidence (sentiment), Consumer & Corporate Sentiment
+  - **Automatic Seeding**: All 10 indicators automatically seeded on container startup
 - **Dow Theory Market Strain Analysis**: Advanced market direction and strain calculations based on Dow Theory principles
 - **System Overview Dashboard**: Composite scoring system with historical trends, recent news highlights, and purpose description
 - **Manual Refresh Button**: One-click data refresh on dashboard to fetch latest market data
@@ -61,7 +61,7 @@ chmod +x scripts/launch.sh
 The launcher script will:
 - ✅ Check and start Docker if needed
 - ✅ Build and start all containers
-- ✅ Automatically seed all 8 indicators on backend startup
+- ✅ Automatically seed all 10 indicators on backend startup
 - ✅ Backfill 365 days of historical data from FRED and Yahoo Finance
 - ✅ Open the dashboard in your browser
 - ✅ Display comprehensive setup status and service URLs
@@ -241,11 +241,14 @@ docker-compose logs -f
 - Adminer (DB admin) runs on port 8080
 - ETL scheduler runs every 4 hours during market hours
 - Initial data load happens on application startup
-- Backend automatically seeds all 8 indicators on container start
+- Backend automatically seeds all 10 indicators on container start
 
 ## Recent Improvements
 
 ### January 2026 Updates
+- **Sparkline Visualization Enhancements**: Added bit smoothing and converted to connected line charts for better trend visibility
+- **Adaptive Data Fetching**: Monthly indicators now fetch 365 days of history vs 60 days for daily/weekly indicators
+- **UI Refinements**: Hidden redundant raw value chart on indicator detail pages
 - **AWS Deployment Support**: Added flexible configuration for AWS EC2 deployments with proxy mode and direct mode options
 - **Environment-Based Configuration**: CORS and API URLs now fully configurable via environment variables
 - **Interactive Setup Script**: Added `configure_aws.sh` for easy AWS deployment configuration

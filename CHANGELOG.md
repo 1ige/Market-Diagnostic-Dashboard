@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2026-01-02] Sparkline Visualization Enhancements
+
+### Added
+- **Bit Smoothing**: Applied 3-point moving average to sparkline charts to reduce visual noise while preserving trend direction
+- **Comprehensive Code Documentation**: Added detailed comments to StateSparkline component explaining smoothing algorithm, data sampling, and rendering logic
+
+### Changed
+- **Sparkline Display**: Converted from isolated dots to connected line charts with color-coded segments
+- **Data Sampling**: Optimized for both daily indicators (60 points) and monthly indicators (all points)
+- **Adaptive History**: Monthly indicators now fetch 365 days vs 60 days for daily/weekly indicators
+
+### Fixed
+- **Raw Value Chart**: Hidden redundant raw value chart on indicator detail pages (stability score chart provides sufficient information)
+
 ## [2026-01-02] AWS Deployment Configuration
 
 ### Added
