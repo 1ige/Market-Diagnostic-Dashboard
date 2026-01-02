@@ -304,17 +304,32 @@ export default function SystemBreakdown() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-green-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.GREEN.label}</div>
+            <div className="flex items-center gap-2 text-xl md:text-2xl mb-1 md:mb-2">
+              <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#10b981" />
+              </svg>
+              <span className="text-green-400">{STATE_DESCRIPTIONS.GREEN.label}</span>
+            </div>
             <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.GREEN.range}</div>
             <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.GREEN.description}</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-yellow-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.YELLOW.label}</div>
+            <div className="flex items-center gap-2 text-xl md:text-2xl mb-1 md:mb-2">
+              <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#eab308" />
+              </svg>
+              <span className="text-yellow-400">{STATE_DESCRIPTIONS.YELLOW.label}</span>
+            </div>
             <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.YELLOW.range}</div>
             <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.YELLOW.description}</div>
           </div>
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 md:p-4">
-            <div className="text-red-400 text-xl md:text-2xl mb-1 md:mb-2">{STATE_DESCRIPTIONS.RED.label}</div>
+            <div className="flex items-center gap-2 text-xl md:text-2xl mb-1 md:mb-2">
+              <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" fill="#ef4444" />
+              </svg>
+              <span className="text-red-400">{STATE_DESCRIPTIONS.RED.label}</span>
+            </div>
             <div className="text-xs text-stealth-400 mb-1">{STATE_DESCRIPTIONS.RED.range}</div>
             <div className="text-xs text-stealth-300">{STATE_DESCRIPTIONS.RED.description}</div>
           </div>

@@ -73,19 +73,19 @@ export function getStateBadgeClasses(state: StabilityState): string {
  */
 export const STATE_DESCRIPTIONS = {
   GREEN: {
-    label: "🟢 GREEN",
+    label: "GREEN",
     range: `Stability Score: ≥ ${STABILITY_THRESHOLDS.YELLOW_MAX}`,
     description:
       "Market conditions are stable. Low volatility, healthy growth, minimal systemic risks.",
   },
   YELLOW: {
-    label: "🟡 YELLOW",
+    label: "YELLOW",
     range: `Stability Score: ${STABILITY_THRESHOLDS.RED_MAX}–${STABILITY_THRESHOLDS.YELLOW_MAX - 1}`,
     description:
       "Market shows caution signals. Increased volatility, mixed indicators, elevated monitoring required.",
   },
   RED: {
-    label: "🔴 RED",
+    label: "RED",
     range: `Stability Score: < ${STABILITY_THRESHOLDS.RED_MAX}`,
     description:
       "Market under stress. High volatility, recession signals, significant systemic concerns.",
