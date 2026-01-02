@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2026-01-02] System History & Data Quality Improvements
+
+### Added
+- **Dynamic System History**: Backend now calculates historical composite scores on-the-fly from indicator data
+  - Supports arbitrary date ranges (90, 180, 365 days)
+  - Aggregates scores by day with proper weighting
+  - Eliminates dependency on limited SystemStatus table records
+- **NaN/Inf Protection**: Added comprehensive handling for invalid float values in LIQUIDITY_PROXY components
+  - Enhanced z-score calculations with `np.nan_to_num()`
+  - Safe float conversion function prevents JSON serialization errors
+
+### Changed
+- **Dashboard Chart X-Axis**: Converted to numeric timestamps with proper time-scale rendering
+  - Fixes repeating date labels
+  - Added `tickCount` for better label spacing
+  - Date range buttons (90d/6mo/1yr) now work correctly
+- **Code Cleanup**: Removed debug logging and test buttons throughout the application
+  - Removed console.log statements from SystemOverviewWidget, SystemBreakdown
+  - Removed debug button from IndicatorDetail component
+  - Kept appropriate error logging (console.error)
+
+### Fixed
+- **Chart Date Rendering**: Dashboard composite score chart now properly displays date ranges
+- **Liquidity Proxy Components**: Fixed 500 error caused by NaN values in z-score calculations
+- **Raw Value Chart**: Fully removed duplicate raw value chart from indicator detail pages
+- **Syntax Error**: Fixed orphaned button tag in IndicatorDetail that caused module loading failure
+
 ## [2026-01-02] Sparkline Visualization Enhancements
 
 ### Added

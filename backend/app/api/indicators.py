@@ -256,7 +256,18 @@ async def get_bond_composite_components(days: int = 365):
 async def get_liquidity_proxy_components(days: int = 365):
     """
     Return component breakdown for Liquidity Proxy Indicator.
-    Shows M2 YoY%, Fed balance sheet delta, and RRP usage.
+    
+    Shows M2 YoY%, Fed balance sheet delta, and RRP usage with z-score normalization.
+    
+    Important: All numeric values are sanitized to prevent NaN/Infinity values that
+    would cause JSON serialization errors. Z-score calculations use np.nan_to_num()
+    and all outputs pass through safe_float() conversion.
+    
+    Args:
+        days: Number of days of component history to return (default: 365)
+    
+    Returns:
+        List of daily component breakdowns with M2, Fed balance sheet, RRP, and composite scores
     """
     from datetime import datetime, timedelta
     from app.services.ingestion.fred_client import FredClient

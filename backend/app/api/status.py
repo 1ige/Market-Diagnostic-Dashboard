@@ -18,7 +18,17 @@ def get_system_status():
 def get_system_history(days: int = 365):
     """
     Return time-series history of composite system scores.
+    
     Calculates scores dynamically from indicator history to support arbitrary date ranges.
+    This approach eliminates the limitation of the SystemStatus table which only contains
+    recent ETL update records. By aggregating indicator values by day and computing
+    weighted composite scores, we can provide historical data for any requested period.
+    
+    Args:
+        days: Number of days of history to return (default: 365)
+    
+    Returns:
+        List of daily system status records with composite score, state, and indicator counts
     """
     with get_db_session() as db:
         cutoff = datetime.utcnow() - timedelta(days=days)
