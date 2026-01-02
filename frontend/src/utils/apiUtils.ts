@@ -26,10 +26,9 @@ export function buildApiUrl(endpoint: string): string {
 
 /**
  * Get the legacy direct API URL (for backward compatibility)
- * Routes through proxy to avoid HTTPS/port issues
+ * Now routes through proxy to avoid CORS issues with HTTPS
  */
 export function getLegacyApiUrl(): string {
-  // Always use the proxy path to avoid mixed content and SSL issues
   return '/api';
 }
 
