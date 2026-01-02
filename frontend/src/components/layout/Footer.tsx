@@ -40,7 +40,7 @@ export default function Footer() {
             href="https://www.paypal.com/donate/?hosted_button_id=UMTL4BWY2HAEA" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="bg-stealth-100 hover:bg-blue-600 text-stealth-900 hover:text-white px-4 py-1.5 rounded-md transition-colors font-medium"
+            className="bg-white hover:bg-blue-600 text-stealth-900 hover:text-white px-4 py-1.5 rounded-md transition-colors font-medium"
           >
             Donate
           </a>
