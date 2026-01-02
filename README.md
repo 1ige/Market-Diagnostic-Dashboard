@@ -20,6 +20,9 @@ A real-time market stability monitoring system that tracks key financial indicat
   - Federal Funds Rate tracks rate-of-change (not absolute rate) with proper directional scoring
   - Bond Market Stability: Weighted composite (44% credit, 23% curve, 17% momentum, 16% Treasury volatility)
   - Liquidity Proxy: Z-score combination of M2 growth, Fed balance sheet delta, and RRP usage
+<img width="3358" height="3228" alt="image" src="https://github.com/user-attachments/assets/d53500cf-684c-41f0-87ea-3708c5b404df" />
+<img width="1080" height="935" alt="image" src="https://github.com/user-attachments/assets/df6b4d91-4928-442c-87d5-e736b4c8278f" />
+<img width="1080" height="3775" alt="image" src="https://github.com/user-attachments/assets/ee0e2c41-22cf-4da4-985e-66941ad7d4d1" />
 
 ## Tech Stack
 
