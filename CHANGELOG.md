@@ -6,6 +6,80 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.0.0] - 2026-01-04 - Sector Projections Module
+
+### Added
+- **New Sector Projections Page** (`/sector-projections`)
+  - Multi-horizon analysis: 3-month, 6-month, and 12-month projections for 11 sector ETFs
+  - Transparent, rules-based scoring with four weighted components:
+    - Trend (45%): Return + momentum (SMA distance)
+    - Relative Strength (30%): Outperformance vs SPY benchmark  
+    - Risk (20%): Volatility + drawdown (inverted - lower risk = higher score)
+    - Regime (5%): Context-aware adjustments based on market state
+  - Smooth line chart visualization tracking score evolution across horizons
+  - Winner/Neutral/Loser classifications (top 3, middle 5, bottom 3)
+  - Collapsible methodology section with detailed technical documentation
+  
+- **Sector Divergence Widget** on Dashboard
+  - Defensive vs Cyclical sector performance comparison
+  - Visual line chart showing score trends across horizons  
+  - Market interpretation system with five narratives:
+    - "Flight to Safety": Defensives leading in RED market (expected)
+    - "Risk Appetite Emerging": Cyclicals gaining in RED market (recovery signal)
+    - "Risk-On Mode": Cyclicals leading in GREEN market (healthy)
+    - "Caution Creeping In": Defensives leading in GREEN market (warning)
+    - "Balanced Rotation": No clear bias
+  - Leading/Lagging sectors lists with trend arrows
+  - Regime alignment score (0-100) with color-coded status
+  - Sector breadth: improving/stable/deteriorating counts
+
+- **Sector Alerts Widget** on Dashboard
+  - Real-time divergence alerts when sector leadership conflicts with market regime
+  - Five alert types with INFO/WARNING severity:
+    1. Recovery Signal: Cyclicals leading in RED market
+    2. Extreme Flight to Safety: Defensive spread >15 in RED
+    3. Caution Signal: Defensives leading in GREEN market
+    4. Strong Risk-On: Cyclical spread >15 in GREEN
+    5. Regime Transition: Extreme bias (>15) in YELLOW market
+  - Detailed metrics for each alert (spread, averages, system state)
+
+- **Market Map Integration**
+  - Sector projection scores overlaid on sector cards  
+  - Trend arrows showing 3M→12M direction (↗ improving, → flat, ↘ declining)
+  - Color-coded indicators (green/gray/red based on trend)
+
+- **System Breakdown Updates**
+  - Updated text: "11 indicators across 7 domains" (added Sector Regime)
+  - New domain card: "Sector Regime - Defensive vs Cyclical Alignment"
+  - Backend virtual indicator framework created (SECTOR_REGIME_ALIGNMENT)
+
+- **Backend Infrastructure**
+  - New models: `SectorProjectionRun`, `SectorProjectionValue`
+  - New services: `sector_projection.py` (scoring engine), `sector_alerts.py` (divergence detection)
+  - New API endpoints:
+    - `GET /sectors/projections/latest`: Current projections
+    - `GET /sectors/projections/history`: Time-series data
+    - `POST /sectors/projections/refresh`: Manual recomputation
+    - `GET /sectors/summary`: Dashboard aggregate metrics
+    - `GET /sectors/alerts`: Active divergence alerts
+  - Scheduler integration: Auto-compute every 4 hours during market hours
+  - Virtual indicator framework for dynamically computed indicators
+
+### Technical Details
+- Data sources: yfinance for 11 SPDR sector ETFs + SPY benchmark
+- Lookback: 800 days for robust statistical calculations
+- Scoring: Percentile ranking (0-100 scale) with NaN/Inf handling
+- Regime adjustments: +5 for defensives in RED, -5 for high-vol in RED
+- Frontend: Smooth Bezier curves, responsive 3-column grid, dynamic highlighting
+- All components fully documented with JSDoc headers and inline comments
+
+### Fixed
+- NaN handling in sector scoring (multiple .fillna() calls, na_option='bottom')
+- JSON serialization with clean_float() helper for NaN/Inf values
+- Classification logic: per-horizon thresholds instead of global
+- DataFrame initialization: Added mdf creation before scoring operations
+
+
 ## [2026-01-02] System History & Data Quality Improvements
 
 ### Added

@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     FRED_API_KEY: Optional[str] = None
     CORS_ORIGINS: str = "*"  # Comma-separated origins or * for all
 
-    model_config = {"extra": "allow", "env_file": ".env"}
+    class Config:
+        env_file = ".env"
+        extra = "allow"
 
 settings = Settings()

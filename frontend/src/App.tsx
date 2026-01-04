@@ -8,6 +8,7 @@ import MarketNews from "./pages/MarketNews";
 import IndicatorDetail from "./pages/IndicatorDetail";
 import SystemBreakdown from "./pages/SystemBreakdown";
 import MarketMap from "./pages/MarketMap";
+import SectorProjections from "./pages/SectorProjections";
 import { trackPageView } from "./utils/analytics";
 
 function AppWithAnalytics() {
@@ -21,6 +22,7 @@ function AppWithAnalytics() {
                      location.pathname.includes('/news') ? 'Market News' :
                      location.pathname.includes('/system-breakdown') ? 'System Breakdown' :
                      location.pathname.includes('/market-map') ? 'Market Map' :
+                     location.pathname.includes('/sector-projections') ? 'Sector Projections' :
                      'Unknown';
     
     trackPageView(location.pathname, pageName);
@@ -39,6 +41,7 @@ function AppWithAnalytics() {
           <Route path="/news" element={<MarketNews />} />
           <Route path="/system-breakdown" element={<SystemBreakdown />} />
           <Route path="/market-map" element={<MarketMap />} />
+          <Route path="/sector-projections" element={<SectorProjections />} />
         </Routes>
       </main>
 

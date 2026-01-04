@@ -261,10 +261,10 @@ export default function SystemBreakdown() {
         </div>
         <p className="text-xs sm:text-sm text-stealth-300 leading-relaxed mb-3 md:mb-4">
           This Market Diagnostic Dashboard provides a comprehensive, real-time assessment of market stability by monitoring 
-          and analyzing <strong>ten critical indicators</strong> across six domains: <strong>volatility</strong> (VIX), 
+          and analyzing <strong>eleven critical indicators</strong> across seven domains: <strong>volatility</strong> (VIX), 
           <strong>equities</strong> (SPY), <strong>interest rates</strong> (DFF, T10Y2Y), <strong>employment</strong> (UNRATE), 
           <strong>bonds</strong> (Bond Market Stability), <strong>liquidity</strong> (Liquidity Proxy), <strong>consumers</strong> (Consumer Health), 
-          and <strong>sentiment</strong> (Analyst Confidence, Consumer & Corporate Sentiment). 
+          <strong>sentiment</strong> (Analyst Confidence, Consumer & Corporate Sentiment), and <strong>sector positioning</strong> (Sector Regime Alignment).
           Each indicator is independently scored on a 0-100 scale using statistical normalization techniques, then combined into 
           a weighted composite score that reflects overall market health.
         </p>
@@ -300,6 +300,10 @@ export default function SystemBreakdown() {
           <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
             <div className="text-xs font-semibold text-stealth-200">Sentiment Composite</div>
             <div className="text-xs text-stealth-400">Michigan + NFIB + ISM + CapEx</div>
+          </div>
+          <div className="bg-stealth-900 border border-stealth-600 rounded p-3 text-center">
+            <div className="text-xs font-semibold text-stealth-200">Sector Regime</div>
+            <div className="text-xs text-stealth-400">Defensive vs Cyclical Alignment</div>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">

@@ -134,8 +134,24 @@ const MarketMap = () => {
   // State management
   const [data, setData] = useState<MarketMapData | null>(null);
   const [intradayData, setIntradayData] = useState<IntradayData[]>([]);
+  const [sectorProjections, setSectorProjections] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Map sector names to ETF symbols
+  const sectorToEtf: Record<string, string> = {
+    'Technology': 'XLK',
+    'Financials': 'XLF',
+    'Health Care': 'XLV',
+    'Consumer Discretionary': 'XLY',
+    'Industrials': 'XLI',
+    'Energy': 'XLE',
+    'Consumer Staples': 'XLP',
+    'Utilities': 'XLU',
+    'Materials': 'XLB',
+    'Real Estate': 'XLRE',
+    'Communication Services': 'XLC',
+  };
 
   /**
    * Fetch market map data from backend API
@@ -143,9 +159,10 @@ const MarketMap = () => {
   const fetchData = async () => {
     try {
       const apiUrl = '/api';
-      const [mapResponse, spyResponse] = await Promise.all([
+      const [mapResponse, spyResponse, projectionsResponse] = await Promise.all([
         fetch(`${apiUrl}/market-map/data?days=5`),
-        fetch(`${apiUrl}/market-map/spy-intraday`)
+        fetch(`${apiUrl}/market-map/spy-intraday`),
+        fetch(`${apiUrl}/sectors/projections/latest`)
       ]);
       
       if (!mapResponse.ok) throw new Error("Failed to fetch market map data");
@@ -153,9 +170,11 @@ const MarketMap = () => {
       
       const mapResult = await mapResponse.json();
       const intradayResult = await spyResponse.json();
+      const projectionsResult = projectionsResponse.ok ? await projectionsResponse.json() : null;
       
       setData(mapResult);
       setIntradayData(intradayResult.data || []);
+      setSectorProjections(projectionsResult?.projections || null);
     } catch (error) {
       console.error("Error fetching market map:", error);
     } finally {
@@ -513,7 +532,40 @@ const MarketMap = () => {
               >
                 {/* Sector Header */}
                 <div className="flex flex-col gap-1 px-4 py-2.5 bg-stealth-900 border-b border-stealth-700">
-                  <h3 className="text-sm font-semibold text-stealth-200 truncate">{sector.name}</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-stealth-200 truncate">{sector.name}</h3>
+                    {(() => {
+                      const etfSymbol = sectorToEtf[sector.name];
+                      if (!etfSymbol || !sectorProjections) return null;
+                      
+                      const projection3m = sectorProjections["3m"]?.find((p: any) => p.sector_symbol === etfSymbol);
+                      const projection6m = sectorProjections["6m"]?.find((p: any) => p.sector_symbol === etfSymbol);
+                      const projection12m = sectorProjections["12m"]?.find((p: any) => p.sector_symbol === etfSymbol);
+                      
+                      if (!projection3m) return null;
+                      
+                      const score3m = projection3m.score_total;
+                      const score12m = projection12m?.score_total || score3m;
+                      const trend = score12m - score3m;
+                      
+                      let trendIcon = '→';
+                      let trendColor = 'text-gray-400';
+                      if (trend > 5) {
+                        trendIcon = '↗';
+                        trendColor = 'text-green-400';
+                      } else if (trend < -5) {
+                        trendIcon = '↘';
+                        trendColor = 'text-red-400';
+                      }
+                      
+                      return (
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs font-bold ${trendColor}`}>{trendIcon}</span>
+                          <span className="text-xs text-stealth-400">{score3m.toFixed(0)}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <span
                     className={`text-xs font-bold px-1.5 py-0.5 rounded self-start ${
                       sector.pct_change >= 0 ? "bg-green-600 text-white" : "bg-red-600 text-white"

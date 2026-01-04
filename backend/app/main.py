@@ -53,6 +53,8 @@ app = FastAPI(
 from app.core.config import settings
 
 allowed_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"]
+# Ensure all origins are stripped of whitespace
+allowed_origins = [o.strip() for o in allowed_origins]
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,6 +76,18 @@ app.include_router(alerts_router, tags=["Alerts"])
 app.include_router(news_router, tags=["News"])
 app.include_router(dow_theory_router, tags=["DowTheory"])
 app.include_router(market_map_router, tags=["MarketMap"])
+
+# Sector Projections
+from app.api.sector_projection import router as sector_projection_router
+app.include_router(sector_projection_router, tags=["SectorProjections"])
+
+# Sector Summary (for dashboard integration)
+from app.api.sector_summary import router as sector_summary_router
+app.include_router(sector_summary_router, tags=["SectorSummary"])
+
+# Sector Alerts (divergence detection)
+from app.api.sector_alerts import router as sector_alerts_router
+app.include_router(sector_alerts_router, tags=["SectorAlerts"])
 
 from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
