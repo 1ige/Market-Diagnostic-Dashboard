@@ -248,10 +248,22 @@ export default function SectorProjections() {
                     const gradientId = `grad_${idx}`;
                     return (
                       <linearGradient key={gradientId} id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor={color} stopOpacity="0" />
-                        <stop offset="50%" stopColor={color} stopOpacity="0.08" />
-                        <stop offset="100%" stopColor={color} stopOpacity="0.15" />
+                        <stop offset="0%" stopColor={color} stopOpacity="0.02" />
+                        <stop offset="30%" stopColor={color} stopOpacity="0.08" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.12" />
                       </linearGradient>
+                    );
+                  })}
+                  {/* Radial gradients for fading cone edges */}
+                  {chartData.map((sector: any, idx: number) => {
+                    const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
+                    const color = colors[idx % colors.length];
+                    const radialId = `radial_${idx}`;
+                    return (
+                      <radialGradient key={radialId} id={radialId} cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0.08" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0" />
+                      </radialGradient>
                     );
                   })}
                 </defs>
@@ -287,11 +299,26 @@ export default function SectorProjections() {
                   const x3 = 720;  // 12M
                   const y3 = 260 - (sector.scores["12m"] * 2.4);
                   
-                  // Calculate uncertainty cone (expanding from 6M to 12M)
-                  const sigma = Math.abs(sector.scores["12m"] - sector.scores["6m"]) * 0.4 + 8;
-                  const upperBound = y3 - (sigma * 2.4);
-                  const lowerBound = y3 + (sigma * 2.4);
-                  const conePoints = `${x2},${y2} ${x3},${upperBound} ${x3},${lowerBound}`;
+                  // Calculate expanding uncertainty cone starting from now
+                  // Uncertainty grows progressively and smoothly
+                  const initialSigma = 2; // Small initial uncertainty at "now"
+                  const midSigma = Math.abs(sector.scores["6m"] - sector.scores["3m"]) * 0.3 + 5;
+                  const finalSigma = Math.abs(sector.scores["12m"] - sector.scores["6m"]) * 0.4 + 8;
+                  
+                  // Create smooth cone envelope by calculating bounds at each point
+                  const sigma0 = initialSigma;
+                  const sigma1 = midSigma * 0.4;
+                  const sigma2 = midSigma * 0.85;
+                  const sigma3 = finalSigma;
+                  
+                  const upper0 = y0 - (sigma0 * 2.4);
+                  const lower0 = y0 + (sigma0 * 2.4);
+                  const upper1 = y1 - (sigma1 * 2.4);
+                  const lower1 = y1 + (sigma1 * 2.4);
+                  const upper2 = y2 - (sigma2 * 2.4);
+                  const lower2 = y2 + (sigma2 * 2.4);
+                  const upper3 = y3 - (sigma3 * 2.4);
+                  const lower3 = y3 + (sigma3 * 2.4);
                   
                   // Create smooth path using quadratic bezier curves
                   const pathData = `
@@ -301,14 +328,58 @@ export default function SectorProjections() {
                     Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
                   `;
                   
+                  // Create smooth uncertainty cone envelope
+                  const conePathUpper = `
+                    M ${x0} ${upper0}
+                    Q ${(x0 + x1) / 2} ${(upper0 + upper1) / 2}, ${x1} ${upper1}
+                    Q ${(x1 + x2) / 2} ${(upper1 + upper2) / 2}, ${x2} ${upper2}
+                    Q ${(x2 + x3) / 2} ${(upper2 + upper3) / 2}, ${x3} ${upper3}
+                  `;
+                  
+                  const conePathLower = `
+                    M ${x0} ${lower0}
+                    Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x1} ${lower1}
+                    Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x2} ${lower2}
+                    Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x3} ${lower3}
+                  `;
+                  
                   return (
                     <g key={sector.symbol} onClick={() => setSelectedSector(isSelected ? null : sector.symbol)} style={{ cursor: 'pointer' }}>
-                      {/* Uncertainty cone - only shown when selected */}
+                      {/* Uncertainty cone - filled area between upper and lower bounds */}
                       {isSelected && (
-                        <polygon points={conePoints} fill={`url(#grad_${idx})`} opacity={0.6} />
+                        <g opacity={0.4}>
+                          <path
+                            d={`${conePathUpper} L ${x3} ${lower3} Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x0} ${lower0} Z`}
+                            fill={`url(#grad_${idx})`}
+                          />
+                        </g>
                       )}
                       
-                      {/* Smooth path */}
+                      {/* Upper and lower cone boundaries - subtle when not selected */}
+                      {isSelected && (
+                        <>
+                          <path 
+                            d={conePathUpper}
+                            stroke={color}
+                            strokeWidth="1"
+                            fill="none"
+                            opacity={0.3}
+                            strokeDasharray="3 3"
+                            strokeLinecap="round"
+                          />
+                          <path 
+                            d={conePathLower}
+                            stroke={color}
+                            strokeWidth="1"
+                            fill="none"
+                            opacity={0.3}
+                            strokeDasharray="3 3"
+                            strokeLinecap="round"
+                          />
+                        </>
+                      )}
+                      
+                      {/* Main trend line */}
                       <path 
                         d={pathData} 
                         stroke={color} 
