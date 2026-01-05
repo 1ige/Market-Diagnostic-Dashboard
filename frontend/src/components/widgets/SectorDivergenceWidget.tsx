@@ -244,9 +244,10 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           ))}
           
           {/* X-axis labels */}
-          <text x="70" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">3M</text>
-          <text x="160" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">6M</text>
-          <text x="340" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">12M</text>
+          <text x="50" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">Today</text>
+          <text x="120" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">3M</text>
+          <text x="210" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">6M</text>
+          <text x="360" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">12M</text>
           
           {/* Draw all lines */}
           {chartData.map((sector, idx) => {
@@ -259,20 +260,22 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             if (isTop) color = "#10b981";
             if (isBottom) color = "#ef4444";
             
-            const x1 = 70;
-            const y1 = 125 - (sector.scores["3m"] * 1.25);
-            const x2 = 160;
-            const y2 = 125 - (sector.scores["6m"] * 1.25);
-            const x3 = 340;
-            const y3 = 125 - (sector.scores["12m"] * 1.25);
+            const x1 = 50;  // Today
+            const y1 = 125 - (sector.scores["3m"] * 1.25);  // Use 3m as starting point
+            const x2 = 120;  // 3M
+            const y2 = 125 - (sector.scores["3m"] * 1.25);
+            const x3 = 210;  // 6M
+            const y3 = 125 - (sector.scores["6m"] * 1.25);
+            const x4 = 360;  // 12M
+            const y4 = 125 - (sector.scores["12m"] * 1.25);
             
-            const pathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2} Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}`;
+            const pathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2} Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3} Q ${(x3 + x4) / 2} ${(y3 + y4) / 2}, ${x4} ${y4}`;
             
             return (
               <g key={sector.symbol}>
                 <path d={pathData} stroke={color} strokeWidth={strokeWidth} fill="none" opacity={opacity} strokeLinecap="round" strokeLinejoin="round" />
                 {(isTop || isBottom) && (
-                  <text x="348" y={y3 + 3} fill={color} fontSize="9" fontWeight="600" opacity={opacity}>
+                  <text x="368" y={y4 + 3} fill={color} fontSize="9" fontWeight="600" opacity={opacity}>
                     {sector.symbol}
                   </text>
                 )}
