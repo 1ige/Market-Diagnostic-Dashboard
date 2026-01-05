@@ -346,14 +346,9 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
                   })()}
                 </div>
               </div>
-              <svg 
-                className={`w-5 h-5 text-gray-500 transition-transform ${expandedSector === sector.symbol ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
+              <div className="text-xl font-bold text-gray-500 transition-transform">
+                {expandedSector === sector.symbol ? '−' : '+'}
+              </div>
             </button>
 
             {expandedSector === sector.symbol && (
