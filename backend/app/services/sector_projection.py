@@ -243,7 +243,7 @@ def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state
     return projections
 
 # --- Data Fetch Helper ---
-def fetch_sector_price_history(days: int = 800) -> Dict[str, pd.DataFrame]:
+def fetch_sector_price_history(days: int = 8000) -> Dict[str, pd.DataFrame]:
     """
     Fetch price history for all sector ETFs and SPY. Returns dict of DataFrames.
     """

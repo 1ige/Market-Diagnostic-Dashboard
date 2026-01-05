@@ -117,7 +117,7 @@ export default function SectorProjections() {
               <h3 className="font-semibold text-gray-100 mb-3 text-base">Option B: Transparent Rule-Based Scoring</h3>
               <p className="text-gray-400 mb-2">
                 This model ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) against the SPY benchmark 
-                using 800 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
+                using 8000 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
               </p>
               <p className="text-gray-400">
                 Scores are computed independently for three time horizons: 3-month (63 trading days), 6-month (126 days), and 12-month (252 days) lookback periods.
@@ -217,7 +217,7 @@ export default function SectorProjections() {
               <h4 className="font-semibold text-gray-100 mb-2">Data Sources & Frequency</h4>
               <div className="text-xs text-gray-400 space-y-1">
                 <p><strong>Price Data:</strong> Yahoo Finance API (adjusted close prices)</p>
-                <p><strong>Lookback:</strong> 800 trading days to ensure sufficient data for 12-month calculations</p>
+                <p><strong>Lookback:</strong> 8000 trading days to ensure sufficient data for 12-month calculations</p>
                 <p><strong>Update Frequency:</strong> Every 4 hours during market hours (Monday-Friday, 8am-8pm ET)</p>
                 <p><strong>System State:</strong> Derived from the Market Stability Dashboard's composite indicator model</p>
               </div>
