@@ -117,25 +117,25 @@ export default function StockProjections() {
   const chartData = getChartData();
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto text-gray-100">
-      <h1 className="text-xl sm:text-2xl font-bold mb-2">Stock Projections</h1>
-      <p className="mb-4 text-gray-400 text-xs sm:text-sm">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
+      <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
+      <p className="mb-4 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
       
       {/* Stock Search */}
-      <div className="bg-gray-800 rounded-lg p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 shadow-lg">
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6 shadow-lg">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             value={ticker}
             onChange={(e) => setTicker(e.target.value.toUpperCase())}
             placeholder="e.g., AAPL, MSFT, TSLA"
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 sm:py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition text-base"
+            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 sm:py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition text-sm sm:text-base"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !ticker.trim()}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold transition whitespace-nowrap text-base"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold transition whitespace-nowrap"
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>
@@ -144,9 +144,9 @@ export default function StockProjections() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-900/20 border border-red-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-          <p className="text-red-300 text-sm sm:text-base">{error}</p>
-          <p className="text-xs sm:text-sm text-red-400 mt-2">
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
+          <p className="text-red-300">{error}</p>
+          <p className="text-sm text-red-400 mt-2">
             Please check the ticker symbol and try again. The stock must have sufficient historical data available.
           </p>
         </div>
@@ -164,23 +164,23 @@ export default function StockProjections() {
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
             <h3 className="text-base sm:text-lg font-semibold mb-4">Score Trends</h3>
-            <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2 -mx-2 sm:mx-0">
+            <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2">
               <div className="w-full" style={{ aspectRatio: '3 / 1', maxHeight: '240px' }}>
-                <svg width="100%" height="100%" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
+                <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet">
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
-                    <line x1="80" y1={260 - (y * 2.4)} x2="880" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="65" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
+                    <line x1="50" y1={260 - (y * 2.4)} x2="960" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="40" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
                   </g>
                 ))}
                 
                 {/* X-axis labels - simplified */}
                 <text x="150" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">-3M</text>
                 <text x="375" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">T</text>
-                <text x="525" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="675" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="825" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
+                <text x="575" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="750" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="925" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {(() => {
                   const color = "#3b82f6"; // Blue color for stock
@@ -195,11 +195,11 @@ export default function StockProjections() {
                   const yHist = 260 - (histScore * 2.4);
                   const x0 = 375;      // Now (T)
                   const y0 = 260 - (chartData.scores["T"] * 2.4);
-                  const x1 = 525;      // +3M
+                  const x1 = 575;      // +3M
                   const y1 = 260 - (chartData.scores["3m"] * 2.4);
-                  const x2 = 675;      // +6M
+                  const x2 = 750;      // +6M
                   const y2 = 260 - (chartData.scores["6m"] * 2.4);
-                  const x3 = 825;      // +12M
+                  const x3 = 925;      // +12M
                   const y3 = 260 - (chartData.scores["12m"] * 2.4);
                   
                   // Calculate uncertainty cone (only for future projections starting from T)
