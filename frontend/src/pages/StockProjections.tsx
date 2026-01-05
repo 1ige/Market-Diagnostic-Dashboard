@@ -116,26 +116,6 @@ export default function StockProjections() {
       <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
       <p className="mb-4 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
       
-      {/* Disclaimer */}
-      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-        <p className="text-xs text-yellow-200/90 leading-relaxed">
-          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
-          They are not financial advice, investment recommendations, or guarantees of future performance. 
-          Past performance does not indicate future results. Always conduct your own research and consult with a qualified 
-          financial advisor before making investment decisions.
-        </p>
-      </div>
-
-      {/* How to Read */}
-      <div className="mb-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
-        <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
-          <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment. 70+ is strong, 30- is weak.</p>
-          <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
-          <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
-        </div>
-      </div>
-
       {/* Stock Search */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
         <form onSubmit={handleSearch} className="flex gap-3">
@@ -588,6 +568,16 @@ export default function StockProjections() {
             </div>
           )}
 
+          {/* Understanding the Projections */}
+          <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
+            <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
+              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment. 70+ is strong, 30- is weak.</p>
+              <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
+              <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
+            </div>
+          </div>
+
           {/* Methodology */}
           <div className="mt-6 bg-gray-800 rounded-lg shadow">
             <button
@@ -623,6 +613,16 @@ export default function StockProjections() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Disclaimer */}
+          <div className="mt-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+            <p className="text-xs text-yellow-200/90 leading-relaxed">
+              <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
+              They are not financial advice, investment recommendations, or guarantees of future performance. 
+              Past performance does not indicate future results. Always conduct your own research and consult with a qualified 
+              financial advisor before making investment decisions.
+            </p>
           </div>
         </>
       )}
