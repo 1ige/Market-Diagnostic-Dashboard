@@ -441,9 +441,12 @@ export default function StockProjections() {
                       <div className="text-3xl font-bold text-blue-400">{Math.round(projection.score_total)}</div>
                     </div>
                     <div className="bg-gray-900 rounded p-4">
-                      <div className="text-sm text-gray-400 mb-1">Return</div>
-                      <div className={`text-3xl font-bold ${projection.return_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {projection.return_pct >= 0 ? '+' : ''}{projection.return_pct.toFixed(1)}%
+                      <div className="text-sm text-gray-400 mb-1">Score Change</div>
+                      <div className={`text-3xl font-bold ${
+                        projection.score_total >= projections["3m"].score_total ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {projection.score_total >= projections["3m"].score_total ? '+' : ''}
+                        {(projection.score_total - projections["3m"].score_total).toFixed(1)}
                       </div>
                     </div>
                   </div>
