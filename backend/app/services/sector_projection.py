@@ -19,6 +19,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from app.services.ingestion.yahoo_client import YahooClient
+import logging
 
 # =============================================================================
 # CONFIGURATION CONSTANTS
@@ -63,6 +64,8 @@ WEIGHTS = {
 # =============================================================================
 # CORE PROJECTION COMPUTATION
 # =============================================================================
+
+logger = logging.getLogger(__name__)
 
 def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state: str = "YELLOW") -> List[Dict[str, Any]]:
     """
@@ -256,4 +259,20 @@ def fetch_sector_price_history(days: int = 8000) -> Dict[str, pd.DataFrame]:
         if data:
             df = pd.DataFrame(data)
             result[etf["symbol"]] = df
+
+    # Detect duplicate series across symbols to catch ingestion issues.
+    signatures: Dict[tuple, str] = {}
+    duplicates = []
+    for symbol, df in result.items():
+        if df.empty or "value" not in df.columns:
+            continue
+        tail = df["value"].tail(30).tolist()
+        sig = (len(df), tuple(round(v, 8) for v in tail))
+        if sig in signatures:
+            duplicates.append((signatures[sig], symbol))
+        else:
+            signatures[sig] = symbol
+    for a, b in duplicates:
+        logger.warning("Duplicate sector price series detected: %s and %s", a, b)
+
     return result

@@ -126,12 +126,11 @@ def get_projection_history(days: int = Query(365, ge=1, le=1095)):
     cutoff = datetime.utcnow().date() - timedelta(days=days)
     with get_db_session() as db:
         runs = db.query(SectorProjectionRun).filter(SectorProjectionRun.as_of_date >= cutoff).order_by(SectorProjectionRun.as_of_date).all()
-        history = {}
+        history: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
         for run in runs:
             values = db.query(SectorProjectionValue).filter_by(run_id=run.id).all()
             for v in values:
-                key = (v.sector_symbol, v.horizon)
-                history.setdefault(key, []).append({
+                history.setdefault(v.sector_symbol, {}).setdefault(v.horizon, []).append({
                     "as_of_date": str(run.as_of_date),
                     "score_total": v.score_total,
                     "rank": v.rank,
