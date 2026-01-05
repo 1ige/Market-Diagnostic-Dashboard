@@ -235,20 +235,20 @@ export default function SectorProjections() {
           
           {/* Smooth Line Chart */}
           <div className="bg-gray-900 rounded-lg p-2 sm:p-3 mb-2 h-72 sm:h-80 lg:h-96">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" vectorEffect="non-scaling-stroke">
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((y) => (
                 <g key={y}>
-                  <line x1="8" y1={88 - (y * 0.8)} x2="98" y2={88 - (y * 0.8)} stroke="#374151" strokeWidth="0.2" strokeDasharray="0.5 0.5" />
-                  <text x="6" y={89 - (y * 0.8)} fill="#9ca3af" fontSize="3" textAnchor="end">{y}</text>
+                  <line x1="8" y1={88 - (y * 0.8)} x2="98" y2={88 - (y * 0.8)} stroke="#374151" strokeWidth="0.2" strokeDasharray="0.5 0.5" vectorEffect="non-scaling-stroke" />
+                  <text x="6" y={89 - (y * 0.8)} fill="#9ca3af" fontSize="3" textAnchor="end" transform-origin={`6 ${89 - (y * 0.8)}`} style={{ transform: 'scale(1, 1)' }}>{y}</text>
                 </g>
               ))}
               
               {/* X-axis labels */}
-              <text x="15" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">Now</text>
-              <text x="38" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">3M</text>
-              <text x="65" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">6M</text>
-              <text x="92" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">12M</text>
+              <text x="15" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>Now</text>
+              <text x="38" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>3M</text>
+              <text x="65" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>6M</text>
+              <text x="92" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>12M</text>
               
               {/* Smooth lines for each sector */}
               {chartData.map((sector: any, idx: number) => {
@@ -285,13 +285,14 @@ export default function SectorProjections() {
                       opacity={opacity}
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
                     />
                     
                     {/* Points */}
-                    <circle cx={x0} cy={y0} r="0.5" fill={color} opacity={opacity} />
-                    <circle cx={x1} cy={y1} r="0.6" fill={color} opacity={opacity} />
-                    <circle cx={x2} cy={y2} r="0.6" fill={color} opacity={opacity} />
-                    <circle cx={x3} cy={y3} r="0.6" fill={color} opacity={opacity} />
+                    <circle cx={x0} cy={y0} r="0.5" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
+                    <circle cx={x1} cy={y1} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
+                    <circle cx={x2} cy={y2} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
+                    <circle cx={x3} cy={y3} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
                   </g>
                 );
               })}
