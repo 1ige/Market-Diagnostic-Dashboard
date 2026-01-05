@@ -159,33 +159,33 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
 
   return (
     <Link to="/system-breakdown" className="block">
-      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-6 space-y-4 hover:bg-stealth-750 hover:border-stealth-600 transition cursor-pointer">
+      <div className="bg-stealth-800 border border-stealth-700 rounded-lg p-3 sm:p-6 space-y-4 hover:bg-stealth-750 hover:border-stealth-600 transition cursor-pointer">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-stealth-100">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-start gap-1 sm:gap-2 min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-stealth-100 whitespace-nowrap">
               System Overview
             </h3>
-            <span className="text-xs text-stealth-500">→ View Breakdown</span>
+            <span className="text-xs text-stealth-500 flex-shrink-0">→ View</span>
           </div>
-          <span className="text-xs text-stealth-400">
+          <span className="text-xs text-stealth-400 flex-shrink-0">
             {data.timestamp ? formatTime(data.timestamp) : 'N/A'}
           </span>
         </div>
 
         {/* Description */}
-        <p className="text-xs text-stealth-400 leading-relaxed">
+        <p className="text-xs text-stealth-400 leading-relaxed break-words">
           Composite score aggregating 10 indicators: VIX, SPY, DFF, T10Y2Y, UNRATE, Consumer Health, 
           Bond Market Stability, Liquidity Proxy, Analyst Confidence, and Consumer & Corporate Sentiment. Weighted by historical predictive power.
         </p>
 
       {/* Main Metrics Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         {/* System State */}
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-stealth-400">System State</span>
-            <span className={`text-xl font-bold ${stateColor}`}>
+        <div className="space-y-2 min-w-0">
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xs sm:text-sm text-stealth-400 truncate">System State</span>
+            <span className={`text-lg sm:text-xl font-bold flex-shrink-0 ${stateColor}`}>
               {data.state}
             </span>
           </div>
@@ -201,17 +201,17 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
               style={{ width: `${compositePercentage}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-stealth-400">Composite:</span>
-            <span className="text-stealth-200">{data.composite_score.toFixed(1)}</span>
+          <div className="flex justify-between text-xs gap-1">
+            <span className="text-stealth-400 truncate">Composite:</span>
+            <span className="text-stealth-200 flex-shrink-0">{data.composite_score.toFixed(1)}</span>
           </div>
         </div>
 
         {/* Weekly Trend */}
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-stealth-400">7-Day Trend</span>
-            <span className={`text-xl font-bold ${trendColor}`}>
+        <div className="space-y-2 min-w-0">
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-xs sm:text-sm text-stealth-400 truncate">7-Day Trend</span>
+            <span className={`text-lg sm:text-xl font-bold flex-shrink-0 ${trendColor}`}>
               {trendDirection}
             </span>
           </div>
@@ -221,30 +221,30 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
               style={{ width: `${Math.min(100, Math.abs(trend) * 10)}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-stealth-400">Change:</span>
-            <span className="text-stealth-200">{trend > 0 ? '+' : ''}{trend.toFixed(1)}</span>
+          <div className="flex justify-between text-xs gap-1">
+            <span className="text-stealth-400 truncate">Change:</span>
+            <span className="text-stealth-200 flex-shrink-0">{trend > 0 ? '+' : ''}{trend.toFixed(1)}</span>
           </div>
         </div>
       </div>
 
       {/* Status Badges */}
-      <div className="flex flex-wrap gap-2">
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700">
-          <span className="text-xs text-stealth-400">Red Indicators:</span>
-          <span className="text-xs font-semibold text-red-400">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700 text-xs whitespace-nowrap">
+          <span className="text-stealth-400 flex-shrink-0">Red:</span>
+          <span className="font-semibold text-red-400 flex-shrink-0">
             {data.red_count}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700">
-          <span className="text-xs text-stealth-400">Yellow Indicators:</span>
-          <span className="text-xs font-semibold text-yellow-400">
+        <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700 text-xs whitespace-nowrap">
+          <span className="text-stealth-400 flex-shrink-0">Yellow:</span>
+          <span className="font-semibold text-yellow-400 flex-shrink-0">
             {data.yellow_count}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700">
-          <span className="text-xs text-stealth-400">News (24h):</span>
-          <span className="text-xs font-semibold text-cyan-400">
+        <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-stealth-900 rounded-full border border-stealth-700 text-xs whitespace-nowrap">
+          <span className="text-stealth-400 flex-shrink-0">News:</span>
+          <span className="font-semibold text-cyan-400 flex-shrink-0">
             {news.length}
           </span>
         </div>
@@ -285,29 +285,43 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           timestampNum: new Date(item.timestamp).getTime()
         }));
         
+        // Calculate domain with today at the end
+        const timestamps = chartData.map(d => d.timestampNum);
+        const minTime = Math.min(...timestamps);
+        const maxTime = Math.max(...timestamps);
+        
+        // Generate evenly spaced tick positions (5 ticks total, including start and end)
+        const tickPositions: number[] = [];
+        for (let i = 0; i < 5; i++) {
+          tickPositions.push(minTime + (maxTime - minTime) * (i / 4));
+        }
+        
         console.log('SystemOverview chart data sample:', chartData.slice(0, 3), 'total:', chartData.length);
         
         return (
-          <div className="pt-6 border-t border-stealth-700">
+            <div className="pt-6 border-t border-stealth-700">
             <h4 className="text-sm font-semibold text-stealth-200 mb-4">
               Composite Score Trend
             </h4>
-            <div className="w-full h-60 sm:h-72 lg:h-80">
+            <div className="w-full h-60 sm:h-72 lg:h-80 -mx-6 sm:mx-0 px-3 sm:px-0">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
                   <XAxis
                     dataKey="timestampNum"
                     type="number"
-                    domain={['dataMin', 'dataMax']}
-                    scale="time"
-                    tickCount={5}
-                    tickFormatter={(v: number) =>
-                      new Date(v).toLocaleDateString(undefined, {
+                    domain={[minTime, maxTime]}
+                    scale="linear"
+                    ticks={tickPositions}
+                    tickFormatter={(v: number) => {
+                      const date = new Date(v);
+                      const today = new Date();
+                      const isToday = date.toDateString() === today.toDateString();
+                      return isToday ? 'Today' : date.toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
-                      })
-                    }
+                      });
+                    }}
                     tick={{ fill: "#6b7280", fontSize: 10 }}
                     stroke="#555560"
                   />
