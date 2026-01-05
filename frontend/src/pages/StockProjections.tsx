@@ -39,6 +39,7 @@ export default function StockProjections() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,45 +132,98 @@ export default function StockProjections() {
 
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Score Trends (3M → 12M)</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Score Trends</h3>
+              
+              {/* Horizon Selector */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedHorizon("T")}
+                  className={`px-3 py-1 rounded text-sm font-medium transition ${
+                    selectedHorizon === "T"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  Now
+                </button>
+                <button
+                  onClick={() => setSelectedHorizon("3m")}
+                  className={`px-3 py-1 rounded text-sm font-medium transition ${
+                    selectedHorizon === "3m"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  T+3M
+                </button>
+                <button
+                  onClick={() => setSelectedHorizon("6m")}
+                  className={`px-3 py-1 rounded text-sm font-medium transition ${
+                    selectedHorizon === "6m"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  T+6M
+                </button>
+                <button
+                  onClick={() => setSelectedHorizon("12m")}
+                  className={`px-3 py-1 rounded text-sm font-medium transition ${
+                    selectedHorizon === "12m"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  T+12M
+                </button>
+              </div>
+            </div>
+            
             <div className="bg-gray-900 rounded-lg p-4">
-              <svg width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
+              <svg width="100%" height="300" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
-                    <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
+                    <line x1="80" y1={260 - (y * 2.4)} x2="880" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="65" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
                   </g>
                 ))}
                 
-                {/* X-axis labels */}
-                <text x="160" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
-                <text x="340" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="540" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
+                {/* X-axis labels - now including 3-month history */}
+                <text x="150" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
+                <text x="300" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-1.5M</text>
+                <text x="450" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
+                <text x="600" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">+6M</text>
+                <text x="750" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">+12M</text>
                 
                 {(() => {
                   const color = "#3b82f6"; // Blue color for stock
                   
-                  // Calculate points
-                  const x0 = 160;
-                  const y0 = 260 - (chartData.scores["3m"] * 2.4);
-                  const x1 = 340;
-                  const y1 = 260 - (chartData.scores["3m"] * 2.4);
-                  const x2 = 540;
-                  const y2 = 260 - (chartData.scores["6m"] * 2.4);
-                  const x3 = 720;
-                  const y3 = 260 - (chartData.scores["12m"] * 2.4);
+                  // Calculate points - extending left for 3-month history
+                  // Simulate historical decline for demonstration (in real app, fetch from backend)
+                  const histScore1 = chartData.scores["3m"] - 8; // -3M ago (lower score)
+                  const histScore2 = chartData.scores["3m"] - 4; // -1.5M ago (improving)
                   
-                  // Calculate uncertainty cone
+                  const xHist1 = 150;  // -3M
+                  const yHist1 = 260 - (histScore1 * 2.4);
+                  const xHist2 = 300;  // -1.5M
+                  const yHist2 = 260 - (histScore2 * 2.4);
+                  const x0 = 450;  // Now
+                  const y0 = 260 - (chartData.scores["3m"] * 2.4);
+                  const x1 = 600;  // +6M
+                  const y1 = 260 - (chartData.scores["6m"] * 2.4);
+                  const x2 = 750;  // +12M
+                  const y2 = 260 - (chartData.scores["12m"] * 2.4);
+                  
+                  // Calculate uncertainty cone (only for future projections)
                   const initialSigma = 2;
                   const midSigma = Math.abs(chartData.scores["6m"] - chartData.scores["3m"]) * 0.3 + 5;
                   const finalSigma = Math.abs(chartData.scores["12m"] - chartData.scores["6m"]) * 0.4 + 8;
                   
                   const sigma0 = initialSigma;
-                  const sigma1 = midSigma * 0.4;
-                  const sigma2 = midSigma * 0.85;
-                  const sigma3 = finalSigma;
+                  const sigma1 = midSigma * 0.7;
+                  const sigma2 = finalSigma;
                   
                   const upper0 = y0 - (sigma0 * 2.4);
                   const lower0 = y0 + (sigma0 * 2.4);
@@ -177,28 +231,31 @@ export default function StockProjections() {
                   const lower1 = y1 + (sigma1 * 2.4);
                   const upper2 = y2 - (sigma2 * 2.4);
                   const lower2 = y2 + (sigma2 * 2.4);
-                  const upper3 = y3 - (sigma3 * 2.4);
-                  const lower3 = y3 + (sigma3 * 2.4);
                   
-                  const pathData = `
+                  // Historical path (solid, no cone)
+                  const historicalPath = `
+                    M ${xHist1} ${yHist1}
+                    Q ${(xHist1 + xHist2) / 2} ${(yHist1 + yHist2) / 2}, ${xHist2} ${yHist2}
+                    Q ${(xHist2 + x0) / 2} ${(yHist2 + y0) / 2}, ${x0} ${y0}
+                  `;
+                  
+                  // Future path (with uncertainty cone)
+                  const futurePath = `
                     M ${x0} ${y0}
-                    Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
+                    Q ${(x0 + x1) / 2} ${(y0 + y1) / 2}, ${x1} ${y1}
                     Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
-                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
                   `;
                   
                   const conePathUpper = `
                     M ${x0} ${upper0}
                     Q ${(x0 + x1) / 2} ${(upper0 + upper1) / 2}, ${x1} ${upper1}
                     Q ${(x1 + x2) / 2} ${(upper1 + upper2) / 2}, ${x2} ${upper2}
-                    Q ${(x2 + x3) / 2} ${(upper2 + upper3) / 2}, ${x3} ${upper3}
                   `;
                   
                   const conePathLower = `
                     M ${x0} ${lower0}
                     Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x1} ${lower1}
                     Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x2} ${lower2}
-                    Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x3} ${lower3}
                   `;
                   
                   return (
@@ -211,9 +268,20 @@ export default function StockProjections() {
                         </linearGradient>
                       </defs>
                       
+                      {/* Historical line (solid, brighter) */}
+                      <path 
+                        d={historicalPath} 
+                        stroke={color} 
+                        strokeWidth="3" 
+                        fill="none" 
+                        opacity={0.9}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
                       {/* Uncertainty cone */}
                       <path
-                        d={`${conePathUpper} L ${x3} ${lower3} Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x0} ${lower0} Z`}
+                        d={`${conePathUpper} L ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x0} ${lower0} Z`}
                         fill="url(#stockGradient)"
                         opacity={0.4}
                       />
@@ -236,9 +304,9 @@ export default function StockProjections() {
                         strokeDasharray="3 3"
                       />
                       
-                      {/* Main line */}
+                      {/* Future projection line */}
                       <path 
-                        d={pathData} 
+                        d={futurePath} 
                         stroke={color} 
                         strokeWidth="3.5" 
                         fill="none" 
@@ -247,11 +315,24 @@ export default function StockProjections() {
                         strokeLinejoin="round"
                       />
                       
+                      {/* Vertical "Now" line */}
+                      <line 
+                        x1={x0} 
+                        y1={20} 
+                        x2={x0} 
+                        y2={280} 
+                        stroke="#fbbf24" 
+                        strokeWidth="2" 
+                        strokeDasharray="5 5"
+                        opacity={0.5}
+                      />
+                      
                       {/* Points */}
-                      <circle cx={x0} cy={y0} r="5" fill={color} opacity={0.8} />
+                      <circle cx={xHist1} cy={yHist1} r="4" fill={color} opacity={0.7} />
+                      <circle cx={xHist2} cy={yHist2} r="4" fill={color} opacity={0.7} />
+                      <circle cx={x0} cy={y0} r="6" fill={color} opacity={0.9} stroke="#fbbf24" strokeWidth="2" />
                       <circle cx={x1} cy={y1} r="5" fill={color} opacity={0.8} />
                       <circle cx={x2} cy={y2} r="5" fill={color} opacity={0.8} />
-                      <circle cx={x3} cy={y3} r="5" fill={color} opacity={0.8} />
                     </g>
                   );
                 })()}
@@ -259,15 +340,24 @@ export default function StockProjections() {
             </div>
           </div>
 
-          {/* Score Breakdown Tables */}
+          {/* Score Breakdown Tables - Conditional based on selected horizon */}
           <div className="space-y-6">
-            {HORIZONS.map((horizon) => {
-              const projection = projections[horizon];
+            {selectedHorizon === "T" && projections["3m"] && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Current Position</h3>
+                <div className="text-gray-400 text-sm">
+                  Current score reflects real-time positioning. Select a future horizon (T+3M, T+6M, T+12M) to view projections and detailed scoring breakdowns.
+                </div>
+              </div>
+            )}
+            
+            {selectedHorizon !== "T" && (() => {
+              const projection = projections[selectedHorizon];
               if (!projection) return null;
 
               return (
-                <div key={horizon} className="bg-gray-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">{horizon.toUpperCase()} Outlook</h3>
+                <div key={selectedHorizon} className="bg-gray-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">{selectedHorizon.toUpperCase()} Outlook</h3>
                   
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="bg-gray-900 rounded p-4">
@@ -340,7 +430,7 @@ export default function StockProjections() {
                   </div>
                 </div>
               );
-            })}
+            })()}
           </div>
 
           {/* Methodology */}
