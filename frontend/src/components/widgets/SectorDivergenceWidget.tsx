@@ -223,16 +223,6 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
       <div className="bg-stealth-900 rounded-lg p-4 mb-6 border border-stealth-700">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-semibold text-stealth-200">Score Trends (3M → 12M)</div>
-          <div className="flex gap-3 text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-              <span className="text-gray-500">Leaders</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-              <span className="text-gray-500">Laggards</span>
-            </div>
-          </div>
         </div>
         <svg width="100%" height="150" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid meet" className="w-full">
           {/* Gradient definitions for uncertainty cones */}
