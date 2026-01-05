@@ -230,25 +230,25 @@ export default function SectorProjections() {
       {/* Overview Chart - Sector Score Trends Across Horizons */}
       {!loading && !error && Object.keys(projections).length > 0 && (
         <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
-          <h2 className="text-lg font-semibold mb-4">Sector Score Trends Across Time Horizons</h2>
-          <p className="text-xs text-gray-400 mb-4">Each line shows how a sector's composite score evolves from current to forward projections</p>
+          <h2 className="text-lg font-semibold mb-3">Sector Score Trends Across Time Horizons</h2>
+          <p className="text-xs text-gray-400 mb-3">Each line shows how a sector's composite score evolves from current to forward projections</p>
           
           {/* Smooth Line Chart */}
-          <div className="bg-gray-900 rounded-lg p-3 sm:p-4">
-            <svg width="100%" height="280" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <div className="bg-gray-900 rounded-lg p-2 sm:p-3 mb-2 h-72 sm:h-80 lg:h-96">
+            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((y) => (
                 <g key={y}>
-                  <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                  <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
+                  <line x1="8" y1={88 - (y * 0.8)} x2="98" y2={88 - (y * 0.8)} stroke="#374151" strokeWidth="0.2" strokeDasharray="0.5 0.5" />
+                  <text x="6" y={89 - (y * 0.8)} fill="#9ca3af" fontSize="3" textAnchor="end">{y}</text>
                 </g>
               ))}
               
               {/* X-axis labels */}
-              <text x="100" y="285" fill="#9ca3af" fontSize="12" textAnchor="middle">Now</text>
-              <text x="280" y="285" fill="#9ca3af" fontSize="12" textAnchor="middle">3M</text>
-              <text x="460" y="285" fill="#9ca3af" fontSize="12" textAnchor="middle">6M</text>
-              <text x="640" y="285" fill="#9ca3af" fontSize="12" textAnchor="middle">12M</text>
+              <text x="15" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">Now</text>
+              <text x="38" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">3M</text>
+              <text x="65" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">6M</text>
+              <text x="92" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle">12M</text>
               
               {/* Smooth lines for each sector */}
               {chartData.map((sector: any, idx: number) => {
@@ -256,15 +256,15 @@ export default function SectorProjections() {
                 const color = colors[idx % colors.length];
                 const opacity = 0.7;
                 
-                // Calculate points: now, 3m, 6m, 12m (extending across full width)
-                const x0 = 100;  // Now
-                const y0 = 260 - (sector.scores["3m"] * 2.4); // Use 3m as "current" baseline
-                const x1 = 280;  // 3M
-                const y1 = 260 - (sector.scores["3m"] * 2.4);
-                const x2 = 460;  // 6M
-                const y2 = 260 - (sector.scores["6m"] * 2.4);
-                const x3 = 640;  // 12M
-                const y3 = 260 - (sector.scores["12m"] * 2.4);
+                // Calculate points using percentage-based coordinates
+                const x0 = 15;  // Now (15%)
+                const y0 = 88 - (sector.scores["3m"] * 0.8); // Use 3m as "current" baseline
+                const x1 = 38;  // 3M (38%)
+                const y1 = 88 - (sector.scores["3m"] * 0.8);
+                const x2 = 65;  // 6M (65%)
+                const y2 = 88 - (sector.scores["6m"] * 0.8);
+                const x3 = 92;  // 12M (92%)
+                const y3 = 88 - (sector.scores["12m"] * 0.8);
                 
                 // Create smooth path using quadratic bezier curves
                 const pathData = `
@@ -280,7 +280,7 @@ export default function SectorProjections() {
                     <path 
                       d={pathData} 
                       stroke={color} 
-                      strokeWidth="2.5" 
+                      strokeWidth="0.4" 
                       fill="none" 
                       opacity={opacity}
                       strokeLinecap="round"
@@ -288,46 +288,47 @@ export default function SectorProjections() {
                     />
                     
                     {/* Points */}
-                    <circle cx={x0} cy={y0} r="3" fill={color} opacity={opacity} />
-                    <circle cx={x1} cy={y1} r="4" fill={color} opacity={opacity} />
-                    <circle cx={x2} cy={y2} r="4" fill={color} opacity={opacity} />
-                    <circle cx={x3} cy={y3} r="4" fill={color} opacity={opacity} />
+                    <circle cx={x0} cy={y0} r="0.5" fill={color} opacity={opacity} />
+                    <circle cx={x1} cy={y1} r="0.6" fill={color} opacity={opacity} />
+                    <circle cx={x2} cy={y2} r="0.6" fill={color} opacity={opacity} />
+                    <circle cx={x3} cy={y3} r="0.6" fill={color} opacity={opacity} />
                   </g>
                 );
               })}
             </svg>
           </div>
           
-          {/* Legend */}
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
-            {chartData.map((sector: any, idx: number) => {
-              const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
-              const color = colors[idx % colors.length];
-              return (
-                <div key={sector.symbol} className="flex items-center gap-1">
-                  <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px", opacity: 0.7 }}></div>
-                  <span className="text-gray-400">{sector.name}</span>
-                </div>
-              );
-            })}
+          {/* Legend - Compact and scrollable */}
+          <div className="mt-2 mb-4 overflow-x-auto">
+            <div className="flex flex-wrap gap-2 pb-2 min-w-min">
+              {chartData.map((sector: any, idx: number) => {
+                const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
+                const color = colors[idx % colors.length];
+                return (
+                  <div key={sector.symbol} className="flex items-center gap-1 whitespace-nowrap">
+                    <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px", opacity: 0.7, flexShrink: 0 }}></div>
+                    <span className="text-xs text-gray-400">{sector.symbol}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
           
           {/* Top Performers by Horizon */}
-          <div className="border-t border-gray-700 pt-4 mt-4">
-            <h3 className="text-sm font-semibold mb-3 text-gray-300">Top 3 Performers by Horizon</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="border-t border-gray-700 pt-3 mt-3">
+            <h3 className="text-sm font-semibold mb-2 text-gray-300">Top Performers</h3>
+            <div className="grid grid-cols-4 gap-2 text-xs">
               {HORIZONS.map((h) => {
                 const topSectors = (projections[h] || [])
                   .sort((a: any, b: any) => a.rank - b.rank)
                   .slice(0, 3);
                 return (
-                  <div key={h}>
-                    <div className="text-xs text-gray-500 mb-2">{h.toUpperCase()}</div>
+                  <div key={h} className="bg-gray-900 rounded p-2">
+                    <div className="text-gray-500 mb-1 font-semibold">{h.toUpperCase()}</div>
                     {topSectors.map((s: any, i: number) => (
-                      <div key={s.sector_symbol} className="flex items-center gap-2 mb-1">
-                        <span className="text-green-400 font-bold text-xs">#{i + 1}</span>
-                        <span className="text-xs text-gray-300">{s.sector_name}</span>
-                        <span className="text-xs text-gray-500">({Math.round(s.score_total)})</span>
+                      <div key={s.sector_symbol} className="flex items-center gap-1 mb-0.5">
+                        <span className="text-green-400 font-bold">#{i + 1}</span>
+                        <span className="text-gray-300 truncate">{s.sector_symbol}</span>
                       </div>
                     ))}
                   </div>
