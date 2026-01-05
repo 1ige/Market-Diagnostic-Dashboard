@@ -563,9 +563,9 @@ const MarketMap = () => {
                       
                       return (
                         <svg width="50" height="20" viewBox="0 0 50 20" className="flex-shrink-0">
-                          {/* Polyline connecting 4 points */}
-                          <polyline
-                            points={`0,${sparkPoints[0]} 17,${sparkPoints[1]} 33,${sparkPoints[2]} 50,${sparkPoints[3]}`}
+                          {/* Smooth bezier curve connecting 4 points */}
+                          <path
+                            d={`M 0,${sparkPoints[0]} Q 8,${(sparkPoints[0] + sparkPoints[1]) / 2} 17,${sparkPoints[1]} Q 25,${(sparkPoints[1] + sparkPoints[2]) / 2} 33,${sparkPoints[2]} Q 42,${(sparkPoints[2] + sparkPoints[3]) / 2} 50,${sparkPoints[3]}`}
                             fill="none"
                             stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
                             strokeWidth="1.5"
