@@ -62,6 +62,7 @@ export default function SectorProjections() {
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
   useEffect(() => {
     if (data && data.projections) setProjections(data.projections);
@@ -239,6 +240,22 @@ export default function SectorProjections() {
           <div className="bg-gray-900 rounded-lg p-3 sm:p-4 mb-2">
             <div className="w-full" style={{ aspectRatio: '2 / 1' }}>
               <svg width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
+                {/* Gradient definitions for uncertainty cones */}
+                <defs>
+                  {chartData.map((sector: any, idx: number) => {
+                    const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
+                    const color = colors[idx % colors.length];
+                    const gradientId = `grad_${idx}`;
+                    return (
+                      <linearGradient key={gradientId} id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={color} stopOpacity="0" />
+                        <stop offset="50%" stopColor={color} stopOpacity="0.08" />
+                        <stop offset="100%" stopColor={color} stopOpacity="0.15" />
+                      </linearGradient>
+                    );
+                  })}
+                </defs>
+                
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
@@ -253,11 +270,12 @@ export default function SectorProjections() {
                 <text x="540" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
                 <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
                 
-                {/* Smooth lines for each sector */}
+                {/* Uncertainty cones and lines for each sector */}
                 {chartData.map((sector: any, idx: number) => {
                   const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
                   const color = colors[idx % colors.length];
-                  const opacity = 0.7;
+                  const isSelected = selectedSector === sector.symbol;
+                  const opacity = !selectedSector || isSelected ? 0.7 : 0.1;
                   
                   // Calculate points with better spacing
                   const x0 = 160;  // Now
@@ -269,6 +287,12 @@ export default function SectorProjections() {
                   const x3 = 720;  // 12M
                   const y3 = 260 - (sector.scores["12m"] * 2.4);
                   
+                  // Calculate uncertainty cone (expanding from 6M to 12M)
+                  const sigma = Math.abs(sector.scores["12m"] - sector.scores["6m"]) * 0.4 + 8;
+                  const upperBound = y3 - (sigma * 2.4);
+                  const lowerBound = y3 + (sigma * 2.4);
+                  const conePoints = `${x2},${y2} ${x3},${upperBound} ${x3},${lowerBound}`;
+                  
                   // Create smooth path using quadratic bezier curves
                   const pathData = `
                     M ${x0} ${y0}
@@ -278,12 +302,17 @@ export default function SectorProjections() {
                   `;
                   
                   return (
-                    <g key={sector.symbol}>
+                    <g key={sector.symbol} onClick={() => setSelectedSector(isSelected ? null : sector.symbol)} style={{ cursor: 'pointer' }}>
+                      {/* Uncertainty cone - only shown when selected */}
+                      {isSelected && (
+                        <polygon points={conePoints} fill={`url(#grad_${idx})`} opacity={0.6} />
+                      )}
+                      
                       {/* Smooth path */}
                       <path 
                         d={pathData} 
                         stroke={color} 
-                        strokeWidth="2.5" 
+                        strokeWidth={isSelected ? "3.5" : "2.5"} 
                         fill="none" 
                         opacity={opacity}
                         strokeLinecap="round"
@@ -291,10 +320,10 @@ export default function SectorProjections() {
                       />
                       
                       {/* Points */}
-                      <circle cx={x0} cy={y0} r="4" fill={color} opacity={opacity} />
-                      <circle cx={x1} cy={y1} r="4" fill={color} opacity={opacity} />
-                      <circle cx={x2} cy={y2} r="4" fill={color} opacity={opacity} />
-                      <circle cx={x3} cy={y3} r="4" fill={color} opacity={opacity} />
+                      <circle cx={x0} cy={y0} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
+                      <circle cx={x1} cy={y1} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
+                      <circle cx={x2} cy={y2} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
+                      <circle cx={x3} cy={y3} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
                     </g>
                   );
                 })}
@@ -308,11 +337,21 @@ export default function SectorProjections() {
               {chartData.map((sector: any, idx: number) => {
                 const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
                 const color = colors[idx % colors.length];
+                const isSelected = selectedSector === sector.symbol;
                 return (
-                  <div key={sector.symbol} className="flex items-center gap-1 whitespace-nowrap">
-                    <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px", opacity: 0.7, flexShrink: 0 }}></div>
-                    <span className="text-xs text-gray-400">{sector.symbol}</span>
-                  </div>
+                  <button
+                    key={sector.symbol}
+                    onClick={() => setSelectedSector(isSelected ? null : sector.symbol)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all ${
+                      isSelected 
+                        ? 'bg-gray-700 ring-1' 
+                        : 'bg-transparent hover:bg-gray-800'
+                    }`}
+                    style={isSelected ? { ringColor: color } : {}}
+                  >
+                    <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px", opacity: 0.9, flexShrink: 0 }}></div>
+                    <span className={`text-xs ${isSelected ? 'text-white font-semibold' : 'text-gray-400'}`}>{sector.symbol}</span>
+                  </button>
                 );
               })}
             </div>
