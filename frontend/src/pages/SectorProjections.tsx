@@ -291,9 +291,10 @@ export default function SectorProjections() {
                 ))}
                 
                 {/* X-axis labels */}
-                <text x="160" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
-                <text x="340" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="540" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="100" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
+                <text x="250" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
+                <text x="380" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="550" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
                 <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {/* Uncertainty cones and lines for each sector */}
@@ -303,14 +304,19 @@ export default function SectorProjections() {
                   const isSelected = selectedSector === sector.symbol;
                   const opacity = !selectedSector || isSelected ? 0.7 : 0.1;
                   
-                  // Calculate points with better spacing
-                  const x0 = 160;  // Now
+                  // Calculate points - 5 data points: -3M, T(now), 3M, 6M, 12M
+                  // Simulate historical decline for demonstration
+                  const histScore = sector.scores["3m"] - 8; // -3M ago (lower score)
+                  
+                  const xHist = 100;   // -3M
+                  const yHist = 260 - (histScore * 2.4);
+                  const x0 = 250;      // T (Now)
                   const y0 = 260 - (sector.scores["3m"] * 2.4);
-                  const x1 = 340;  // 3M
+                  const x1 = 380;      // 3M
                   const y1 = 260 - (sector.scores["3m"] * 2.4);
-                  const x2 = 540;  // 6M
+                  const x2 = 550;      // 6M
                   const y2 = 260 - (sector.scores["6m"] * 2.4);
-                  const x3 = 720;  // 12M
+                  const x3 = 720;      // 12M
                   const y3 = 260 - (sector.scores["12m"] * 2.4);
                   
                   // Calculate expanding uncertainty cone starting from now
@@ -334,7 +340,13 @@ export default function SectorProjections() {
                   const upper3 = y3 - (sigma3 * 2.4);
                   const lower3 = y3 + (sigma3 * 2.4);
                   
-                  // Create smooth path using quadratic bezier curves
+                  // Historical path (solid, no cone, -3M to T)
+                  const historicalPath = `
+                    M ${xHist} ${yHist}
+                    Q ${(xHist + x0) / 2} ${(yHist + y0) / 2}, ${x0} ${y0}
+                  `;
+                  
+                  // Future path (from T forward with uncertainty cone)
                   const pathData = `
                     M ${x0} ${y0}
                     Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
@@ -359,6 +371,17 @@ export default function SectorProjections() {
                   
                   return (
                     <g key={sector.symbol} onClick={() => setSelectedSector(isSelected ? null : sector.symbol)} style={{ cursor: 'pointer' }}>
+                      {/* Historical line (solid, no cone, -3M to T) */}
+                      <path 
+                        d={historicalPath} 
+                        stroke={color} 
+                        strokeWidth={isSelected ? "3" : "2"} 
+                        fill="none" 
+                        opacity={opacity * 1.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
                       {/* Uncertainty cone - filled area between upper and lower bounds */}
                       {isSelected && (
                         <g opacity={0.4}>
@@ -404,8 +427,23 @@ export default function SectorProjections() {
                         strokeLinejoin="round"
                       />
                       
-                      {/* Points */}
-                      <circle cx={x0} cy={y0} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
+                      {/* Vertical "T" line - only show once, not per sector */}
+                      {idx === 0 && (
+                        <line 
+                          x1={x0} 
+                          y1={20} 
+                          x2={x0} 
+                          y2={280} 
+                          stroke="#fbbf24" 
+                          strokeWidth="2" 
+                          strokeDasharray="5 5"
+                          opacity={0.4}
+                        />
+                      )}
+                      
+                      {/* Points - 5 data points */}
+                      <circle cx={xHist} cy={yHist} r={isSelected ? "4" : "3"} fill={color} opacity={opacity * 0.9} />
+                      <circle cx={x0} cy={y0} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} stroke={idx === 0 ? "#fbbf24" : "none"} strokeWidth="1" />
                       <circle cx={x1} cy={y1} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
                       <circle cx={x2} cy={y2} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
                       <circle cx={x3} cy={y3} r={isSelected ? "5" : "4"} fill={color} opacity={opacity} />
