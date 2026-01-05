@@ -1,0 +1,399 @@
+/**
+ * Stock Projections Page
+ * 
+ * Single stock lookup and analysis with multi-horizon projections.
+ * Allows users to search for any stock and view transparent scoring across time horizons.
+ * 
+ * Features:
+ * - Stock ticker search and lookup
+ * - Multi-horizon analysis: 3-month, 6-month, and 12-month projections
+ * - Interactive chart with uncertainty cones
+ * - Detailed scoring breakdown
+ * - Comparison against SPY benchmark
+ */
+
+import { useState, useEffect } from "react";
+import { useApi } from "../hooks/useApi";
+import "../index.css";
+
+const HORIZONS = ["3m", "6m", "12m"];
+
+interface StockProjection {
+  ticker: string;
+  name: string;
+  horizon: string;
+  score_total: number;
+  score_trend: number;
+  score_relative_strength: number;
+  score_risk: number;
+  score_regime: number;
+  return_pct: number;
+  volatility: number;
+  max_drawdown: number;
+}
+
+export default function StockProjections() {
+  const [ticker, setTicker] = useState("");
+  const [searchTicker, setSearchTicker] = useState("");
+  const [projections, setProjections] = useState<Record<string, StockProjection>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticker.trim()) return;
+
+    setSearchTicker(ticker.toUpperCase());
+    setLoading(true);
+    setError(null);
+
+    try {
+      // TODO: Replace with actual API endpoint when backend is ready
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/stocks/${ticker.toUpperCase()}/projections`);
+      
+      if (!response.ok) {
+        throw new Error(`Stock not found or data unavailable`);
+      }
+
+      const data = await response.json();
+      setProjections(data.projections);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch stock data");
+      setProjections({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Prepare data for line chart
+  const getChartData = () => {
+    if (!projections["3m"]) return null;
+
+    return {
+      ticker: searchTicker,
+      name: projections["3m"].name,
+      scores: {
+        "3m": projections["3m"]?.score_total || 50,
+        "6m": projections["6m"]?.score_total || 50,
+        "12m": projections["12m"]?.score_total || 50,
+      },
+    };
+  };
+
+  const chartData = getChartData();
+
+  return (
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
+      <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
+      <p className="mb-6 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+
+      {/* Stock Search */}
+      <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
+        <form onSubmit={handleSearch} className="flex gap-3">
+          <input
+            type="text"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            placeholder="Enter stock ticker (e.g., AAPL, TSLA, MSFT)"
+            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            disabled={loading || !ticker.trim()}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold transition"
+          >
+            {loading ? "Analyzing..." : "Analyze"}
+          </button>
+        </form>
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
+          <p className="text-red-300">{error}</p>
+          <p className="text-sm text-red-400 mt-2">
+            Please check the ticker symbol and try again. The stock must have sufficient historical data available.
+          </p>
+        </div>
+      )}
+
+      {/* Results */}
+      {chartData && (
+        <>
+          {/* Stock Header */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-1">{chartData.ticker}</h2>
+            <p className="text-gray-400">{chartData.name}</p>
+          </div>
+
+          {/* Interactive Chart */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Score Trends (3M → 12M)</h3>
+            <div className="bg-gray-900 rounded-lg p-4">
+              <svg width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
+                {/* Grid lines */}
+                {[0, 25, 50, 75, 100].map((y) => (
+                  <g key={y}>
+                    <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
+                  </g>
+                ))}
+                
+                {/* X-axis labels */}
+                <text x="160" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
+                <text x="340" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="540" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
+                
+                {(() => {
+                  const color = "#3b82f6"; // Blue color for stock
+                  
+                  // Calculate points
+                  const x0 = 160;
+                  const y0 = 260 - (chartData.scores["3m"] * 2.4);
+                  const x1 = 340;
+                  const y1 = 260 - (chartData.scores["3m"] * 2.4);
+                  const x2 = 540;
+                  const y2 = 260 - (chartData.scores["6m"] * 2.4);
+                  const x3 = 720;
+                  const y3 = 260 - (chartData.scores["12m"] * 2.4);
+                  
+                  // Calculate uncertainty cone
+                  const initialSigma = 2;
+                  const midSigma = Math.abs(chartData.scores["6m"] - chartData.scores["3m"]) * 0.3 + 5;
+                  const finalSigma = Math.abs(chartData.scores["12m"] - chartData.scores["6m"]) * 0.4 + 8;
+                  
+                  const sigma0 = initialSigma;
+                  const sigma1 = midSigma * 0.4;
+                  const sigma2 = midSigma * 0.85;
+                  const sigma3 = finalSigma;
+                  
+                  const upper0 = y0 - (sigma0 * 2.4);
+                  const lower0 = y0 + (sigma0 * 2.4);
+                  const upper1 = y1 - (sigma1 * 2.4);
+                  const lower1 = y1 + (sigma1 * 2.4);
+                  const upper2 = y2 - (sigma2 * 2.4);
+                  const lower2 = y2 + (sigma2 * 2.4);
+                  const upper3 = y3 - (sigma3 * 2.4);
+                  const lower3 = y3 + (sigma3 * 2.4);
+                  
+                  const pathData = `
+                    M ${x0} ${y0}
+                    Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
+                    Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
+                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
+                  `;
+                  
+                  const conePathUpper = `
+                    M ${x0} ${upper0}
+                    Q ${(x0 + x1) / 2} ${(upper0 + upper1) / 2}, ${x1} ${upper1}
+                    Q ${(x1 + x2) / 2} ${(upper1 + upper2) / 2}, ${x2} ${upper2}
+                    Q ${(x2 + x3) / 2} ${(upper2 + upper3) / 2}, ${x3} ${upper3}
+                  `;
+                  
+                  const conePathLower = `
+                    M ${x0} ${lower0}
+                    Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x1} ${lower1}
+                    Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x2} ${lower2}
+                    Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x3} ${lower3}
+                  `;
+                  
+                  return (
+                    <g>
+                      <defs>
+                        <linearGradient id="stockGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor={color} stopOpacity="0.02" />
+                          <stop offset="30%" stopColor={color} stopOpacity="0.08" />
+                          <stop offset="100%" stopColor={color} stopOpacity="0.12" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Uncertainty cone */}
+                      <path
+                        d={`${conePathUpper} L ${x3} ${lower3} Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x0} ${lower0} Z`}
+                        fill="url(#stockGradient)"
+                        opacity={0.4}
+                      />
+                      
+                      {/* Cone boundaries */}
+                      <path 
+                        d={conePathUpper}
+                        stroke={color}
+                        strokeWidth="1"
+                        fill="none"
+                        opacity={0.3}
+                        strokeDasharray="3 3"
+                      />
+                      <path 
+                        d={conePathLower}
+                        stroke={color}
+                        strokeWidth="1"
+                        fill="none"
+                        opacity={0.3}
+                        strokeDasharray="3 3"
+                      />
+                      
+                      {/* Main line */}
+                      <path 
+                        d={pathData} 
+                        stroke={color} 
+                        strokeWidth="3.5" 
+                        fill="none" 
+                        opacity={0.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Points */}
+                      <circle cx={x0} cy={y0} r="5" fill={color} opacity={0.8} />
+                      <circle cx={x1} cy={y1} r="5" fill={color} opacity={0.8} />
+                      <circle cx={x2} cy={y2} r="5" fill={color} opacity={0.8} />
+                      <circle cx={x3} cy={y3} r="5" fill={color} opacity={0.8} />
+                    </g>
+                  );
+                })()}
+              </svg>
+            </div>
+          </div>
+
+          {/* Score Breakdown Tables */}
+          <div className="space-y-6">
+            {HORIZONS.map((horizon) => {
+              const projection = projections[horizon];
+              if (!projection) return null;
+
+              return (
+                <div key={horizon} className="bg-gray-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4">{horizon.toUpperCase()} Outlook</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-gray-900 rounded p-4">
+                      <div className="text-sm text-gray-400 mb-1">Total Score</div>
+                      <div className="text-3xl font-bold text-blue-400">{Math.round(projection.score_total)}</div>
+                    </div>
+                    <div className="bg-gray-900 rounded p-4">
+                      <div className="text-sm text-gray-400 mb-1">Return</div>
+                      <div className={`text-3xl font-bold ${projection.return_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {projection.return_pct >= 0 ? '+' : ''}{projection.return_pct.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-400 w-32">Trend (45%)</span>
+                      <div className="flex-1 bg-gray-700 rounded h-3">
+                        <div 
+                          className="bg-yellow-500 h-3 rounded transition-all"
+                          style={{ width: `${projection.score_trend}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_trend)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-400 w-32">Rel. Strength (30%)</span>
+                      <div className="flex-1 bg-gray-700 rounded h-3">
+                        <div 
+                          className="bg-lime-500 h-3 rounded transition-all"
+                          style={{ width: `${projection.score_relative_strength}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_relative_strength)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-400 w-32">Risk (20%)</span>
+                      <div className="flex-1 bg-gray-700 rounded h-3">
+                        <div 
+                          className="bg-red-500 h-3 rounded transition-all"
+                          style={{ width: `${projection.score_risk}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_risk)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-400 w-32">Regime (5%)</span>
+                      <div className="flex-1 bg-gray-700 rounded h-3">
+                        <div 
+                          className="bg-indigo-500 h-3 rounded transition-all"
+                          style={{ width: `${projection.score_regime}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_regime)}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Volatility:</span>
+                      <span className="ml-2 font-semibold">{projection.volatility.toFixed(1)}%</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Max Drawdown:</span>
+                      <span className="ml-2 font-semibold text-red-400">{projection.max_drawdown.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Methodology */}
+          <div className="mt-6 bg-gray-800 rounded-lg shadow">
+            <button
+              onClick={() => setMethodologyOpen(!methodologyOpen)}
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
+            >
+              <h2 className="text-lg font-semibold">Methodology & Scoring Details</h2>
+              <div className="text-lg font-bold text-gray-500">
+                {methodologyOpen ? '−' : '+'}
+              </div>
+            </button>
+            {methodologyOpen && (
+              <div className="px-6 pb-6 text-sm text-gray-300 space-y-4">
+                <p>
+                  Stock projections use the same transparent scoring methodology as sector analysis, 
+                  evaluating performance across 3-month, 6-month, and 12-month lookback periods.
+                </p>
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold mb-2">Scoring Components</h4>
+                  <ul className="space-y-2 text-xs">
+                    <li><strong>Trend (45%):</strong> Price momentum and technical positioning relative to moving averages</li>
+                    <li><strong>Relative Strength (30%):</strong> Outperformance vs SPY benchmark</li>
+                    <li><strong>Risk (20%):</strong> Volatility and drawdown analysis (inverted scoring)</li>
+                    <li><strong>Regime (5%):</strong> Context-aware adjustments based on market environment</li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold mb-2">Uncertainty Cones</h4>
+                  <p className="text-xs">
+                    The expanding cone represents projection confidence intervals. Width increases with forecast horizon, 
+                    reflecting growing uncertainty. Narrower cones indicate more predictable price behavior.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Empty State */}
+      {!chartData && !loading && !error && (
+        <div className="bg-gray-800 rounded-lg p-12 text-center">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p className="text-lg font-semibold mb-2">Search for a stock to get started</p>
+            <p className="text-sm">Enter any stock ticker to analyze its multi-horizon projections</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

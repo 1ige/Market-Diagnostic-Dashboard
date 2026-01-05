@@ -89,5 +89,9 @@ app.include_router(sector_summary_router, tags=["SectorSummary"])
 from app.api.sector_alerts import router as sector_alerts_router
 app.include_router(sector_alerts_router, tags=["SectorAlerts"])
 
+# Stock Projections
+from app.api.stock_projection import router as stock_projection_router
+app.include_router(stock_projection_router, tags=["StockProjections"])
+
 from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
