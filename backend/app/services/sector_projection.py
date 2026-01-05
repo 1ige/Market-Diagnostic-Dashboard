@@ -187,7 +187,11 @@ def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state
             spy_ret = (spy["value"].iloc[-1] / spy["value"].iloc[0]) - 1
             
             # Distance from 200-day SMA (momentum indicator)
-            sma_window = min(200, len(df))
+            # For T horizon with limited data (21 days), use a shorter SMA window
+            if horizon == "T":
+                sma_window = min(10, len(df) - 1)  # 10-day SMA, or shorter if less data
+            else:
+                sma_window = min(200, len(df) - 1)  # 200-day SMA
             sma = df["value"].rolling(sma_window).mean().iloc[-1]
             sma_dist = (df["value"].iloc[-1] / sma) - 1 if sma else 0
             
