@@ -20,7 +20,13 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.utils.db_helpers import get_db_session
 from app.models.sector_projection import SectorProjectionRun, SectorProjectionValue
-from app.services.sector_projection import compute_sector_projections, fetch_sector_price_history, MODEL_VERSION, WEIGHTS
+from app.services.sector_projection import (
+    compute_sector_projections,
+    detect_duplicate_series,
+    fetch_sector_price_history,
+    MODEL_VERSION,
+    WEIGHTS,
+)
 from app.models.system_status import SystemStatus
 from typing import List, Dict, Any
 from functools import lru_cache
@@ -107,9 +113,12 @@ def get_latest_projections():
             historical_scores = _historical_scores_cache
         
         return {
+            "run_id": run.id,
             "as_of_date": str(run.as_of_date),
+            "created_at": run.created_at.isoformat(),
             "model_version": run.model_version,
             "system_state": run.system_state,
+            "data_warnings": (run.config_json or {}).get("data_warnings", []),
             "projections": result,
             "historical": historical_scores,  # {sector_symbol: score_3m_ago}
         }
@@ -138,6 +147,8 @@ def get_projection_history(days: int = Query(365, ge=1, le=1095)):
             for v in values:
                 history.setdefault(v.sector_symbol, {}).setdefault(v.horizon, []).append({
                     "as_of_date": str(run.as_of_date),
+                    "created_at": run.created_at.isoformat(),
+                    "run_id": run.id,
                     "score_total": v.score_total,
                     "rank": v.rank,
                 })
@@ -155,6 +166,8 @@ def get_projection_history(days: int = Query(365, ge=1, le=1095)):
                     for v in prev_cache.get("values", []):
                         history.setdefault(v["sector_symbol"], {}).setdefault(v["horizon"], []).append({
                             "as_of_date": prev_cache["as_of_date"],
+                            "created_at": prev_cache.get("created_at"),
+                            "run_id": prev_cache.get("run_id"),
                             "score_total": v["score_total"],
                             "rank": v["rank"],
                         })
@@ -168,6 +181,12 @@ def refresh_projections():
         system_state = status.state if status else "YELLOW"
     # Fetch data and compute projections
     price_data = fetch_sector_price_history()
+    duplicates = detect_duplicate_series(price_data)
+    if duplicates:
+        raise HTTPException(
+            status_code=500,
+            detail="Duplicate sector price series detected; aborting projection refresh.",
+        )
     projections = compute_sector_projections(price_data, system_state=system_state)
     if not projections:
         raise HTTPException(status_code=500, detail="Failed to compute projections.")
@@ -187,6 +206,7 @@ def refresh_projections():
                 .all()
             )
             prev_cache = {
+                "run_id": prev_run.id,
                 "as_of_date": str(prev_run.as_of_date),
                 "created_at": prev_run.created_at.isoformat(),
                 "system_state": prev_run.system_state,
@@ -210,6 +230,7 @@ def refresh_projections():
             model_version=MODEL_VERSION,
             config_json={
                 "weights": WEIGHTS,
+                "data_warnings": duplicates,
                 "previous_run_cache": prev_cache,
             },
         )

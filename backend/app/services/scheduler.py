@@ -10,7 +10,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from app.services.ingestion.etl_runner import ETLRunner
-from app.services.sector_projection import compute_sector_projections, fetch_sector_price_history, MODEL_VERSION, WEIGHTS
+from app.services.sector_projection import (
+    compute_sector_projections,
+    detect_duplicate_series,
+    fetch_sector_price_history,
+    MODEL_VERSION,
+    WEIGHTS,
+)
 from app.models.sector_projection import SectorProjectionRun, SectorProjectionValue
 from app.models.system_status import SystemStatus
 from app.utils.db_helpers import get_db_session
@@ -42,6 +48,12 @@ async def scheduled_etl_job():
         # Get system state
         system_state = status["system_state"] if status and "system_state" in status else "YELLOW"
         price_data = fetch_sector_price_history()
+        duplicates = detect_duplicate_series(price_data)
+        if duplicates:
+            logger.error(
+                "❌ Duplicate sector price series detected; skipping projection storage."
+            )
+            return
         projections = compute_sector_projections(price_data, system_state=system_state)
         if projections:
             as_of_date = datetime.utcnow().date()
@@ -59,6 +71,7 @@ async def scheduled_etl_job():
                         .all()
                     )
                     prev_cache = {
+                        "run_id": prev_run.id,
                         "as_of_date": str(prev_run.as_of_date),
                         "created_at": prev_run.created_at.isoformat(),
                         "system_state": prev_run.system_state,
@@ -82,6 +95,7 @@ async def scheduled_etl_job():
                     model_version=MODEL_VERSION,
                     config_json={
                         "weights": WEIGHTS,
+                        "data_warnings": duplicates,
                         "previous_run_cache": prev_cache,
                     },
                 )

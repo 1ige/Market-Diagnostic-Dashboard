@@ -67,6 +67,28 @@ WEIGHTS = {
 
 logger = logging.getLogger(__name__)
 
+def detect_duplicate_series(
+    price_data: Dict[str, pd.DataFrame],
+    tail_points: int = 30,
+) -> List[Dict[str, Any]]:
+    """Return duplicate series signatures for data integrity checks."""
+    signatures: Dict[tuple, str] = {}
+    duplicates: List[Dict[str, Any]] = []
+    for symbol, df in price_data.items():
+        if df.empty or "value" not in df.columns:
+            continue
+        tail = df["value"].tail(tail_points).tolist()
+        sig = (len(df), tuple(round(v, 8) for v in tail))
+        if sig in signatures:
+            duplicates.append({
+                "symbol_a": signatures[sig],
+                "symbol_b": symbol,
+                "points": len(df),
+            })
+        else:
+            signatures[sig] = symbol
+    return duplicates
+
 def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state: str = "YELLOW") -> List[Dict[str, Any]]:
     """
     Compute sector projections for each ETF and horizon.
@@ -260,19 +282,12 @@ def fetch_sector_price_history(days: int = 8000) -> Dict[str, pd.DataFrame]:
             df = pd.DataFrame(data)
             result[etf["symbol"]] = df
 
-    # Detect duplicate series across symbols to catch ingestion issues.
-    signatures: Dict[tuple, str] = {}
-    duplicates = []
-    for symbol, df in result.items():
-        if df.empty or "value" not in df.columns:
-            continue
-        tail = df["value"].tail(30).tolist()
-        sig = (len(df), tuple(round(v, 8) for v in tail))
-        if sig in signatures:
-            duplicates.append((signatures[sig], symbol))
-        else:
-            signatures[sig] = symbol
-    for a, b in duplicates:
-        logger.warning("Duplicate sector price series detected: %s and %s", a, b)
+    duplicates = detect_duplicate_series(result)
+    for dup in duplicates:
+        logger.warning(
+            "Duplicate sector price series detected: %s and %s",
+            dup["symbol_a"],
+            dup["symbol_b"],
+        )
 
     return result
