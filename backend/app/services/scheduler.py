@@ -46,12 +46,44 @@ async def scheduled_etl_job():
         if projections:
             as_of_date = datetime.utcnow().date()
             with get_db_session() as db:
+                prev_run = (
+                    db.query(SectorProjectionRun)
+                    .order_by(SectorProjectionRun.created_at.desc())
+                    .first()
+                )
+                prev_cache = None
+                if prev_run:
+                    prev_values = (
+                        db.query(SectorProjectionValue)
+                        .filter_by(run_id=prev_run.id)
+                        .all()
+                    )
+                    prev_cache = {
+                        "as_of_date": str(prev_run.as_of_date),
+                        "created_at": prev_run.created_at.isoformat(),
+                        "system_state": prev_run.system_state,
+                        "model_version": prev_run.model_version,
+                        "values": [
+                            {
+                                "horizon": v.horizon,
+                                "sector_symbol": v.sector_symbol,
+                                "sector_name": v.sector_name,
+                                "score_total": v.score_total,
+                                "rank": v.rank,
+                            }
+                            for v in prev_values
+                        ],
+                    }
+
                 run = SectorProjectionRun(
                     as_of_date=as_of_date,
                     created_at=datetime.utcnow(),
                     system_state=system_state,
                     model_version=MODEL_VERSION,
-                    config_json={"weights": WEIGHTS},
+                    config_json={
+                        "weights": WEIGHTS,
+                        "previous_run_cache": prev_cache,
+                    },
                 )
                 db.add(run)
                 db.flush()
@@ -69,6 +101,16 @@ async def scheduled_etl_job():
                         metrics_json=p["metrics"],
                         rank=p["rank"],
                     ))
+
+                if prev_run:
+                    old_runs = (
+                        db.query(SectorProjectionRun)
+                        .filter(SectorProjectionRun.id != run.id)
+                        .all()
+                    )
+                    for old_run in old_runs:
+                        db.delete(old_run)
+
                 db.commit()
             logger.info(f"✅ Sector projections computed and stored for {as_of_date}")
         else:

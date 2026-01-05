@@ -125,8 +125,14 @@ def classify_rank(rank, n):
 def get_projection_history(days: int = Query(365, ge=1, le=1095)):
     cutoff = datetime.utcnow().date() - timedelta(days=days)
     with get_db_session() as db:
-        runs = db.query(SectorProjectionRun).filter(SectorProjectionRun.as_of_date >= cutoff).order_by(SectorProjectionRun.as_of_date).all()
+        runs = (
+            db.query(SectorProjectionRun)
+            .filter(SectorProjectionRun.as_of_date >= cutoff)
+            .order_by(SectorProjectionRun.as_of_date)
+            .all()
+        )
         history: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+
         for run in runs:
             values = db.query(SectorProjectionValue).filter_by(run_id=run.id).all()
             for v in values:
@@ -135,6 +141,23 @@ def get_projection_history(days: int = Query(365, ge=1, le=1095)):
                     "score_total": v.score_total,
                     "rank": v.rank,
                 })
+
+        # Include cached previous run if present on the latest run.
+        if runs:
+            latest_run = runs[-1]
+            prev_cache = (latest_run.config_json or {}).get("previous_run_cache")
+            if prev_cache and prev_cache.get("as_of_date"):
+                try:
+                    prev_date = datetime.fromisoformat(prev_cache["as_of_date"]).date()
+                except ValueError:
+                    prev_date = None
+                if prev_date and prev_date >= cutoff:
+                    for v in prev_cache.get("values", []):
+                        history.setdefault(v["sector_symbol"], {}).setdefault(v["horizon"], []).append({
+                            "as_of_date": prev_cache["as_of_date"],
+                            "score_total": v["score_total"],
+                            "rank": v["rank"],
+                        })
         return history
 
 @router.post("/sectors/projections/refresh")
@@ -151,12 +174,44 @@ def refresh_projections():
     # Store in DB
     as_of_date = datetime.utcnow().date()
     with get_db_session() as db:
+        prev_run = (
+            db.query(SectorProjectionRun)
+            .order_by(SectorProjectionRun.created_at.desc())
+            .first()
+        )
+        prev_cache = None
+        if prev_run:
+            prev_values = (
+                db.query(SectorProjectionValue)
+                .filter_by(run_id=prev_run.id)
+                .all()
+            )
+            prev_cache = {
+                "as_of_date": str(prev_run.as_of_date),
+                "created_at": prev_run.created_at.isoformat(),
+                "system_state": prev_run.system_state,
+                "model_version": prev_run.model_version,
+                "values": [
+                    {
+                        "horizon": v.horizon,
+                        "sector_symbol": v.sector_symbol,
+                        "sector_name": v.sector_name,
+                        "score_total": v.score_total,
+                        "rank": v.rank,
+                    }
+                    for v in prev_values
+                ],
+            }
+
         run = SectorProjectionRun(
             as_of_date=as_of_date,
             created_at=datetime.utcnow(),
             system_state=system_state,
             model_version=MODEL_VERSION,
-            config_json={"weights": WEIGHTS},
+            config_json={
+                "weights": WEIGHTS,
+                "previous_run_cache": prev_cache,
+            },
         )
         db.add(run)
         db.flush()
@@ -174,5 +229,15 @@ def refresh_projections():
                 metrics_json=p["metrics"],
                 rank=p["rank"],
             ))
+
+        if prev_run:
+            old_runs = (
+                db.query(SectorProjectionRun)
+                .filter(SectorProjectionRun.id != run.id)
+                .all()
+            )
+            for old_run in old_runs:
+                db.delete(old_run)
+
         db.commit()
     return {"status": "ok", "as_of_date": str(as_of_date), "count": len(projections)}
