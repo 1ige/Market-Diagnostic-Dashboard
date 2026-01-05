@@ -93,7 +93,7 @@ export default function MarketNews() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTickerOpen, setIsTickerOpen] = useState(true);
   const [selectedTicker, setSelectedTicker] = useState("ALL");
-  const [selectedPreset, setSelectedPreset] = useState("custom");
+  const [selectedPreset, setSelectedPreset] = useState("nasdaq100");
   const [tickerDraft, setTickerDraft] = useState("");
   const [customDraft, setCustomDraft] = useState("");
   const [tickerMessage, setTickerMessage] = useState<string | null>(null);
