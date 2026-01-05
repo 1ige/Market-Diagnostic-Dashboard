@@ -114,6 +114,9 @@ export default function SectorProjections() {
   };
 
   const chartData = getChartData();
+  const tInterpolated = chartData.some((sector: any) =>
+    sector.scores["T"] === null || sector.scores["T"] === undefined
+  );
   
   // Detect if T data is valid (should have variation across sectors)
   // If all sectors have identical scores, T data is likely stale/unavailable
@@ -153,6 +156,11 @@ export default function SectorProjections() {
         <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
           <h2 className="text-lg font-semibold mb-3">Sector Score Trends Across Time Horizons</h2>
           <p className="text-xs text-gray-400 mb-3">Each line shows how a sector's composite score evolves from current to forward projections</p>
+          {tInterpolated && (
+            <p className="text-xs text-amber-300/90 mb-3">
+              Note: Some T values are estimated from historical and 3M data due to missing current readings.
+            </p>
+          )}
           
           {/* Smooth Line Chart */}
           <div className="bg-gray-900 rounded-lg p-3 sm:p-4 mb-2">
