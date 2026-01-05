@@ -145,70 +145,83 @@ export default function StockProjections() {
                 
                 {/* X-axis labels - simplified */}
                 <text x="150" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
-                <text x="450" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
+                <text x="375" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
                 <text x="525" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="650" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="750" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
+                <text x="675" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="825" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {(() => {
                   const color = "#3b82f6"; // Blue color for stock
                   
-                  // Calculate points - extending left for 3-month history
+                  // Calculate points - 5 data points total: -3M, T(now), 3M, 6M, 12M
                   // Simulate historical decline for demonstration (in real app, fetch from backend)
-                  const histScore1 = chartData.scores["3m"] - 8; // -3M ago (lower score)
-                  const histScore2 = chartData.scores["3m"] - 4; // -1.5M ago (improving)
+                  const histScore = chartData.scores["3m"] - 8; // -3M ago (lower score)
                   
-                  const xHist1 = 150;  // -3M
-                  const yHist1 = 260 - (histScore1 * 2.4);
-                  const xHist2 = 300;  // -1.5M
-                  const yHist2 = 260 - (histScore2 * 2.4);
-                  const x0 = 450;  // Now
+                  const xHist = 150;   // -3M
+                  const yHist = 260 - (histScore * 2.4);
+                  const x0 = 375;      // Now (T)
                   const y0 = 260 - (chartData.scores["3m"] * 2.4);
-                  const x1 = 600;  // +6M
-                  const y1 = 260 - (chartData.scores["6m"] * 2.4);
-                  const x2 = 750;  // +12M
-                  const y2 = 260 - (chartData.scores["12m"] * 2.4);
+                  const x1 = 525;      // +3M
+                  const y1 = 260 - (chartData.scores["3m"] * 2.4);
+                  const x2 = 675;      // +6M
+                  const y2 = 260 - (chartData.scores["6m"] * 2.4);
+                  const x3 = 825;      // +12M
+                  const y3 = 260 - (chartData.scores["12m"] * 2.4);
                   
-                  // Calculate uncertainty cone (only for future projections)
+                  // Calculate uncertainty cone (only for future projections starting from T)
                   const initialSigma = 2;
-                  const midSigma = Math.abs(chartData.scores["6m"] - chartData.scores["3m"]) * 0.3 + 5;
-                  const finalSigma = Math.abs(chartData.scores["12m"] - chartData.scores["6m"]) * 0.4 + 8;
+                  const sigma3m = 3;
+                  const sigma6m = Math.abs(chartData.scores["6m"] - chartData.scores["3m"]) * 0.3 + 6;
+                  const sigma12m = Math.abs(chartData.scores["12m"] - chartData.scores["6m"]) * 0.4 + 10;
                   
-                  const sigma0 = initialSigma;
-                  const sigma1 = midSigma * 0.7;
-                  const sigma2 = finalSigma;
+                  const upper0 = y0 - (initialSigma * 2.4);
+                  const lower0 = y0 + (initialSigma * 2.4);
+                  const upper1 = y1 - (sigma3m * 2.4);
+                  const lower1 = y1 + (sigma3m * 2.4);
+                  const upper2 = y2 - (sigma6m * 2.4);
+                  const lower2 = y2 + (sigma6m * 2.4);
+                  const upper3 = y3 - (sigma12m * 2.4);
+                  const lower3 = y3 + (sigma12m * 2.4);
                   
-                  const upper0 = y0 - (sigma0 * 2.4);
-                  const lower0 = y0 + (sigma0 * 2.4);
-                  const upper1 = y1 - (sigma1 * 2.4);
-                  const lower1 = y1 + (sigma1 * 2.4);
-                  const upper2 = y2 - (sigma2 * 2.4);
-                  const lower2 = y2 + (sigma2 * 2.4);
-                  
-                  // Historical path (solid, no cone)
+                  // Historical path (solid, no cone, -3M to T)
                   const historicalPath = `
-                    M ${xHist1} ${yHist1}
-                    Q ${(xHist1 + xHist2) / 2} ${(yHist1 + yHist2) / 2}, ${xHist2} ${yHist2}
-                    Q ${(xHist2 + x0) / 2} ${(yHist2 + y0) / 2}, ${x0} ${y0}
+                    M ${xHist} ${yHist}
+                    Q ${(xHist + x0) / 2} ${(yHist + y0) / 2}, ${x0} ${y0}
                   `;
                   
-                  // Future path (with uncertainty cone)
+                  // Future path - full (from T through all horizons)
                   const futurePath = `
                     M ${x0} ${y0}
-                    Q ${(x0 + x1) / 2} ${(y0 + y1) / 2}, ${x1} ${y1}
+                    L ${x1} ${y1}
                     Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
+                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
+                  `;
+                  
+                  // Path from T to 6M (solid, normal opacity)
+                  const pathToSixMonth = `
+                    M ${x0} ${y0}
+                    L ${x1} ${y1}
+                    Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
+                  `;
+                  
+                  // Path from 6M to 12M (fading segment)
+                  const pathSixToTwelve = `
+                    M ${x2} ${y2}
+                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
                   `;
                   
                   const conePathUpper = `
                     M ${x0} ${upper0}
-                    Q ${(x0 + x1) / 2} ${(upper0 + upper1) / 2}, ${x1} ${upper1}
+                    L ${x1} ${upper1}
                     Q ${(x1 + x2) / 2} ${(upper1 + upper2) / 2}, ${x2} ${upper2}
+                    Q ${(x2 + x3) / 2} ${(upper2 + upper3) / 2}, ${x3} ${upper3}
                   `;
                   
                   const conePathLower = `
                     M ${x0} ${lower0}
-                    Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x1} ${lower1}
+                    L ${x1} ${lower1}
                     Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x2} ${lower2}
+                    Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x3} ${lower3}
                   `;
                   
                   return (
@@ -216,12 +229,16 @@ export default function StockProjections() {
                       <defs>
                         <linearGradient id="stockGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor={color} stopOpacity="0.02" />
-                          <stop offset="30%" stopColor={color} stopOpacity="0.08" />
-                          <stop offset="100%" stopColor={color} stopOpacity="0.12" />
+                          <stop offset="40%" stopColor={color} stopOpacity="0.08" />
+                          <stop offset="100%" stopColor={color} stopOpacity="0.15" />
+                        </linearGradient>
+                        <linearGradient id="lineFadeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor={color} stopOpacity="0.9" />
+                          <stop offset="100%" stopColor={color} stopOpacity="0.15" />
                         </linearGradient>
                       </defs>
                       
-                      {/* Historical line (solid, brighter) */}
+                      {/* Historical line (solid, brighter, -3M to T) */}
                       <path 
                         d={historicalPath} 
                         stroke={color} 
@@ -234,9 +251,9 @@ export default function StockProjections() {
                       
                       {/* Uncertainty cone */}
                       <path
-                        d={`${conePathUpper} L ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} Q ${(x0 + x1) / 2} ${(lower0 + lower1) / 2}, ${x0} ${lower0} Z`}
+                        d={`${conePathUpper} L ${x3} ${lower3} Q ${(x2 + x3) / 2} ${(lower2 + lower3) / 2}, ${x2} ${lower2} Q ${(x1 + x2) / 2} ${(lower1 + lower2) / 2}, ${x1} ${lower1} L ${x0} ${lower0} Z`}
                         fill="url(#stockGradient)"
-                        opacity={0.4}
+                        opacity={0.5}
                       />
                       
                       {/* Cone boundaries */}
@@ -257,13 +274,23 @@ export default function StockProjections() {
                         strokeDasharray="3 3"
                       />
                       
-                      {/* Future projection line */}
+                      {/* Future projection line T to 6M (normal opacity) */}
                       <path 
-                        d={futurePath} 
+                        d={pathToSixMonth} 
                         stroke={color} 
                         strokeWidth="3.5" 
                         fill="none" 
                         opacity={0.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Future projection line 6M to 12M (fading into cone) */}
+                      <path 
+                        d={pathSixToTwelve} 
+                        stroke="url(#lineFadeGradient)" 
+                        strokeWidth="3.5" 
+                        fill="none" 
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
@@ -280,12 +307,12 @@ export default function StockProjections() {
                         opacity={0.5}
                       />
                       
-                      {/* Points */}
-                      <circle cx={xHist1} cy={yHist1} r="4" fill={color} opacity={0.7} />
-                      <circle cx={xHist2} cy={yHist2} r="4" fill={color} opacity={0.7} />
+                      {/* Points - 5 data points */}
+                      <circle cx={xHist} cy={yHist} r="4" fill={color} opacity={0.7} />
                       <circle cx={x0} cy={y0} r="6" fill={color} opacity={0.9} stroke="#fbbf24" strokeWidth="2" />
                       <circle cx={x1} cy={y1} r="5" fill={color} opacity={0.8} />
-                      <circle cx={x2} cy={y2} r="5" fill={color} opacity={0.8} />
+                      <circle cx={x2} cy={y2} r="5" fill={color} opacity={0.6} />
+                      <circle cx={x3} cy={y3} r="5" fill={color} opacity={0.3} />
                     </g>
                   );
                 })()}
