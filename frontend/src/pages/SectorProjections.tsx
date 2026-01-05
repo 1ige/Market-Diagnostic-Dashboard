@@ -105,17 +105,12 @@ export default function SectorProjections() {
       <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
       <p className="mb-4 text-gray-400">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
       
-      {/* Disclaimer */}
-      <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-        <p className="text-xs text-yellow-200/90 leading-relaxed">
-          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
-          They are not financial advice, investment recommendations, or guarantees of future performance. 
-          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
-          financial advisor before making investment decisions.
-        </p>
-      </div>
-
-      {/* How to Read - Collapsible */}
+      {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
+      
+      {loading && <div>Loading...</div>}
+      {error && <div className="text-red-400">Error: {error.message}</div>}
+      
+      {/* How to Read This Chart */}
       <div className="mb-6">
         <button
           onClick={() => setReadingGuideOpen(!readingGuideOpen)}
@@ -135,11 +130,7 @@ export default function SectorProjections() {
           </div>
         )}
       </div>
-      {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
-      
-      {loading && <div>Loading...</div>}
-      {error && <div className="text-red-400">Error: {error.message}</div>}
-      
+
       {/* Methodology Explanation - Collapsible */}
       <div className="mb-6 bg-gray-800 rounded-lg shadow">
         <button
@@ -278,6 +269,16 @@ export default function SectorProjections() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Disclaimer */}
+      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+        <p className="text-xs text-yellow-200/90 leading-relaxed">
+          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
+          They are not financial advice, investment recommendations, or guarantees of future performance. 
+          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
+          financial advisor before making investment decisions.
+        </p>
       </div>
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}
