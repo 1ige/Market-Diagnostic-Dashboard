@@ -61,6 +61,7 @@ export default function SectorProjections() {
   const [projections, setProjections] = useState<any>({});
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [selectedHorizon, setSelectedHorizon] = useState<"3m" | "6m" | "12m">("12m");
 
   useEffect(() => {
     if (data && data.projections) setProjections(data.projections);
@@ -337,10 +338,27 @@ export default function SectorProjections() {
         </div>
       )}
 
-      {/* Detailed Tables by Horizon */}
-      {HORIZONS.map((h) => (
-        <div key={h} className="mb-8">
-          <h2 className="text-lg font-semibold mb-2">{h.toUpperCase()} Projection</h2>
+      {/* Detailed Tables with Horizon Selector */}
+      {projections[selectedHorizon] && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <h2 className="text-lg font-semibold">Sector Rankings</h2>
+            <div className="flex gap-2">
+              {["3m", "6m", "12m"].map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setSelectedHorizon(h as "3m" | "6m" | "12m")}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${
+                    selectedHorizon === h
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
+                >
+                  {h === "3m" ? "T+3M" : h === "6m" ? "T+6M" : "T+12M"}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="bg-gray-800 rounded-lg p-4 shadow">
             <div className="hidden md:block">
               <table className="w-full text-sm">
@@ -357,8 +375,7 @@ export default function SectorProjections() {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Sort sectors by rank and apply color coding based on classification */}
-                  {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                  {projections[selectedHorizon]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                     <tr key={row.sector_symbol} className={
                       row.classification === "Winner"
                         ? "bg-green-900/30"
@@ -392,7 +409,7 @@ export default function SectorProjections() {
               </table>
             </div>
             <div className="md:hidden space-y-3">
-              {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+              {projections[selectedHorizon]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                 <div
                   key={row.sector_symbol}
                   className={`rounded-lg border border-gray-700 overflow-hidden ${
@@ -423,14 +440,9 @@ export default function SectorProjections() {
                       }>
                         {row.classification}
                       </span>
-                      <svg 
-                        className={`w-4 h-4 text-gray-500 transition-transform ${expandedCard === row.sector_symbol ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
+                      <div className="text-lg font-bold text-gray-500">
+                        {expandedCard === row.sector_symbol ? '−' : '+'}
+                      </div>
                     </div>
                   </button>
                   <div className="px-3 pt-0 pb-3">
@@ -449,7 +461,7 @@ export default function SectorProjections() {
             </div>
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }
