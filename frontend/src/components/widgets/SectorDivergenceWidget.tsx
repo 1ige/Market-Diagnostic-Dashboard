@@ -317,7 +317,6 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             );
           })}
         </svg>
-        </svg>
       </div>
 
       {/* Expandable Sector Details */}
