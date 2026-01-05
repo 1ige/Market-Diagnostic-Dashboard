@@ -110,7 +110,9 @@ export default function SectorProjections() {
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
         >
           <h2 className="text-lg font-semibold">Methodology & Algorithm Details</h2>
-          <span className="text-gray-400">{methodologyOpen ? "▼" : "▶"}</span>
+          <div className="text-lg font-bold text-gray-500">
+            {methodologyOpen ? '−' : '+'}
+          </div>
         </button>
         {methodologyOpen && (
           <div className="px-6 pb-6 text-sm text-gray-300 space-y-5">
@@ -448,7 +450,7 @@ export default function SectorProjections() {
                       </div>
                     </div>
                   </button>
-                  <div className="px-3 pt-0 pb-3">
+                  <div className="px-3 pt-2 pb-3">
                     <ScoreBar label="Total" value={row.score_total} color="#38bdf8" />
                   </div>
                   {expandedCard === row.sector_symbol && (
