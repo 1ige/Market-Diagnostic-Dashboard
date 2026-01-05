@@ -192,18 +192,18 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
 
         <div className="bg-stealth-900 rounded-lg p-4 border border-stealth-700">
           <div className="text-xs text-gray-400 mb-2">Sector Breadth</div>
-          <div className="flex justify-between items-end mb-2">
-            <div>
-              <div className="text-green-400 font-bold text-2xl">{data.sector_breadth.improving}</div>
-              <div className="text-xs text-gray-500">Improving</div>
+          <div className="flex justify-between items-end mb-2 gap-2 min-w-0">
+            <div className="flex-1 min-w-0">
+              <div className="text-green-400 font-bold text-2xl truncate">{data.sector_breadth.improving}</div>
+              <div className="text-xs text-gray-500 truncate">Improving</div>
             </div>
-            <div className="text-center">
-              <div className="text-gray-400 font-bold text-lg">{data.sector_breadth.stable}</div>
-              <div className="text-xs text-gray-500">Stable</div>
+            <div className="flex-1 min-w-0 text-center">
+              <div className="text-gray-400 font-bold text-lg truncate">{data.sector_breadth.stable}</div>
+              <div className="text-xs text-gray-500 truncate">Stable</div>
             </div>
-            <div>
-              <div className="text-red-400 font-bold text-2xl">{data.sector_breadth.deteriorating}</div>
-              <div className="text-xs text-gray-500">Falling</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-red-400 font-bold text-2xl truncate">{data.sector_breadth.deteriorating}</div>
+              <div className="text-xs text-gray-500 truncate">Falling</div>
             </div>
           </div>
         </div>
