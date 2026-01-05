@@ -164,8 +164,9 @@ export default function StockProjections() {
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
             <h3 className="text-base sm:text-lg font-semibold mb-4">Score Trends</h3>
-            <div className="bg-gray-900 rounded-lg p-2 sm:p-4">
-              <svg width="100%" height="240" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
+            <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2 -mx-2 sm:mx-0">
+              <div className="w-full" style={{ aspectRatio: '3 / 1', maxHeight: '240px' }}>
+                <svg width="100%" height="100%" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
@@ -350,6 +351,7 @@ export default function StockProjections() {
                   );
                 })()}
               </svg>
+              </div>
             </div>
           </div>
 
