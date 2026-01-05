@@ -61,7 +61,7 @@ export default function SectorProjections() {
   const [projections, setProjections] = useState<any>({});
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [selectedHorizon, setSelectedHorizon] = useState<"3m" | "6m" | "12m">("12m");
+  const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
 
   useEffect(() => {
     if (data && data.projections) setProjections(data.projections);
@@ -339,22 +339,22 @@ export default function SectorProjections() {
       )}
 
       {/* Detailed Tables with Horizon Selector */}
-      {projections[selectedHorizon] && (
+      {(projections[selectedHorizon === "T" ? "3m" : selectedHorizon] || selectedHorizon === "T") && (
         <div className="mb-8">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold">Sector Rankings</h2>
             <div className="flex gap-2">
-              {["3m", "6m", "12m"].map((h) => (
+              {["T", "3m", "6m", "12m"].map((h) => (
                 <button
                   key={h}
-                  onClick={() => setSelectedHorizon(h as "3m" | "6m" | "12m")}
+                  onClick={() => setSelectedHorizon(h as "T" | "3m" | "6m" | "12m")}
                   className={`px-4 py-2 rounded-lg font-medium transition ${
                     selectedHorizon === h
                       ? "bg-blue-600 text-white"
                       : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                   }`}
                 >
-                  {h === "3m" ? "T+3M" : h === "6m" ? "T+6M" : "T+12M"}
+                  {h === "T" ? "T" : h === "3m" ? "T+3M" : h === "6m" ? "T+6M" : "T+12M"}
                 </button>
               ))}
             </div>
@@ -375,7 +375,7 @@ export default function SectorProjections() {
                   </tr>
                 </thead>
                 <tbody>
-                  {projections[selectedHorizon]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                  {(selectedHorizon === "T" ? projections["3m"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                     <tr key={row.sector_symbol} className={
                       row.classification === "Winner"
                         ? "bg-green-900/30"
@@ -409,7 +409,7 @@ export default function SectorProjections() {
               </table>
             </div>
             <div className="md:hidden space-y-3">
-              {projections[selectedHorizon]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+              {(selectedHorizon === "T" ? projections["3m"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                 <div
                   key={row.sector_symbol}
                   className={`rounded-lg border border-gray-700 overflow-hidden ${
