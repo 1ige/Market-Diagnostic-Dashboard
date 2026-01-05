@@ -44,14 +44,14 @@ const HORIZONS = ["3m", "6m", "12m"];
 function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="w-14 text-gray-400">{label}</span>
+      <span className="w-12 sm:w-14 text-gray-400">{label}</span>
       <div className="flex-1 bg-gray-700 rounded h-2">
         <div
           className="h-2 rounded"
           style={{ width: `${value}%`, background: color }}
         ></div>
       </div>
-      <span className="w-8 text-right text-gray-300">{Math.round(value)}</span>
+      <span className="w-8 text-right text-gray-300 tabular-nums">{Math.round(value)}</span>
     </div>
   );
 }
@@ -93,7 +93,7 @@ export default function SectorProjections() {
   const chartData = getChartData();
 
   return (
-    <div className="p-6 max-w-5xl mx-auto text-gray-100">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
       <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
       <p className="mb-2 text-gray-400">Forward 3, 6, 12 month sector rankings (Option B, v1, transparent model)</p>
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
@@ -227,13 +227,13 @@ export default function SectorProjections() {
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}
       {!loading && !error && Object.keys(projections).length > 0 && (
-        <div className="mb-8 bg-gray-800 rounded-lg p-6 shadow">
+        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
           <h2 className="text-lg font-semibold mb-4">Sector Score Trends Across Time Horizons</h2>
           <p className="text-xs text-gray-400 mb-4">Each line shows how a sector's composite score evolves from current to forward projections</p>
           
           {/* Smooth Line Chart */}
-          <div className="bg-gray-900 rounded-lg p-4">
-            <svg width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+          <div className="bg-gray-900 rounded-lg p-3 sm:p-4">
+            <svg width="100%" height="280" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((y) => (
                 <g key={y}>
@@ -297,7 +297,7 @@ export default function SectorProjections() {
           </div>
           
           {/* Legend */}
-          <div className="mt-4 grid grid-cols-4 gap-2 text-xs">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
             {chartData.map((sector: any, idx: number) => {
               const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
               const color = colors[idx % colors.length];
@@ -313,7 +313,7 @@ export default function SectorProjections() {
           {/* Top Performers by Horizon */}
           <div className="border-t border-gray-700 pt-4 mt-4">
             <h3 className="text-sm font-semibold mb-3 text-gray-300">Top 3 Performers by Horizon</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {HORIZONS.map((h) => {
                 const topSectors = (projections[h] || [])
                   .sort((a: any, b: any) => a.rank - b.rank)
@@ -341,53 +341,94 @@ export default function SectorProjections() {
         <div key={h} className="mb-8">
           <h2 className="text-lg font-semibold mb-2">{h.toUpperCase()} Projection</h2>
           <div className="bg-gray-800 rounded-lg p-4 shadow">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-400">
-                  <th className="text-left">Rank</th>
-                  <th className="text-left">Sector</th>
-                  <th className="text-left">Score</th>
-                  <th className="text-left">Type</th>
-                  <th className="text-left">Trend</th>
-                  <th className="text-left">Rel</th>
-                  <th className="text-left">Risk</th>
-                  <th className="text-left">Regime</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Sort sectors by rank and apply color coding based on classification */}
-                {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
-                  <tr key={row.sector_symbol} className={
+            <div className="hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-400">
+                    <th className="text-left">Rank</th>
+                    <th className="text-left">Sector</th>
+                    <th className="text-left">Score</th>
+                    <th className="text-left">Type</th>
+                    <th className="text-left">Trend</th>
+                    <th className="text-left">Rel</th>
+                    <th className="text-left">Risk</th>
+                    <th className="text-left">Regime</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Sort sectors by rank and apply color coding based on classification */}
+                  {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                    <tr key={row.sector_symbol} className={
+                      row.classification === "Winner"
+                        ? "bg-green-900/30"
+                        : row.classification === "Loser"
+                        ? "bg-red-900/20"
+                        : ""
+                    }>
+                      <td>{row.rank}</td>
+                      <td>{row.sector_name} <span className="text-xs text-gray-500">({row.sector_symbol})</span></td>
+                      <td>
+                        <ScoreBar label="" value={row.score_total} color="#38bdf8" />
+                      </td>
+                      <td>
+                        <span className={
+                          row.classification === "Winner"
+                            ? "text-green-400"
+                            : row.classification === "Loser"
+                            ? "text-red-400"
+                            : "text-gray-400"
+                        }>
+                          {row.classification}
+                        </span>
+                      </td>
+                      <td><ScoreBar label="" value={row.score_trend} color="#facc15" /></td>
+                      <td><ScoreBar label="" value={row.score_rel} color="#a3e635" /></td>
+                      <td><ScoreBar label="" value={row.score_risk} color="#f87171" /></td>
+                      <td><ScoreBar label="" value={row.score_regime} color="#818cf8" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-3">
+              {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                <div
+                  key={row.sector_symbol}
+                  className={`rounded-lg p-3 border border-gray-700 ${
                     row.classification === "Winner"
-                      ? "bg-green-900/30"
+                      ? "bg-green-900/20"
                       : row.classification === "Loser"
                       ? "bg-red-900/20"
-                      : ""
-                  }>
-                    <td>{row.rank}</td>
-                    <td>{row.sector_name} <span className="text-xs text-gray-500">({row.sector_symbol})</span></td>
-                    <td>
-                      <ScoreBar label="" value={row.score_total} color="#38bdf8" />
-                    </td>
-                    <td>
-                      <span className={
-                        row.classification === "Winner"
-                          ? "text-green-400"
-                          : row.classification === "Loser"
-                          ? "text-red-400"
-                          : "text-gray-400"
-                      }>
-                        {row.classification}
-                      </span>
-                    </td>
-                    <td><ScoreBar label="" value={row.score_trend} color="#facc15" /></td>
-                    <td><ScoreBar label="" value={row.score_rel} color="#a3e635" /></td>
-                    <td><ScoreBar label="" value={row.score_risk} color="#f87171" /></td>
-                    <td><ScoreBar label="" value={row.score_regime} color="#818cf8" /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      : "bg-gray-900/40"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-100">
+                        #{row.rank} {row.sector_name}
+                      </div>
+                      <div className="text-xs text-gray-500">{row.sector_symbol}</div>
+                    </div>
+                    <span className={
+                      row.classification === "Winner"
+                        ? "text-green-400 text-xs font-semibold"
+                        : row.classification === "Loser"
+                        ? "text-red-400 text-xs font-semibold"
+                        : "text-gray-400 text-xs font-semibold"
+                    }>
+                      {row.classification}
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <ScoreBar label="Total" value={row.score_total} color="#38bdf8" />
+                    <ScoreBar label="Trend" value={row.score_trend} color="#facc15" />
+                    <ScoreBar label="Rel" value={row.score_rel} color="#a3e635" />
+                    <ScoreBar label="Risk" value={row.score_risk} color="#f87171" />
+                    <ScoreBar label="Regime" value={row.score_regime} color="#818cf8" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ))}

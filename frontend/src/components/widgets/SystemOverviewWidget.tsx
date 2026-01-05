@@ -288,11 +288,11 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
         console.log('SystemOverview chart data sample:', chartData.slice(0, 3), 'total:', chartData.length);
         
         return (
-          <div className="pt-4 border-t border-stealth-700">
-            <h4 className="text-sm font-semibold text-stealth-200 mb-3">
+          <div className="pt-6 border-t border-stealth-700">
+            <h4 className="text-sm font-semibold text-stealth-200 mb-4">
               Composite Score Trend
             </h4>
-            <div className="h-40">
+            <div className="w-full h-60 sm:h-72 lg:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333338" />
