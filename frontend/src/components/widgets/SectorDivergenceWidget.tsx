@@ -300,13 +300,50 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
                   <div className="text-xs text-gray-500">{sector.name}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className={`font-bold ${sector.trend > 0 ? 'text-green-400' : sector.trend < -5 ? 'text-red-400' : 'text-gray-400'}`}>
-                    {sector.trend > 0 ? '↗' : sector.trend < -5 ? '↘' : '→'}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-stealth-100">{sector.scores["12m"].toFixed(0)}</div>
-                    <div className="text-xs text-gray-500">12M</div>
-                  </div>
+                  {(() => {
+                    // Get projection data for this sector
+                    const etfMap: {[key: string]: string} = {
+                      "XLE": "Energy", "XLF": "Financials", "XLK": "Technology", "XLY": "Consumer Discretionary",
+                      "XLP": "Consumer Staples", "XLV": "Health Care", "XLI": "Industrials", "XLU": "Utilities",
+                      "XLB": "Materials", "XLRE": "Real Estate", "XLC": "Communication Services"
+                    };
+                    const sectorName = etfMap[sector.symbol];
+                    const proj3m = projections?.["3m"]?.find((p: any) => p.sector_name === sectorName);
+                    const proj6m = projections?.["6m"]?.find((p: any) => p.sector_name === sectorName);
+                    const proj12m = projections?.["12m"]?.find((p: any) => p.sector_name === sectorName);
+                    
+                    if (!proj3m) return null;
+                    
+                    const score3m = proj3m.score_total;
+                    const score6m = proj6m?.score_total || score3m;
+                    const score12m = proj12m?.score_total || score3m;
+                    
+                    const scores = [score3m, score6m, score12m];
+                    const sparkPoints = scores.map((score) => {
+                      const normalized = Math.max(0, Math.min(100, score));
+                      return 20 - (normalized / 100) * 20;
+                    });
+                    
+                    const trendUp = score12m > score3m;
+                    const trendDown = score12m < score3m;
+                    
+                    return (
+                      <div className="flex flex-col items-end">
+                        <svg width="45" height="20" viewBox="0 0 45 20" className="flex-shrink-0">
+                          <path
+                            d={`M 0,${sparkPoints[0]} Q 7,${(sparkPoints[0] + sparkPoints[1]) / 2} 15,${sparkPoints[1]} Q 22,${(sparkPoints[1] + sparkPoints[2]) / 2} 45,${sparkPoints[2]}`}
+                            fill="none"
+                            stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <circle cx="45" cy={sparkPoints[2]} r="1.5" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
+                        </svg>
+                        <div className="text-[9px] text-gray-500">T + 12M</div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <svg 
