@@ -544,43 +544,53 @@ const MarketMap = () => {
                       
                       if (!projection3m) return null;
                       
+                      // Get current sector performance as "now" value
+                      const scoreNow = sector.pct_change * 10 + 50;  // Convert -5% to +5% range to 0-100 scale
                       const score3m = projection3m.score_total;
                       const score6m = projection6m?.score_total || score3m;
                       const score12m = projection12m?.score_total || score3m;
                       
-                      // Create sparkline using the 4 data points
-                      const scores = [score3m, score6m, score12m];
+                      // Create sparkline using 4 data points: now, 3m, 6m, 12m
+                      const scores = [scoreNow, score3m, score6m, score12m];
                       const minScore = Math.min(...scores, 30);
                       const maxScore = Math.max(...scores, 70);
                       const range = maxScore - minScore || 1;
                       
-                      // Calculate Y positions for sparkline (0 = top/high score, 100 = bottom/low score)
+                      // Calculate Y positions for sparkline (0 = top/high, 100 = bottom/low)
                       const sparkPoints = scores.map((score) => 
                         100 - ((score - minScore) / range) * 100
                       );
                       
-                      // Create SVG path for sparkline
-                      const pathData = `M 0,${sparkPoints[0]} L 22,${sparkPoints[1]} L 44,${sparkPoints[2]}`;
+                      // Determine color based on overall trend
+                      const trendUp = score12m > scoreNow;
+                      const trendDown = score12m < scoreNow;
                       
                       return (
                         <div className="flex items-center gap-2">
-                          {/* Sparkline */}
-                          <svg width="50" height="24" viewBox="0 0 50 24" className="flex-shrink-0">
+                          {/* Sparkline SVG with 4 points */}
+                          <svg width="60" height="20" viewBox="0 0 60 20" className="flex-shrink-0" preserveAspectRatio="none">
+                            {/* Grid background */}
+                            <rect width="60" height="20" fill="none" />
+                            
+                            {/* Polyline connecting 4 points */}
                             <polyline
-                              points={`0,${sparkPoints[0]} 22,${sparkPoints[1]} 44,${sparkPoints[2]}`}
+                              points={`0,${sparkPoints[0]} 20,${sparkPoints[1]} 40,${sparkPoints[2]} 60,${sparkPoints[3]}`}
                               fill="none"
-                              stroke={score12m > score3m ? '#10b981' : score12m < score3m ? '#ef4444' : '#6b7280'}
+                              stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             />
-                            <circle cx="0" cy={sparkPoints[0]} r="1.5" fill="#a4a4b0" />
-                            <circle cx="22" cy={sparkPoints[1]} r="1.5" fill="#a4a4b0" />
-                            <circle cx="44" cy={sparkPoints[2]} r="1.5" fill="#a4a4b0" opacity="0.6" />
+                            
+                            {/* Data points */}
+                            <circle cx="0" cy={sparkPoints[0]} r="2" fill="#a4a4b0" />
+                            <circle cx="20" cy={sparkPoints[1]} r="2" fill="#a4a4b0" />
+                            <circle cx="40" cy={sparkPoints[2]} r="2" fill="#a4a4b0" />
+                            <circle cx="60" cy={sparkPoints[3]} r="2" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
                           </svg>
-                          <div className="text-xs text-stealth-400 text-right">
+                          <div className="text-xs text-stealth-400 text-right flex-shrink-0">
                             <div className="font-bold text-stealth-200">{score12m.toFixed(0)}</div>
-                            <div className="text-[10px]">12m</div>
+                            <div className="text-[10px]">proj</div>
                           </div>
                         </div>
                       );
