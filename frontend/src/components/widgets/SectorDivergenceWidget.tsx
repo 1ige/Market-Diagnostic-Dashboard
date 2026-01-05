@@ -341,7 +341,8 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
         </svg>
       </div>
 
-      {/* Expandable Sector Details */}
+      {/* Expandable Sector Details - HIDDEN */}
+      {false && (
       <div className="space-y-2">
         <div className="text-sm font-semibold text-stealth-200 mb-3">All Sectors (12M Outlook)</div>
         {sortedByScore.map((sector) => (
@@ -444,6 +445,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }
