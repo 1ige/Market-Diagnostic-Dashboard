@@ -71,6 +71,15 @@ export default function SectorProjections() {
     if (data && data.projections) {
       setProjections(data.projections);
       setHistoricalScores(data.historical || {});
+      
+      // If T data is invalid and currently selected, switch to 3m
+      const tData = data.projections["T"] || [];
+      const tScoresValid = tData.length > 0 && (
+        new Set(tData.map(s => Math.round(s.score_total))).size > 1
+      );
+      if (selectedHorizon === "T" && !tScoresValid) {
+        setSelectedHorizon("3m");
+      }
     }
   }, [data]);
 
@@ -105,6 +114,13 @@ export default function SectorProjections() {
   };
 
   const chartData = getChartData();
+  
+  // Detect if T data is valid (should have variation across sectors)
+  // If all sectors have identical scores, T data is likely stale/unavailable
+  const tData = projections["T"] || [];
+  const tScoresValid = tData.length > 0 && (
+    new Set(tData.map(s => Math.round(s.score_total))).size > 1
+  );
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
@@ -406,28 +422,31 @@ export default function SectorProjections() {
           <div className="flex items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold">Sector Rankings</h2>
             <div className="flex gap-2">
-              {["T", "3m", "6m", "12m"].map((h) => (
-                <button
-                  key={h}
-                  onClick={() => setSelectedHorizon(h as "T" | "3m" | "6m" | "12m")}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    selectedHorizon === h
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  {h === "T" ? "T" : h === "3m" ? "T+3M" : h === "6m" ? "T+6M" : "T+12M"}
-                </button>
-              ))}
+              {["T", "3m", "6m", "12m"].map((h) => {
+                if (h === "T" && !tScoresValid) return null;
+                return (
+                  <button
+                    key={h}
+                    onClick={() => setSelectedHorizon(h as "T" | "3m" | "6m" | "12m")}
+                    className={`px-4 py-2 rounded-lg font-medium transition ${
+                      selectedHorizon === h
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    }`}
+                  >
+                    {h === "T" ? "T" : h === "3m" ? "T+3M" : h === "6m" ? "T+6M" : "T+12M"}
+                  </button>
+                );
+              })}
             </div>
           </div>
           
-          {/* Show warning if T data is not available */}
-          {selectedHorizon === "T" && !projections["T"] && (
+          {/* Show warning if T data is not available or invalid */}
+          {selectedHorizon === "T" && (!projections["T"] || !tScoresValid) && (
             <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
               <p className="text-xs text-yellow-200/90">
-                <strong>Note:</strong> Current time (T) projections are not available yet. The system needs to compute and store this data.
-                Please select another time horizon or check back after the next scheduled update.
+                <strong>Note:</strong> {!tScoresValid ? "Current time (T) projections appear uniform (likely market closed). " : "Current time (T) projections are not available yet. "}
+                The system computes T data during market hours. Please select another time horizon or check back when the market is open.
               </p>
             </div>
           )}
