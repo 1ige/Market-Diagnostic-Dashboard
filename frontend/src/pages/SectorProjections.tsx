@@ -234,65 +234,65 @@ export default function SectorProjections() {
           <p className="text-xs text-gray-400 mb-3">Each line shows how a sector's composite score evolves from current to forward projections</p>
           
           {/* Smooth Line Chart */}
-          <div className="bg-gray-900 rounded-lg p-2 sm:p-3 mb-2 h-72 sm:h-80 lg:h-96">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" vectorEffect="non-scaling-stroke">
-              {/* Grid lines */}
-              {[0, 25, 50, 75, 100].map((y) => (
-                <g key={y}>
-                  <line x1="8" y1={88 - (y * 0.8)} x2="98" y2={88 - (y * 0.8)} stroke="#374151" strokeWidth="0.2" strokeDasharray="0.5 0.5" vectorEffect="non-scaling-stroke" />
-                  <text x="6" y={89 - (y * 0.8)} fill="#9ca3af" fontSize="3" textAnchor="end" transform-origin={`6 ${89 - (y * 0.8)}`} style={{ transform: 'scale(1, 1)' }}>{y}</text>
-                </g>
-              ))}
-              
-              {/* X-axis labels */}
-              <text x="15" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>Now</text>
-              <text x="38" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>3M</text>
-              <text x="65" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>6M</text>
-              <text x="92" y="95" fill="#9ca3af" fontSize="3.5" textAnchor="middle" style={{ transform: 'scale(1, 1)' }}>12M</text>
-              
-              {/* Smooth lines for each sector */}
-              {chartData.map((sector: any, idx: number) => {
-                const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
-                const color = colors[idx % colors.length];
-                const opacity = 0.7;
+          <div className="bg-gray-900 rounded-lg p-3 sm:p-4 mb-2">
+            <div className="w-full" style={{ aspectRatio: '2 / 1' }}>
+              <svg width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
+                {/* Grid lines */}
+                {[0, 25, 50, 75, 100].map((y) => (
+                  <g key={y}>
+                    <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
+                  </g>
+                ))}
                 
-                // Calculate points using percentage-based coordinates
-                const x0 = 15;  // Now (15%)
-                const y0 = 88 - (sector.scores["3m"] * 0.8); // Use 3m as "current" baseline
-                const x1 = 38;  // 3M (38%)
-                const y1 = 88 - (sector.scores["3m"] * 0.8);
-                const x2 = 65;  // 6M (65%)
-                const y2 = 88 - (sector.scores["6m"] * 0.8);
-                const x3 = 92;  // 12M (92%)
-                const y3 = 88 - (sector.scores["12m"] * 0.8);
+                {/* X-axis labels */}
+                <text x="160" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
+                <text x="340" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="540" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
                 
-                // Create smooth path using quadratic bezier curves
-                const pathData = `
-                  M ${x0} ${y0}
-                  Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
-                  Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
-                  Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
-                `;
-                
-                return (
-                  <g key={sector.symbol}>
-                    {/* Smooth path */}
-                    <path 
-                      d={pathData} 
-                      stroke={color} 
-                      strokeWidth="0.4" 
-                      fill="none" 
-                      opacity={opacity}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                    
-                    {/* Points */}
-                    <circle cx={x0} cy={y0} r="0.5" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
-                    <circle cx={x1} cy={y1} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
-                    <circle cx={x2} cy={y2} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
-                    <circle cx={x3} cy={y3} r="0.6" fill={color} opacity={opacity} vectorEffect="non-scaling-stroke" />
+                {/* Smooth lines for each sector */}
+                {chartData.map((sector: any, idx: number) => {
+                  const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
+                  const color = colors[idx % colors.length];
+                  const opacity = 0.7;
+                  
+                  // Calculate points with better spacing
+                  const x0 = 160;  // Now
+                  const y0 = 260 - (sector.scores["3m"] * 2.4);
+                  const x1 = 340;  // 3M
+                  const y1 = 260 - (sector.scores["3m"] * 2.4);
+                  const x2 = 540;  // 6M
+                  const y2 = 260 - (sector.scores["6m"] * 2.4);
+                  const x3 = 720;  // 12M
+                  const y3 = 260 - (sector.scores["12m"] * 2.4);
+                  
+                  // Create smooth path using quadratic bezier curves
+                  const pathData = `
+                    M ${x0} ${y0}
+                    Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
+                    Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
+                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
+                  `;
+                  
+                  return (
+                    <g key={sector.symbol}>
+                      {/* Smooth path */}
+                      <path 
+                        d={pathData} 
+                        stroke={color} 
+                        strokeWidth="2.5" 
+                        fill="none" 
+                        opacity={opacity}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Points */}
+                      <circle cx={x0} cy={y0} r="4" fill={color} opacity={opacity} />
+                      <circle cx={x1} cy={y1} r="4" fill={color} opacity={opacity} />
+                      <circle cx={x2} cy={y2} r="4" fill={color} opacity={opacity} />
+                      <circle cx={x3} cy={y3} r="4" fill={color} opacity={opacity} />
                   </g>
                 );
               })}
