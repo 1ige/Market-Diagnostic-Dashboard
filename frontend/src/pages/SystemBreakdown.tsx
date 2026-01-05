@@ -244,7 +244,8 @@ export default function SystemBreakdown() {
 
   return (
     <div className="p-3 md:p-6 text-gray-200">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 md:mb-6">System Breakdown & Methodology</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-2">System Breakdown & Methodology</h2>
+      <p className="text-sm text-gray-400 mb-4 md:mb-6">Assess market regime with confidence, spot inflection points early, and align positioning with macroeconomic reality</p>
 
       {/* Overview Section */}
       <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6 mb-4 md:mb-6">

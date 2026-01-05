@@ -69,9 +69,12 @@ export default function Dashboard() {
     <div className="p-3 md:p-6 text-gray-200">
       {/* Header with News Badge */}
       <div className="flex flex-col mb-4 md:mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+          <div className="flex flex-col">
             <h2 className="text-xl sm:text-2xl font-bold">Dashboard</h2>
+            <p className="text-xs sm:text-sm text-gray-400">Real-time market regime assessment across volatility, rates, liquidity, and sentiment</p>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
             {newsCount > 0 && (
               <div className="flex items-center gap-2 bg-sky-500/20 border border-sky-500/50 rounded-full px-2 sm:px-3 py-1">
                 <span className="relative flex h-2 w-2">
@@ -84,8 +87,9 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 justify-end">
             {/* Refresh Button */}
             <button
               onClick={handleRefresh}

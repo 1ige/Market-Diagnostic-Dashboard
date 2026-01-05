@@ -1,6 +1,10 @@
 # Market Diagnostic Dashboard
 
-A real-time market stability monitoring system that tracks key financial indicators and provides comprehensive market analysis. Now available at https://www.marketdiagnostictool.com/
+**What It Achieves:** Empowers analysts and portfolio managers to make informed decisions by identifying market regime shifts, quantifying systemic risk, and spotting inflection points before they become obvious.
+
+**How It Works:** A real-time market stability monitoring system that tracks key financial indicators across volatility, rates, liquidity, sentiment, and sector positioning, combining them into a composite score that reflects overall market health.
+
+Now available at https://www.marketdiagnostictool.com/
 
 ## Features
 
