@@ -238,12 +238,22 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           {/* Gradient definitions for uncertainty cones */}
           <defs>
             {chartData.map((sector, idx) => {
-              const isTop = topPerformers.some(p => p.symbol === sector.symbol);
-              const isBottom = bottomPerformers.some(p => p.symbol === sector.symbol);
-              let color = "#6b7280";
-              if (isTop) color = "#10b981";
-              if (isBottom) color = "#ef4444";
+              // Distinct color palette for each sector
+              const sectorColors: {[key: string]: string} = {
+                "XLE": "#ef5350",   // Energy - red
+                "XLF": "#42a5f5",   // Financials - blue
+                "XLK": "#ab47bc",   // Technology - purple
+                "XLY": "#ec407a",   // Consumer Discretionary - pink
+                "XLP": "#29b6f6",   // Consumer Staples - cyan
+                "XLV": "#66bb6a",   // Healthcare - green
+                "XLI": "#ffa726",   // Industrials - orange
+                "XLU": "#78909c",   // Utilities - blue-grey
+                "XLB": "#d4af37",   // Materials - gold
+                "XLRE": "#a1887f",  // Real Estate - brown
+                "XLC": "#26a69a"    // Communication - teal
+              };
               
+              const color = sectorColors[sector.symbol] || "#6b7280";
               const gradientId = `grad_${idx}`;
               return (
                 <linearGradient key={gradientId} id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -271,14 +281,26 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           
           {/* Draw uncertainty cones and lines */}
           {chartData.map((sector, idx) => {
+            // Distinct color palette for each sector
+            const sectorColors: {[key: string]: string} = {
+              "XLE": "#ef5350",   // Energy - red
+              "XLF": "#42a5f5",   // Financials - blue
+              "XLK": "#ab47bc",   // Technology - purple
+              "XLY": "#ec407a",   // Consumer Discretionary - pink
+              "XLP": "#29b6f6",   // Consumer Staples - cyan
+              "XLV": "#66bb6a",   // Healthcare - green
+              "XLI": "#ffa726",   // Industrials - orange
+              "XLU": "#78909c",   // Utilities - blue-grey
+              "XLB": "#d4af37",   // Materials - gold
+              "XLRE": "#a1887f",  // Real Estate - brown
+              "XLC": "#26a69a"    // Communication - teal
+            };
+            
+            const color = sectorColors[sector.symbol] || "#6b7280";
             const isTop = topPerformers.some(p => p.symbol === sector.symbol);
             const isBottom = bottomPerformers.some(p => p.symbol === sector.symbol);
-            const opacity = isTop || isBottom ? 0.8 : 0.15;
+            const opacity = isTop || isBottom ? 0.85 : 0.15;
             const strokeWidth = isTop || isBottom ? 2.5 : 1;
-            
-            let color = "#6b7280";
-            if (isTop) color = "#10b981";
-            if (isBottom) color = "#ef4444";
             
             const x1 = 50;  // Today
             const y1 = 125 - (sector.scores["3m"] * 1.25);  // Use 3m as starting point
