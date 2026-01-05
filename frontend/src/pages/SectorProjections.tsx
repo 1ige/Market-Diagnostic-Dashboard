@@ -126,18 +126,18 @@ export default function SectorProjections() {
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
-      <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
-      <p className="mb-4 text-gray-400">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto text-gray-100">
+      <h1 className="text-xl sm:text-2xl font-bold mb-2">Sector Projections</h1>
+      <p className="mb-4 text-gray-400 text-xs sm:text-sm">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
       
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
 
       {data?.data_warnings?.length > 0 && (
-        <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-          <p className="text-xs text-yellow-200/90 leading-relaxed">
+        <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-yellow-200/90 leading-relaxed">
             <strong>Data Warning:</strong> Recent projections contain data quality flags that may reduce accuracy.
           </p>
-          <ul className="mt-2 text-xs text-yellow-200/80 space-y-1">
+          <ul className="mt-2 text-xs text-yellow-200/80 space-y-0.5">
             {data.data_warnings.map((warning: any, idx: number) => (
               <li key={`${warning.type}-${idx}`}>
                 {warning.type.replace(/_/g, " ")} • {Array.isArray(warning.details) ? warning.details.length : 0} issue(s)
@@ -153,8 +153,8 @@ export default function SectorProjections() {
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}
       {!loading && !error && Object.keys(projections).length > 0 && (
-        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
-          <h2 className="text-lg font-semibold mb-3">Sector Score Trends Across Time Horizons</h2>
+        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow overflow-hidden">
+          <h2 className="text-base sm:text-lg font-semibold mb-3">Sector Score Trends Across Time Horizons</h2>
           <p className="text-xs text-gray-400 mb-3">Each line shows how a sector's composite score evolves from current to forward projections</p>
           {tInterpolated && (
             <p className="text-xs text-amber-300/90 mb-3">
@@ -163,8 +163,8 @@ export default function SectorProjections() {
           )}
           
           {/* Smooth Line Chart */}
-          <div className="bg-gray-900 rounded-lg p-3 sm:p-4 mb-2">
-            <div className="w-full" style={{ aspectRatio: '2 / 1' }}>
+          <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2 overflow-x-auto -mx-2 sm:mx-0">
+            <div className="w-full min-w-[600px]" style={{ aspectRatio: '2 / 1', maxHeight: '240px' }}>
               <svg width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
                 {/* Gradient definitions for uncertainty cones */}
                 <defs>
@@ -198,16 +198,16 @@ export default function SectorProjections() {
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
                     <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
+                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
                   </g>
                 ))}
                 
                 {/* X-axis labels */}
-                <text x="100" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
-                <text x="250" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
-                <text x="380" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="550" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="720" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
+                <text x="100" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">-3M</text>
+                <text x="250" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">T</text>
+                <text x="380" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="550" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="720" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {/* Uncertainty cones and lines for each sector */}
                 {chartData.map((sector: any, idx: number) => {
@@ -375,7 +375,7 @@ export default function SectorProjections() {
           
           {/* Legend - Compact and scrollable */}
           <div className="mt-2 mb-4 overflow-x-auto">
-            <div className="flex flex-wrap gap-2 pb-2 min-w-min">
+            <div className="flex flex-wrap gap-1 sm:gap-2 pb-2 min-w-min">
               {chartData.map((sector: any, idx: number) => {
                 const colors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1", "#84cc16"];
                 const color = colors[idx % colors.length];
@@ -384,15 +384,15 @@ export default function SectorProjections() {
                   <button
                     key={sector.symbol}
                     onClick={() => setSelectedSector(isSelected ? null : sector.symbol)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all ${
+                    className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded whitespace-nowrap transition-all text-xs sm:text-sm ${
                       isSelected 
-                        ? 'bg-gray-700 ring-1' 
+                        ? 'ring-2 bg-gray-700' 
                         : 'bg-transparent hover:bg-gray-800'
                     }`}
                     style={isSelected ? { ringColor: color } : {}}
                   >
-                    <div style={{ width: "12px", height: "12px", backgroundColor: color, borderRadius: "2px", opacity: 0.9, flexShrink: 0 }}></div>
-                    <span className={`text-xs ${isSelected ? 'text-white font-semibold' : 'text-gray-400'}`}>{sector.symbol}</span>
+                    <div style={{ width: "10px", height: "10px", backgroundColor: color, borderRadius: "2px", opacity: 0.9, flexShrink: 0 }}></div>
+                    <span className={`${isSelected ? 'text-white font-semibold' : 'text-gray-400'}`}>{sector.symbol}</span>
                   </button>
                 );
               })}
@@ -401,19 +401,19 @@ export default function SectorProjections() {
           
           {/* Top Performers by Horizon */}
           <div className="border-t border-gray-700 pt-3 mt-3">
-            <h3 className="text-sm font-semibold mb-2 text-gray-300">Top Performers</h3>
-            <div className="grid grid-cols-4 gap-2 text-xs">
+            <h3 className="text-xs sm:text-sm font-semibold mb-2 text-gray-300">Top Performers</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-2 text-xs">
               {HORIZONS.map((h) => {
                 const topSectors = (projections[h] || [])
                   .sort((a: any, b: any) => a.rank - b.rank)
                   .slice(0, 3);
                 return (
-                  <div key={h} className="bg-gray-900 rounded p-2">
-                    <div className="text-gray-500 mb-1 font-semibold">{h.toUpperCase()}</div>
+                  <div key={h} className="bg-gray-900 rounded p-1.5 sm:p-2">
+                    <div className="text-gray-500 mb-1 font-semibold text-xs">{h.toUpperCase()}</div>
                     {topSectors.map((s: any, i: number) => (
                       <div key={s.sector_symbol} className="flex items-center gap-1 mb-0.5">
-                        <span className="text-green-400 font-bold">#{i + 1}</span>
-                        <span className="text-gray-300 truncate">{s.sector_symbol}</span>
+                        <span className="text-green-400 font-bold text-xs">#{i + 1}</span>
+                        <span className="text-gray-300 truncate text-xs">{s.sector_symbol}</span>
                       </div>
                     ))}
                   </div>
@@ -427,16 +427,16 @@ export default function SectorProjections() {
       {/* Detailed Tables with Horizon Selector */}
       {(projections[selectedHorizon === "T" ? "T" : selectedHorizon] || selectedHorizon === "T") && (
         <div className="mb-8">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <h2 className="text-lg font-semibold">Sector Rankings</h2>
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <h2 className="text-base sm:text-lg font-semibold">Sector Rankings</h2>
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               {["T", "3m", "6m", "12m"].map((h) => {
                 if (h === "T" && !tScoresValid) return null;
                 return (
                   <button
                     key={h}
                     onClick={() => setSelectedHorizon(h as "T" | "3m" | "6m" | "12m")}
-                    className={`px-4 py-2 rounded-lg font-medium transition ${
+                    className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition min-h-10 ${
                       selectedHorizon === h
                         ? "bg-blue-600 text-white"
                         : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -451,10 +451,10 @@ export default function SectorProjections() {
           
           {/* Show warning if T data is not available or invalid */}
           {selectedHorizon === "T" && (!projections["T"] || !tScoresValid) && (
-            <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-              <p className="text-xs text-yellow-200/90">
+            <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-yellow-200/90">
                 <strong>Note:</strong> {!tScoresValid ? "Current time (T) projections appear uniform (likely market closed). " : "Current time (T) projections are not available yet. "}
-                The system computes T data during market hours. Please select another time horizon or check back when the market is open.
+                {!tScoresValid ? "Select another time horizon." : "Check back when the market is open."}
               </p>
             </div>
           )}
@@ -508,7 +508,7 @@ export default function SectorProjections() {
                 </tbody>
               </table>
             </div>
-            <div className="md:hidden space-y-3">
+            <div className="md:hidden space-y-2 sm:space-y-3">
               {(selectedHorizon === "T" ? projections["T"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                 <div
                   key={row.sector_symbol}
@@ -522,15 +522,15 @@ export default function SectorProjections() {
                 >
                   <button
                     onClick={() => setExpandedCard(expandedCard === row.sector_symbol ? null : row.sector_symbol)}
-                    className="w-full p-3 flex items-start justify-between gap-3 hover:bg-black/20 transition-colors"
+                    className="w-full p-2 sm:p-3 flex items-start justify-between gap-2 sm:gap-3 hover:bg-black/20 transition-colors"
                   >
                     <div className="text-left">
-                      <div className="text-sm font-semibold text-gray-100">
+                      <div className="text-xs sm:text-sm font-semibold text-gray-100">
                         #{row.rank} {row.sector_name}
                       </div>
                       <div className="text-xs text-gray-500">{row.sector_symbol}</div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                       <span className={
                         row.classification === "Winner"
                           ? "text-green-400 text-xs font-semibold"
@@ -567,19 +567,19 @@ export default function SectorProjections() {
       <div className="mb-6">
         <button
           onClick={() => setReadingGuideOpen(!readingGuideOpen)}
-          className="w-full bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-left hover:bg-blue-900/30 transition"
+          className="w-full bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 sm:p-4 text-left hover:bg-blue-900/30 transition"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-blue-200">How to Read This Chart</h3>
-            <span className="text-blue-300 text-xl">{readingGuideOpen ? '−' : '+'}</span>
+            <h3 className="text-xs sm:text-sm font-semibold text-blue-200">How to Read This Chart</h3>
+            <span className="text-blue-300 text-lg sm:text-xl">{readingGuideOpen ? '−' : '+'}</span>
           </div>
         </button>
         {readingGuideOpen && (
-          <div className="bg-blue-900/20 border border-blue-700/50 border-t-0 rounded-b-lg p-4 text-xs text-blue-200/80 space-y-2 leading-relaxed">
-            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength vs SPY, risk metrics, and market regime alignment. Compare sectors vertically - higher is better.</p>
-            <p><strong>Score Changes:</strong> Lines moving up show improving outlook, lines moving down show deteriorating conditions. Crossing lines indicate sector rotation - leadership shifts.</p>
-            <p><strong>Uncertainty Cones (Click a Sector):</strong> The shaded area shows a confidence range based on how much projected scores diverge across horizons. Larger score gaps create wider cones; smaller gaps keep them tighter.</p>
-            <p><strong>Historical (-3M):</strong> Shows the score from 3 months ago when available; otherwise a small estimated offset is used to preserve the trend shape.</p>
+          <div className="bg-blue-900/20 border border-blue-700/50 border-t-0 rounded-b-lg p-3 sm:p-4 text-xs sm:text-sm text-blue-200/80 space-y-2 leading-relaxed">
+            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength vs SPY, risk metrics, and market regime alignment. Compare sectors vertically—higher is better.</p>
+            <p><strong>Score Changes:</strong> Lines moving up show improving outlook; lines moving down show deteriorating conditions. Crossing lines indicate sector rotation.</p>
+            <p><strong>Uncertainty Cones (Click a Sector):</strong> The shaded area shows confidence range based on score divergence. Larger gaps create wider cones; smaller gaps keep them tighter.</p>
+            <p><strong>Historical (-3M):</strong> Score from 3 months ago, or estimated offset to preserve trend shape.</p>
           </div>
         )}
       </div>
@@ -588,32 +588,31 @@ export default function SectorProjections() {
       <div className="mb-6 bg-gray-800 rounded-lg shadow">
         <button
           onClick={() => setMethodologyOpen(!methodologyOpen)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
+          className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
         >
-          <h2 className="text-lg font-semibold">Methodology & Algorithm Details</h2>
+          <h2 className="text-base sm:text-lg font-semibold">Methodology & Algorithm Details</h2>
           <div className="text-lg font-bold text-gray-500">
             {methodologyOpen ? '−' : '+'}
           </div>
         </button>
         {methodologyOpen && (
-          <div className="px-6 pb-6 text-sm text-gray-300 space-y-5">
+          <div className="px-4 sm:px-6 pb-6 text-xs sm:text-sm text-gray-300 space-y-5">
             <div>
-              <h3 className="font-semibold text-gray-100 mb-3 text-base">Transparent Rule-Based Scoring</h3>
-              <p className="text-gray-400 mb-2">
-                This model ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) against the SPY benchmark 
-                using 8000 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
+              <h3 className="font-semibold text-gray-100 mb-3 text-sm sm:text-base">Transparent Rule-Based Scoring</h3>
+              <p className="text-gray-400 mb-2 text-xs sm:text-sm">
+                Ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) using 8000 days of historical data. Each sector receives a composite score (0-100) from four weighted components.
               </p>
-              <p className="text-gray-400">
-                Scores are computed independently for three time horizons: 3-month (63 trading days), 6-month (126 days), and 12-month (252 days) lookback periods.
+              <p className="text-gray-400 text-xs sm:text-sm">
+                Computed independently for 3-month (63 days), 6-month (126 days), and 12-month (252 days) horizons.
               </p>
             </div>
             
             <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Component Calculations</h3>
+              <h3 className="font-semibold text-gray-100 mb-3 text-sm sm:text-base">Component Calculations</h3>
               
               <div className="space-y-4">
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-yellow-400 mb-2">1. Trend Score (45% weight)</h4>
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="font-semibold text-yellow-400 mb-2 text-xs sm:text-sm">1. Trend Score (45% weight)</h4>
                   <p className="text-xs text-gray-400 mb-2">
                     Measures price momentum and technical positioning relative to moving averages.
                   </p>
@@ -624,8 +623,8 @@ export default function SectorProjections() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-lime-400 mb-2">2. Relative Strength Score (30% weight)</h4>
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="font-semibold text-lime-400 mb-2 text-xs sm:text-sm">2. Relative Strength Score (30% weight)</h4>
                   <p className="text-xs text-gray-400 mb-2">
                     Quantifies outperformance versus the broad market (SPY) over the same period.
                   </p>
@@ -636,8 +635,8 @@ export default function SectorProjections() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-red-400 mb-2">3. Risk Score (20% weight, inverted)</h4>
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="font-semibold text-red-400 mb-2 text-xs sm:text-sm">3. Risk Score (20% weight, inverted)</h4>
                   <p className="text-xs text-gray-400 mb-2">
                     Evaluates price stability and downside protection. Lower risk = higher score (inverse ranking).
                   </p>
@@ -649,8 +648,8 @@ export default function SectorProjections() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-indigo-400 mb-2">4. Regime Adjustment (5% weight)</h4>
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="font-semibold text-indigo-400 mb-2 text-xs sm:text-sm">4. Regime Adjustment (5% weight)</h4>
                   <p className="text-xs text-gray-400 mb-2">
                     Context-aware modifier based on the current system state (RED/YELLOW/GREEN market environment).
                   </p>
@@ -668,56 +667,56 @@ export default function SectorProjections() {
             </div>
             
             <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Final Score & Ranking</h3>
-              <div className="text-xs text-gray-400 space-y-2">
-                <p className="font-mono bg-gray-950 p-2 rounded">
+              <h3 className="font-semibold text-gray-100 mb-3 text-sm sm:text-base">Final Score & Ranking</h3>
+              <div className="text-xs sm:text-sm text-gray-400 space-y-2">
+                <p className="font-mono bg-gray-950 p-2 rounded text-xs">
                   Composite Score = (0.45 × Trend) + (0.30 × Rel_Strength) + (0.20 × Risk) + (0.05 × Regime)
                 </p>
-                <p>
-                  All sectors are ranked by composite score (descending). Ranks are assigned 1-11 using minimum rank method (ties get the same rank).
+                <p className="text-xs sm:text-sm">
+                  Sectors ranked 1-11 by composite score (descending) using minimum rank method for ties.
                 </p>
               </div>
             </div>
             
             <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Uncertainty Cones</h3>
-              <p className="text-xs text-gray-400 mb-3">
-                The interactive chart displays projection confidence intervals visualized as expanding "uncertainty cones" for each sector.
+              <h3 className="font-semibold text-gray-100 mb-3 text-sm sm:text-base">Uncertainty Cones</h3>
+              <p className="text-xs sm:text-sm text-gray-400 mb-3">
+                Interactive projection confidence intervals visualized as expanding "uncertainty cones" for each sector.
               </p>
-              <div className="text-xs text-gray-400 space-y-2">
-                <p><strong>What they represent:</strong> The cone boundary shows the range of possible scores based on score volatility across the projection period (3M, 6M, 12M).</p>
-                <p><strong>How they expand:</strong> Each cone starts narrow at the current date (high confidence in today's positioning) and progressively widens toward longer time horizons (lower confidence in distant forecasts).</p>
-                <p><strong>Calculating cone width:</strong> Width scales with absolute score changes between 3M, 6M, and 12M projections, expanding further into the future to reflect rising uncertainty.</p>
-                <p><strong>Interpreting the cone:</strong> A wide cone indicates high forecast uncertainty—the sector score could reasonably vary significantly. A narrow cone suggests more stable, predictable positioning. Analysts should weight sectors with narrower cones more heavily for tactical positioning.</p>
-                <p><strong>Interactive selection:</strong> Click any sector line or legend item to isolate that sector, fade others, and highlight its uncertainty cone for detailed analysis.</p>
+              <div className="text-xs sm:text-sm text-gray-400 space-y-2">
+                <p><strong>What they represent:</strong> Cone boundary shows range of possible scores based on score volatility across projection horizons (3M, 6M, 12M).</p>
+                <p><strong>How they expand:</strong> Cone starts narrow at current date (high confidence) and widens toward longer horizons (lower confidence).</p>
+                <p><strong>Calculating width:</strong> Width scales with absolute score changes between 3M, 6M, and 12M projections.</p>
+                <p><strong>Interpreting:</strong> Wide cone = high forecast uncertainty; narrow cone = stable, predictable positioning.</p>
+                <p><strong>Interactive selection:</strong> Click sector line or legend item to isolate that sector and highlight its uncertainty cone.</p>
               </div>
             </div>
             
             <div className="border-t border-gray-700 pt-3">
-              <h4 className="font-semibold text-gray-100 mb-2">Classification Thresholds</h4>
-              <div className="grid grid-cols-3 gap-4 text-xs">
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-green-400 font-semibold">Winner</span>
-                  <p className="text-gray-400 mt-1">Ranks 1-3 (top 3 sectors)</p>
+              <h4 className="font-semibold text-gray-100 mb-2 text-xs sm:text-sm">Classification Thresholds</h4>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs">
+                <div className="bg-gray-950 p-2 sm:p-3 rounded">
+                  <span className="text-green-400 font-semibold text-xs">Winner</span>
+                  <p className="text-gray-400 mt-1 text-xs">Ranks 1-3</p>
                 </div>
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-gray-400 font-semibold">Neutral</span>
-                  <p className="text-gray-400 mt-1">Ranks 4-8 (middle 5 sectors)</p>
+                <div className="bg-gray-950 p-2 sm:p-3 rounded">
+                  <span className="text-gray-400 font-semibold text-xs">Neutral</span>
+                  <p className="text-gray-400 mt-1 text-xs">Ranks 4-8</p>
                 </div>
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-red-400 font-semibold">Loser</span>
-                  <p className="text-gray-400 mt-1">Ranks 9-11 (bottom 3 sectors)</p>
+                <div className="bg-gray-950 p-2 sm:p-3 rounded">
+                  <span className="text-red-400 font-semibold text-xs">Loser</span>
+                  <p className="text-gray-400 mt-1 text-xs">Ranks 9-11</p>
                 </div>
               </div>
             </div>
             
             <div className="border-t border-gray-700 pt-3">
-              <h4 className="font-semibold text-gray-100 mb-2">Data Sources & Frequency</h4>
-              <div className="text-xs text-gray-400 space-y-1">
+              <h4 className="font-semibold text-gray-100 mb-2 text-xs sm:text-sm">Data Sources & Frequency</h4>
+              <div className="text-xs sm:text-sm text-gray-400 space-y-1">
                 <p><strong>Price Data:</strong> Yahoo Finance API (adjusted close prices)</p>
-                <p><strong>Lookback:</strong> 8000 trading days to ensure sufficient data for 12-month calculations</p>
-                <p><strong>Update Frequency:</strong> Every 4 hours during market hours (Monday-Friday, 8am-8pm ET)</p>
-                <p><strong>System State:</strong> Derived from the Market Stability Dashboard's composite indicator model</p>
+                <p><strong>Lookback:</strong> 8000 trading days for 12-month calculation reliability</p>
+                <p><strong>Updates:</strong> Every 4 hours during market hours (Monday-Friday, 8am-8pm ET)</p>
+                <p><strong>System State:</strong> Market Stability Dashboard composite indicator model</p>
               </div>
             </div>
           </div>
@@ -725,12 +724,9 @@ export default function SectorProjections() {
       </div>
 
       {/* Disclaimer */}
-      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-        <p className="text-xs text-yellow-200/90 leading-relaxed">
-          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
-          They are not financial advice, investment recommendations, or guarantees of future performance. 
-          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
-          financial advisor before making investment decisions.
+      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 sm:p-4">
+        <p className="text-xs sm:text-sm text-yellow-200/90 leading-relaxed">
+          <strong>Disclaimer:</strong> These projections are theoretical models for educational purposes only. Not financial advice, investment recommendations, or performance guarantees. Always conduct your own research and consult a qualified financial advisor before making investment decisions.
         </p>
       </div>
     </div>

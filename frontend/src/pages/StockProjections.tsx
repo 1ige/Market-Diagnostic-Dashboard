@@ -117,25 +117,25 @@ export default function StockProjections() {
   const chartData = getChartData();
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
-      <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
-      <p className="mb-4 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto text-gray-100">
+      <h1 className="text-xl sm:text-2xl font-bold mb-2">Stock Projections</h1>
+      <p className="mb-4 text-gray-400 text-xs sm:text-sm">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
       
       {/* Stock Search */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
-        <form onSubmit={handleSearch} className="flex gap-3">
+      <div className="bg-gray-800 rounded-lg p-3 sm:p-4 md:p-6 mb-4 sm:mb-6 shadow-lg">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             value={ticker}
             onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="Enter stock ticker (e.g., AAPL, TSLA, MSFT)"
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+            placeholder="e.g., AAPL, MSFT, TSLA"
+            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 sm:py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition text-base"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !ticker.trim()}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold transition"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold transition whitespace-nowrap text-base"
           >
             {loading ? "Analyzing..." : "Analyze"}
           </button>
@@ -144,9 +144,9 @@ export default function StockProjections() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-6">
-          <p className="text-red-300">{error}</p>
-          <p className="text-sm text-red-400 mt-2">
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <p className="text-red-300 text-sm sm:text-base">{error}</p>
+          <p className="text-xs sm:text-sm text-red-400 mt-2">
             Please check the ticker symbol and try again. The stock must have sufficient historical data available.
           </p>
         </div>
@@ -162,24 +162,24 @@ export default function StockProjections() {
           </div>
 
           {/* Interactive Chart */}
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Score Trends</h3>
-            <div className="bg-gray-900 rounded-lg p-4">
-              <svg width="100%" height="300" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-4">Score Trends</h3>
+            <div className="bg-gray-900 rounded-lg p-2 sm:p-4">
+              <svg width="100%" height="240" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
                     <line x1="80" y1={260 - (y * 2.4)} x2="880" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="65" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="11" textAnchor="end">{y}</text>
+                    <text x="65" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
                   </g>
                 ))}
                 
                 {/* X-axis labels - simplified */}
-                <text x="150" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
-                <text x="375" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
-                <text x="525" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="675" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="825" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
+                <text x="150" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">-3M</text>
+                <text x="375" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">T</text>
+                <text x="525" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="675" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="825" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {(() => {
                   const color = "#3b82f6"; // Blue color for stock
@@ -364,7 +364,7 @@ export default function StockProjections() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setSelectedHorizon("T")}
-                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                         selectedHorizon === "T"
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -374,7 +374,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("3m")}
-                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                         selectedHorizon === "3m"
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -384,7 +384,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("6m")}
-                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                         selectedHorizon === "6m"
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -394,7 +394,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("12m")}
-                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                         selectedHorizon === "12m"
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -404,8 +404,8 @@ export default function StockProjections() {
                     </button>
                   </div>
                 </div>
-                <div className="text-gray-400 text-sm">
-                  Current score reflects real-time positioning. Select a future horizon (T+3M, T+6M, T+12M) to view projections and detailed scoring breakdowns.
+                <div className="text-gray-400 text-xs sm:text-sm">
+                  Current score reflects real-time positioning. Select a future horizon to view projections.
                 </div>
               </div>
             )}
@@ -423,7 +423,7 @@ export default function StockProjections() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setSelectedHorizon("T")}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                           selectedHorizon === "T"
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -433,7 +433,7 @@ export default function StockProjections() {
                       </button>
                       <button
                         onClick={() => setSelectedHorizon("3m")}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                           selectedHorizon === "3m"
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -443,7 +443,7 @@ export default function StockProjections() {
                       </button>
                       <button
                         onClick={() => setSelectedHorizon("6m")}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                           selectedHorizon === "6m"
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -453,7 +453,7 @@ export default function StockProjections() {
                       </button>
                       <button
                         onClick={() => setSelectedHorizon("12m")}
-                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
                           selectedHorizon === "12m"
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -464,14 +464,14 @@ export default function StockProjections() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                     <div className="bg-gray-900 rounded p-4">
-                      <div className="text-sm text-gray-400 mb-1">Total Score</div>
-                      <div className="text-3xl font-bold text-blue-400">{Math.round(projection.score_total)}</div>
+                      <div className="text-xs sm:text-sm text-gray-400 mb-1">Total Score</div>
+                      <div className="text-2xl sm:text-3xl font-bold text-blue-400">{Math.round(projection.score_total)}</div>
                     </div>
                     <div className="bg-gray-900 rounded p-4">
-                      <div className="text-sm text-gray-400 mb-1">Score Change</div>
-                      <div className={`text-3xl font-bold ${
+                      <div className="text-xs sm:text-sm text-gray-400 mb-1">Score Change</div>
+                      <div className={`text-2xl sm:text-3xl font-bold ${
                         projection.score_total >= projections["3m"].score_total ? 'text-green-400' : 'text-red-400'
                       }`}>
                         {projection.score_total >= projections["3m"].score_total ? '+' : ''}
@@ -481,52 +481,52 @@ export default function StockProjections() {
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400 w-32">Trend (45%)</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      <span className="text-gray-400 w-24 sm:w-32 truncate">Trend (45%)</span>
                       <div className="flex-1 bg-gray-700 rounded h-3">
                         <div 
                           className="bg-yellow-500 h-3 rounded transition-all"
                           style={{ width: `${projection.score_trend}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_trend)}</span>
+                      <span className="text-xs sm:text-sm font-semibold w-10 sm:w-12 text-right">{Math.round(projection.score_trend)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400 w-32">Rel. Strength (30%)</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      <span className="text-gray-400 w-24 sm:w-32 truncate">Rel. Strength (30%)</span>
                       <div className="flex-1 bg-gray-700 rounded h-3">
                         <div 
                           className="bg-lime-500 h-3 rounded transition-all"
                           style={{ width: `${projection.score_relative_strength}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_relative_strength)}</span>
+                      <span className="text-xs sm:text-sm font-semibold w-10 sm:w-12 text-right">{Math.round(projection.score_relative_strength)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400 w-32">Risk (20%)</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      <span className="text-gray-400 w-24 sm:w-32 truncate">Risk (20%)</span>
                       <div className="flex-1 bg-gray-700 rounded h-3">
                         <div 
                           className="bg-red-500 h-3 rounded transition-all"
                           style={{ width: `${projection.score_risk}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_risk)}</span>
+                      <span className="text-xs sm:text-sm font-semibold w-10 sm:w-12 text-right">{Math.round(projection.score_risk)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400 w-32">Regime (5%)</span>
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      <span className="text-gray-400 w-24 sm:w-32 truncate">Regime (5%)</span>
                       <div className="flex-1 bg-gray-700 rounded h-3">
                         <div 
                           className="bg-indigo-500 h-3 rounded transition-all"
                           style={{ width: `${projection.score_regime}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold w-12 text-right">{Math.round(projection.score_regime)}</span>
+                      <span className="text-xs sm:text-sm font-semibold w-10 sm:w-12 text-right">{Math.round(projection.score_regime)}</span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-sm">
+                  <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div>
                       <span className="text-gray-400">Volatility:</span>
                       <span className="ml-2 font-semibold">{projection.volatility.toFixed(1)}%</span>
@@ -543,27 +543,26 @@ export default function StockProjections() {
 
           {/* Recent News */}
           {news.length > 0 && (
-            <div className="mt-6 bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Recent News for {searchTicker}</h2>
-              <div className="space-y-3">
+            <div className="mt-6 bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold mb-4">Recent News for {searchTicker}</h2>
+              <div className="space-y-2 sm:space-y-3">
                 {news.map((article) => (
                   <a
                     key={article.id}
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-gray-900 rounded-lg p-4 hover:bg-stealth-850 transition-colors border border-gray-700 hover:border-blue-500/50"
+                    className="block bg-gray-900 rounded-lg p-3 sm:p-4 min-h-20 sm:min-h-24 hover:bg-gray-850 transition-colors border border-gray-700 hover:border-blue-500/50"
                   >
-                    <h3 className="text-sm font-semibold text-blue-400 mb-2 line-clamp-2">
+                    <h3 className="text-xs sm:text-sm font-semibold text-blue-400 mb-2 line-clamp-2">
                       {article.title}
                     </h3>
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <span className="font-medium">{article.source}</span>
-                      <span>
+                    <div className="flex items-center justify-between text-xs text-gray-400 gap-2">
+                      <span className="font-medium truncate">{article.source}</span>
+                      <span className="whitespace-nowrap">
                         {new Date(article.published_at).toLocaleDateString('en-US', {
                           month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
+                          day: 'numeric'
                         })}
                       </span>
                     </div>
@@ -574,27 +573,25 @@ export default function StockProjections() {
           )}
 
           {/* Understanding the Projections */}
-          <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
-          <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
-            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment.</p>
-            <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
-            <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
+          <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
+          <div className="text-xs text-blue-200/80 space-y-1 sm:space-y-2 leading-relaxed">
+            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook.</p>
+            <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over time.</p>
+            <p><strong>Uncertainty Cone:</strong> Tighter cones = higher confidence. Wider cones = greater uncertainty.</p>
           </div>
         </div>
 
         {dataWarnings.length > 0 && (
-          <div className="mt-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-            <p className="text-xs text-yellow-200/90 leading-relaxed">
+          <div className="mt-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-yellow-200/90 leading-relaxed">
               <strong>Data Warning:</strong> Recent projections contain data quality flags that may reduce accuracy.
             </p>
-            <ul className="mt-2 text-xs text-yellow-200/80 space-y-1">
-              {dataWarnings.map((warning, idx) => (
-                <li key={`${warning.type}-${idx}`}>
-                  {warning.type.replace(/_/g, " ")}
-                </li>
-              ))}
-            </ul>
+            {dataWarnings.length > 0 && (
+              <p className="mt-1 text-xs text-yellow-200/80">
+                {dataWarnings.map(w => w.type.replace(/_/g, " ")).join(", ")}
+              </p>
+            )}
           </div>
         )}
 
