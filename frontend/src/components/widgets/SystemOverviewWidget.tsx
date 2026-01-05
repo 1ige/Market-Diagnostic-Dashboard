@@ -173,12 +173,6 @@ const SystemOverviewWidget = ({ trendPeriod = 90 }: Props) => {
           </span>
         </div>
 
-        {/* Description */}
-        <p className="text-xs text-stealth-400 leading-relaxed break-words">
-          Composite score aggregating 10 indicators: VIX, SPY, DFF, T10Y2Y, UNRATE, Consumer Health, 
-          Bond Market Stability, Liquidity Proxy, Analyst Confidence, and Consumer & Corporate Sentiment. Weighted by historical predictive power.
-        </p>
-
       {/* Main Metrics Grid */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4">
         {/* System State */}

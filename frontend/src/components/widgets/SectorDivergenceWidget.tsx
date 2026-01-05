@@ -45,6 +45,15 @@ interface SectorProjections {
   "12m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
 }
 
+interface SectorAlert {
+  type: string;
+  severity: "INFO" | "WARNING";
+  title: string;
+  message: string;
+  details: any;
+  timestamp: string;
+}
+
 interface Props {
   trendPeriod?: 90 | 180 | 365;
 }
@@ -52,6 +61,7 @@ interface Props {
 export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
   const [data, setData] = useState<SectorSummary | null>(null);
   const [projections, setProjections] = useState<SectorProjections | null>(null);
+  const [alerts, setAlerts] = useState<SectorAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
 
@@ -59,14 +69,17 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
     const fetchData = async () => {
       try {
         const apiUrl = getLegacyApiUrl();
-        const [summaryRes, projectionsRes] = await Promise.all([
+        const [summaryRes, projectionsRes, alertsRes] = await Promise.all([
           fetch(`${apiUrl}/sectors/summary`),
-          fetch(`${apiUrl}/sectors/projections/latest`)
+          fetch(`${apiUrl}/sectors/projections/latest`),
+          fetch(`${apiUrl}/sectors/alerts`)
         ]);
         const summaryData = await summaryRes.json();
         const projectionsData = await projectionsRes.json();
+        const alertsData = await alertsRes.json();
         setData(summaryData);
         setProjections(projectionsData.projections);
+        setAlerts(alertsData.alerts || []);
       } catch (error) {
         console.error("Failed to fetch sector data:", error);
       } finally {
@@ -174,7 +187,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-stealth-900 rounded-lg p-4 border border-stealth-700">
           <div className="text-xs text-gray-400 mb-2">Regime Alignment</div>
           <div className="flex items-end justify-between">
@@ -207,20 +220,10 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             </div>
           </div>
         </div>
-
-        <div className="bg-stealth-900 rounded-lg p-4 border border-stealth-700">
-          <div className="text-xs text-gray-400 mb-2">System State</div>
-          <div className={`text-3xl font-bold ${getStateColor(data.system_state)} mb-2`}>
-            {data.system_state}
-          </div>
-          <div className="text-xs text-gray-500">
-            Market regime: {data.system_state === "GREEN" ? "Healthy" : data.system_state === "YELLOW" ? "Cautious" : "Stressed"}
-          </div>
-        </div>
       </div>
 
       {/* Trend Chart */}
-      <div className="bg-stealth-900 rounded-lg p-4 mb-6 border border-stealth-700">
+      <div className="bg-stealth-900 rounded-lg p-4 border border-stealth-700">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-semibold text-stealth-200">Score Trends (3M → 12M)</div>
         </div>
@@ -330,6 +333,76 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           })}
         </svg>
       </div>
+
+      {/* Sector Divergence Alerts */}
+      {alerts.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-sm font-semibold text-stealth-200 mb-3">Divergence Alerts</h4>
+          <div className="space-y-3">
+            {alerts.map((alert, idx) => (
+              <div
+                key={idx}
+                className={`bg-stealth-900 rounded p-4 border-l-4 ${
+                  alert.severity === "WARNING" 
+                    ? "border-yellow-400" 
+                    : "border-blue-400"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${
+                      alert.severity === "WARNING" ? "text-yellow-400" : "text-blue-400"
+                    }`}>
+                      {alert.severity === "WARNING" ? "⚠" : "ℹ"}
+                    </span>
+                    <span className="text-sm font-semibold text-stealth-100">
+                      {alert.title}
+                    </span>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-300 mb-3">
+                  {alert.message}
+                </p>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-stealth-800 rounded p-2">
+                    <div className="text-gray-500">System State</div>
+                    <div className={`font-bold ${
+                      alert.details.system_state === "RED" ? "text-red-400" :
+                      alert.details.system_state === "GREEN" ? "text-green-400" :
+                      "text-yellow-400"
+                    }`}>
+                      {alert.details.system_state}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-stealth-800 rounded p-2">
+                    <div className="text-gray-500">Spread</div>
+                    <div className="font-bold text-stealth-200">
+                      {alert.details.spread > 0 ? "+" : ""}{alert.details.spread} pts
+                    </div>
+                  </div>
+                  
+                  <div className="bg-stealth-800 rounded p-2">
+                    <div className="text-gray-500">Defensive Avg</div>
+                    <div className="font-bold text-blue-400">
+                      {alert.details.defensive_avg}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-stealth-800 rounded p-2">
+                    <div className="text-gray-500">Cyclical Avg</div>
+                    <div className="font-bold text-orange-400">
+                      {alert.details.cyclical_avg}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Expandable Sector Details - HIDDEN */}
       {false && (

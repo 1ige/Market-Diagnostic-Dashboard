@@ -4,7 +4,6 @@ import IndicatorCard from "../components/widgets/IndicatorCard";
 import DowTheoryWidget from "../components/widgets/DowTheoryWidget";
 import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
 import SectorDivergenceWidget from "../components/widgets/SectorDivergenceWidget";
-import SectorAlertsWidget from "../components/widgets/SectorAlertsWidget";
 import { getLegacyApiUrl } from "../utils/apiUtils";
 import { BUTTON_STYLES } from "../utils/styleUtils";
 
@@ -158,11 +157,6 @@ export default function Dashboard() {
         <SystemOverviewWidget trendPeriod={trendPeriod} />
         <DowTheoryWidget trendPeriod={trendPeriod} />
         <SectorDivergenceWidget />
-      </div>
-
-      {/* Sector Alerts - Full Width */}
-      <div className="mb-3 md:mb-6">
-        <SectorAlertsWidget />
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
