@@ -23,8 +23,13 @@ from app.models.sector_projection import SectorProjectionRun, SectorProjectionVa
 from app.services.sector_projection import compute_sector_projections, fetch_sector_price_history, MODEL_VERSION, WEIGHTS
 from app.models.system_status import SystemStatus
 from typing import List, Dict, Any
+from functools import lru_cache
 
 router = APIRouter()
+
+# Cache historical scores since they don't change (based on date)
+_historical_scores_cache = {}
+_cache_date = None
 
 @router.get("/sectors/projections/latest")
 def get_latest_projections():
@@ -62,33 +67,44 @@ def get_latest_projections():
             })
         
         # Compute historical scores (what scores were 3 months ago)
-        historical_scores = {}
-        try:
-            price_data = fetch_sector_price_history(days=500)
-            
-            # Need to compute ALL sectors together for proper ranking/percentiles
-            # Build historical price_data dict with all sectors cut off at 90 days ago
-            hist_price_data = {}
-            min_length = float('inf')
-            
-            for sector_symbol, sector_df in price_data.items():
-                if len(sector_df) > 153:  # Need 90 days ago + 63 days lookback
-                    cutoff_idx = len(sector_df) - 90
-                    hist_price_data[sector_symbol] = sector_df.iloc[:cutoff_idx]
-                    min_length = min(min_length, len(hist_price_data[sector_symbol]))
-            
-            # Compute projections for all sectors from that historical point
-            if len(hist_price_data) > 1 and min_length > 63:  # Have multiple sectors + SPY
-                hist_projections = compute_sector_projections(hist_price_data, run.system_state)
-                # Extract the 3m projection for each sector
-                for proj in hist_projections:
-                    if proj["horizon"] == "3m":
-                        historical_scores[proj["sector_symbol"]] = clean_float(proj["score_total"])
-        except Exception as e:
-            print(f"Warning: Could not compute historical sector scores: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            # Continue without historical data - not critical
+        # Use cache to ensure consistency across requests on the same day
+        global _historical_scores_cache, _cache_date
+        today = datetime.utcnow().date()
+        
+        if _cache_date != today or not _historical_scores_cache:
+            historical_scores = {}
+            try:
+                price_data = fetch_sector_price_history(days=500)
+                
+                # Need to compute ALL sectors together for proper ranking/percentiles
+                # Build historical price_data dict with all sectors cut off at 90 days ago
+                hist_price_data = {}
+                min_length = float('inf')
+                
+                for sector_symbol, sector_df in price_data.items():
+                    if len(sector_df) > 153:  # Need 90 days ago + 63 days lookback
+                        cutoff_idx = len(sector_df) - 90
+                        hist_price_data[sector_symbol] = sector_df.iloc[:cutoff_idx]
+                        min_length = min(min_length, len(hist_price_data[sector_symbol]))
+                
+                # Compute projections for all sectors from that historical point
+                if len(hist_price_data) > 1 and min_length > 63:  # Have multiple sectors + SPY
+                    hist_projections = compute_sector_projections(hist_price_data, run.system_state)
+                    # Extract the 3m projection for each sector
+                    for proj in hist_projections:
+                        if proj["horizon"] == "3m":
+                            historical_scores[proj["sector_symbol"]] = clean_float(proj["score_total"])
+                
+                # Cache the results
+                _historical_scores_cache = historical_scores
+                _cache_date = today
+            except Exception as e:
+                print(f"Warning: Could not compute historical sector scores: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Continue without historical data - not critical
+        else:
+            historical_scores = _historical_scores_cache
         
         return {
             "as_of_date": str(run.as_of_date),
