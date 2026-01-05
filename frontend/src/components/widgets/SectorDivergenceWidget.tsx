@@ -40,6 +40,7 @@ interface SectorSummary {
 }
 
 interface SectorProjections {
+  "T": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
   "3m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
   "6m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
   "12m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
@@ -115,18 +116,19 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
   };
 
   // Prepare chart data with trend analysis
-  const chartData = projections["3m"].map(sector => {
-    const score3m = sector.score_total;
+  const chartData = projections["T"]?.map(sector => {
+    const scoreT = sector.score_total;
+    const score3m = projections["3m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
     const score6m = projections["6m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
     const score12m = projections["12m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
     return {
       name: sector.sector_name,
       symbol: sector.sector_symbol,
-      scores: { "3m": score3m, "6m": score6m, "12m": score12m },
-      trend: score12m - score3m, // positive = improving over time
-      volatility: Math.abs(score6m - score3m) + Math.abs(score12m - score6m)
+      scores: { "T": scoreT, "3m": score3m, "6m": score6m, "12m": score12m },
+      trend: score12m - scoreT, // positive = improving over time
+      volatility: Math.abs(score3m - scoreT) + Math.abs(score6m - score3m) + Math.abs(score12m - score6m)
     };
-  });
+  }) || [];
 
   // Sort by 12m score to identify leaders/laggards
   const sortedByScore = [...chartData].sort((a, b) => b.scores["12m"] - a.scores["12m"]);
@@ -296,7 +298,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             const strokeWidth = isTop || isBottom ? 2.5 : 1;
             
             const x1 = 50;  // Today
-            const y1 = 125 - (sector.scores["3m"] * 1.25);  // Use 3m as starting point
+            const y1 = 125 - (sector.scores["T"] * 1.25);  // Use T (today) score
             const x2 = 120;  // 3M
             const y2 = 125 - (sector.scores["3m"] * 1.25);
             const x3 = 210;  // 6M
