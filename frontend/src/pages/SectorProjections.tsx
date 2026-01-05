@@ -64,6 +64,7 @@ export default function SectorProjections() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [readingGuideOpen, setReadingGuideOpen] = useState(false);
 
   useEffect(() => {
     if (data && data.projections) {
@@ -102,7 +103,38 @@ export default function SectorProjections() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
       <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
-      <p className="mb-2 text-gray-400">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
+      <p className="mb-4 text-gray-400">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
+      
+      {/* Disclaimer */}
+      <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+        <p className="text-xs text-yellow-200/90 leading-relaxed">
+          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
+          They are not financial advice, investment recommendations, or guarantees of future performance. 
+          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
+          financial advisor before making investment decisions.
+        </p>
+      </div>
+
+      {/* How to Read - Collapsible */}
+      <div className="mb-6">
+        <button
+          onClick={() => setReadingGuideOpen(!readingGuideOpen)}
+          className="w-full bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-left hover:bg-blue-900/30 transition"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-blue-200">How to Read This Chart</h3>
+            <span className="text-blue-300 text-xl">{readingGuideOpen ? '−' : '+'}</span>
+          </div>
+        </button>
+        {readingGuideOpen && (
+          <div className="bg-blue-900/20 border border-blue-700/50 border-t-0 rounded-b-lg p-4 text-xs text-blue-200/80 space-y-2 leading-relaxed">
+            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength vs SPY, risk metrics, and market regime alignment. Compare sectors vertically - higher is better.</p>
+            <p><strong>Score Changes:</strong> Lines moving up show improving outlook, lines moving down show deteriorating conditions. Crossing lines indicate sector rotation - leadership shifts.</p>
+            <p><strong>Uncertainty Cones (Click a Sector):</strong> The shaded area shows projection confidence range. Tighter cones = more predictable sector behavior. Wider cones = higher volatility or uncertainty. All cones expand further into the future as predictability decreases.</p>
+            <p><strong>Historical (-3M):</strong> Shows actual scores from 3 months ago, helping you see recent trend direction and momentum.</p>
+          </div>
+        )}
+      </div>
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
       
       {loading && <div>Loading...</div>}

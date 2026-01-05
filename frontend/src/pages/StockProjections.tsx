@@ -12,8 +12,7 @@
  * - Comparison against SPY benchmark
  */
 
-import { useState, useEffect } from "react";
-import { useApi } from "../hooks/useApi";
+import { useState } from "react";
 import "../index.css";
 
 const HORIZONS = ["3m", "6m", "12m"];
@@ -32,11 +31,22 @@ interface StockProjection {
   max_drawdown: number;
 }
 
+interface NewsArticle {
+  id: number;
+  symbol: string;
+  sector?: string | null;
+  title: string;
+  link: string;
+  source: string;
+  published_at: string;
+}
+
 export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
   const [historicalScore, setHistoricalScore] = useState<number | null>(null);
+  const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -52,19 +62,33 @@ export default function StockProjections() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const response = await fetch(`${apiUrl}/stocks/${ticker.toUpperCase()}/projections`);
       
-      if (!response.ok) {
+      // Fetch projections
+      const projResponse = await fetch(`${apiUrl}/stocks/${ticker.toUpperCase()}/projections`);
+      
+      if (!projResponse.ok) {
         throw new Error(`Stock not found or data unavailable`);
       }
 
-      const data = await response.json();
-      setProjections(data.projections);
-      setHistoricalScore(data.historical?.score_3m_ago || null);
+      const projData = await projResponse.json();
+      setProjections(projData.projections);
+      setHistoricalScore(projData.historical?.score_3m_ago || null);
+
+      // Fetch news filtered by ticker
+      const newsResponse = await fetch(`${apiUrl}/news?hours=720&limit=200`); // Last 30 days
+      if (newsResponse.ok) {
+        const allNews = await newsResponse.json();
+        // Filter news for this specific ticker
+        const tickerNews = allNews.filter((article: NewsArticle) => 
+          article.symbol === ticker.toUpperCase()
+        );
+        setNews(tickerNews.slice(0, 10)); // Show top 10 articles
+      }
     } catch (err: any) {
       setError(err.message || "Failed to fetch stock data");
       setProjections({});
       setHistoricalScore(null);
+      setNews([]);
     } finally {
       setLoading(false);
     }
@@ -90,7 +114,27 @@ export default function StockProjections() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
       <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
-      <p className="mb-6 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+      <p className="mb-4 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+      
+      {/* Disclaimer */}
+      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+        <p className="text-xs text-yellow-200/90 leading-relaxed">
+          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
+          They are not financial advice, investment recommendations, or guarantees of future performance. 
+          Past performance does not indicate future results. Always conduct your own research and consult with a qualified 
+          financial advisor before making investment decisions.
+        </p>
+      </div>
+
+      {/* How to Read */}
+      <div className="mb-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
+        <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
+        <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
+          <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment. 70+ is strong, 30- is weak.</p>
+          <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
+          <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
+        </div>
+      </div>
 
       {/* Stock Search */}
       <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
@@ -511,6 +555,38 @@ export default function StockProjections() {
               );
             })()}
           </div>
+
+          {/* Recent News */}
+          {news.length > 0 && (
+            <div className="mt-6 bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4">Recent News for {searchTicker}</h2>
+              <div className="space-y-3">
+                {news.map((article) => (
+                  <a
+                    key={article.id}
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block bg-gray-900 rounded-lg p-4 hover:bg-gray-850 transition-colors border border-gray-700 hover:border-blue-500/50"
+                  >
+                    <h3 className="text-sm font-semibold text-blue-400 mb-2 line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span className="font-medium">{article.source}</span>
+                      <span>
+                        {new Date(article.published_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Methodology */}
           <div className="mt-6 bg-gray-800 rounded-lg shadow">
