@@ -293,10 +293,11 @@ export default function SectorProjections() {
                       <circle cx={x1} cy={y1} r="4" fill={color} opacity={opacity} />
                       <circle cx={x2} cy={y2} r="4" fill={color} opacity={opacity} />
                       <circle cx={x3} cy={y3} r="4" fill={color} opacity={opacity} />
-                  </g>
-                );
-              })}
-            </svg>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
           </div>
           
           {/* Legend - Compact and scrollable */}
