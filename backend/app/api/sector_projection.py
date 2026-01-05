@@ -23,6 +23,7 @@ from app.models.sector_projection import SectorProjectionRun, SectorProjectionVa
 from app.services.sector_projection import (
     compute_sector_projections,
     detect_duplicate_series,
+    detect_stale_series,
     fetch_sector_price_history,
     MODEL_VERSION,
     WEIGHTS,
@@ -123,6 +124,20 @@ def get_latest_projections():
             "historical": historical_scores,  # {sector_symbol: score_3m_ago}
         }
 
+@router.get("/sectors/projections/warnings")
+def get_projection_warnings():
+    with get_db_session() as db:
+        run = db.query(SectorProjectionRun).order_by(SectorProjectionRun.created_at.desc()).first()
+        if not run:
+            raise HTTPException(status_code=404, detail="No sector projections available.")
+        return {
+            "run_id": run.id,
+            "as_of_date": str(run.as_of_date),
+            "created_at": run.created_at.isoformat(),
+            "system_state": run.system_state,
+            "data_warnings": (run.config_json or {}).get("data_warnings", []),
+        }
+
 def classify_rank(rank, n):
     if rank <= 3:
         return "Winner"
@@ -182,6 +197,12 @@ def refresh_projections():
     # Fetch data and compute projections
     price_data = fetch_sector_price_history()
     duplicates = detect_duplicate_series(price_data)
+    stale = detect_stale_series(price_data)
+    warnings = []
+    if duplicates:
+        warnings.append({"type": "duplicate_series", "details": duplicates})
+    if stale:
+        warnings.append({"type": "stale_series", "details": stale})
     if duplicates:
         raise HTTPException(
             status_code=500,
@@ -230,7 +251,7 @@ def refresh_projections():
             model_version=MODEL_VERSION,
             config_json={
                 "weights": WEIGHTS,
-                "data_warnings": duplicates,
+                "data_warnings": warnings,
                 "previous_run_cache": prev_cache,
             },
         )

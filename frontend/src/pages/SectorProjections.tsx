@@ -106,6 +106,21 @@ export default function SectorProjections() {
       <p className="mb-4 text-gray-400">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
       
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
+
+      {data?.data_warnings?.length > 0 && (
+        <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+          <p className="text-xs text-yellow-200/90 leading-relaxed">
+            <strong>Data Warning:</strong> Recent projections contain data quality flags that may reduce accuracy.
+          </p>
+          <ul className="mt-2 text-xs text-yellow-200/80 space-y-1">
+            {data.data_warnings.map((warning: any, idx: number) => (
+              <li key={`${warning.type}-${idx}`}>
+                {warning.type.replace(/_/g, " ")} • {Array.isArray(warning.details) ? warning.details.length : 0} issue(s)
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       
       {loading && <div>Loading...</div>}
       {error && <div className="text-red-400">Error: {error.message}</div>}

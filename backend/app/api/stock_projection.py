@@ -125,11 +125,31 @@ def get_stock_projections(
     
     ticker = ticker.upper()
     
+    data_warnings = []
+
     # Fetch stock data
     df = fetch_stock_data(ticker)
     
     # Fetch SPY for relative strength comparison
     spy_df = fetch_stock_data("SPY")
+
+    # Data freshness checks
+    try:
+        latest_stock_date = pd.to_datetime(df.index).max()
+        latest_spy_date = pd.to_datetime(spy_df.index).max()
+        if latest_stock_date < latest_spy_date:
+            lag_days = (latest_spy_date - latest_stock_date).days
+            if lag_days > 2:
+                data_warnings.append({
+                    "type": "stale_series",
+                    "details": {
+                        "symbol": ticker,
+                        "latest_date": latest_stock_date.date().isoformat(),
+                        "lag_days": lag_days,
+                    },
+                })
+    except Exception:
+        pass
     
     # Get current system state
     with get_db_session() as db:
@@ -180,6 +200,8 @@ def get_stock_projections(
         "ticker": ticker,
         "name": stock_name,
         "as_of_date": datetime.now().isoformat(),
+        "created_at": datetime.utcnow().isoformat(),
+        "data_warnings": data_warnings,
         "projections": projections,
         "historical": {
             "score_3m_ago": historical_score  # What the score was 90 days ago

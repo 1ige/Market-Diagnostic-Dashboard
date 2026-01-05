@@ -41,12 +41,18 @@ interface NewsArticle {
   published_at: string;
 }
 
+interface DataWarning {
+  type: string;
+  details?: any;
+}
+
 export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
   const [historicalScore, setHistoricalScore] = useState<number | null>(null);
   const [news, setNews] = useState<NewsArticle[]>([]);
+  const [dataWarnings, setDataWarnings] = useState<DataWarning[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -73,6 +79,7 @@ export default function StockProjections() {
       const projData = await projResponse.json();
       setProjections(projData.projections);
       setHistoricalScore(projData.historical?.score_3m_ago || null);
+      setDataWarnings(projData.data_warnings || []);
 
       // Fetch news filtered by ticker (server-side to avoid missing relevant articles)
       const newsResponse = await fetch(`${apiUrl}/news?hours=720&limit=50&symbol=${ticker.toUpperCase()}`); // Last 30 days
@@ -85,6 +92,7 @@ export default function StockProjections() {
       setProjections({});
       setHistoricalScore(null);
       setNews([]);
+      setDataWarnings([]);
     } finally {
       setLoading(false);
     }
@@ -567,12 +575,27 @@ export default function StockProjections() {
           {/* Understanding the Projections */}
           <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
-            <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
-              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment.</p>
-              <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
-              <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
-            </div>
+          <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
+            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment.</p>
+            <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
+            <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
           </div>
+        </div>
+
+        {dataWarnings.length > 0 && (
+          <div className="mt-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+            <p className="text-xs text-yellow-200/90 leading-relaxed">
+              <strong>Data Warning:</strong> Recent projections contain data quality flags that may reduce accuracy.
+            </p>
+            <ul className="mt-2 text-xs text-yellow-200/80 space-y-1">
+              {dataWarnings.map((warning, idx) => (
+                <li key={`${warning.type}-${idx}`}>
+                  {warning.type.replace(/_/g, " ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
           {/* Methodology */}
           <div className="mt-6 bg-gray-800 rounded-lg shadow">

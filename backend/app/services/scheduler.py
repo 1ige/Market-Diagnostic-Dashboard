@@ -13,6 +13,7 @@ from app.services.ingestion.etl_runner import ETLRunner
 from app.services.sector_projection import (
     compute_sector_projections,
     detect_duplicate_series,
+    detect_stale_series,
     fetch_sector_price_history,
     MODEL_VERSION,
     WEIGHTS,
@@ -49,6 +50,12 @@ async def scheduled_etl_job():
         system_state = status["system_state"] if status and "system_state" in status else "YELLOW"
         price_data = fetch_sector_price_history()
         duplicates = detect_duplicate_series(price_data)
+        stale = detect_stale_series(price_data)
+        warnings = []
+        if duplicates:
+            warnings.append({"type": "duplicate_series", "details": duplicates})
+        if stale:
+            warnings.append({"type": "stale_series", "details": stale})
         if duplicates:
             logger.error(
                 "❌ Duplicate sector price series detected; skipping projection storage."
@@ -95,7 +102,7 @@ async def scheduled_etl_job():
                     model_version=MODEL_VERSION,
                     config_json={
                         "weights": WEIGHTS,
-                        "data_warnings": duplicates,
+                        "data_warnings": warnings,
                         "previous_run_cache": prev_cache,
                     },
                 )

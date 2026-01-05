@@ -89,6 +89,35 @@ def detect_duplicate_series(
             signatures[sig] = symbol
     return duplicates
 
+def detect_stale_series(
+    price_data: Dict[str, pd.DataFrame],
+    max_age_days: int = 2,
+) -> List[Dict[str, Any]]:
+    """Return series that lag behind the most recent date."""
+    latest_dates = {}
+    for symbol, df in price_data.items():
+        if df.empty or "date" not in df.columns:
+            continue
+        try:
+            latest_dates[symbol] = pd.to_datetime(df["date"]).max()
+        except Exception:
+            continue
+
+    if not latest_dates:
+        return []
+
+    overall_latest = max(latest_dates.values())
+    stale = []
+    for symbol, date_val in latest_dates.items():
+        lag_days = (overall_latest - date_val).days
+        if lag_days > max_age_days:
+            stale.append({
+                "symbol": symbol,
+                "latest_date": date_val.date().isoformat(),
+                "lag_days": lag_days,
+            })
+    return stale
+
 def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state: str = "YELLOW") -> List[Dict[str, Any]]:
     """
     Compute sector projections for each ETF and horizon.
