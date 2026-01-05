@@ -132,54 +132,7 @@ export default function StockProjections() {
 
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Score Trends</h3>
-              
-              {/* Horizon Selector */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedHorizon("T")}
-                  className={`px-3 py-1 rounded text-sm font-medium transition ${
-                    selectedHorizon === "T"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  Now
-                </button>
-                <button
-                  onClick={() => setSelectedHorizon("3m")}
-                  className={`px-3 py-1 rounded text-sm font-medium transition ${
-                    selectedHorizon === "3m"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  T+3M
-                </button>
-                <button
-                  onClick={() => setSelectedHorizon("6m")}
-                  className={`px-3 py-1 rounded text-sm font-medium transition ${
-                    selectedHorizon === "6m"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  T+6M
-                </button>
-                <button
-                  onClick={() => setSelectedHorizon("12m")}
-                  className={`px-3 py-1 rounded text-sm font-medium transition ${
-                    selectedHorizon === "12m"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  T+12M
-                </button>
-              </div>
-            </div>
-            
+            <h3 className="text-lg font-semibold mb-4">Score Trends</h3>
             <div className="bg-gray-900 rounded-lg p-4">
               <svg width="100%" height="300" viewBox="0 0 900 300" preserveAspectRatio="xMinYMid meet">
                 {/* Grid lines */}
@@ -190,12 +143,12 @@ export default function StockProjections() {
                   </g>
                 ))}
                 
-                {/* X-axis labels - now including 3-month history */}
+                {/* X-axis labels - simplified */}
                 <text x="150" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-3M</text>
-                <text x="300" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">-1.5M</text>
-                <text x="450" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">Now</text>
-                <text x="600" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">+6M</text>
-                <text x="750" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">+12M</text>
+                <text x="450" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">T</text>
+                <text x="525" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="650" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="750" y="285" fill="#9ca3af" fontSize="13" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {(() => {
                   const color = "#3b82f6"; // Blue color for stock
@@ -344,7 +297,53 @@ export default function StockProjections() {
           <div className="space-y-6">
             {selectedHorizon === "T" && projections["3m"] && (
               <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Current Position</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Current Position</h3>
+                  
+                  {/* Horizon Selector */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedHorizon("T")}
+                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        selectedHorizon === "T"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      Now
+                    </button>
+                    <button
+                      onClick={() => setSelectedHorizon("3m")}
+                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        selectedHorizon === "3m"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      T+3M
+                    </button>
+                    <button
+                      onClick={() => setSelectedHorizon("6m")}
+                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        selectedHorizon === "6m"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      T+6M
+                    </button>
+                    <button
+                      onClick={() => setSelectedHorizon("12m")}
+                      className={`px-3 py-1 rounded text-sm font-medium transition ${
+                        selectedHorizon === "12m"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
+                    >
+                      T+12M
+                    </button>
+                  </div>
+                </div>
                 <div className="text-gray-400 text-sm">
                   Current score reflects real-time positioning. Select a future horizon (T+3M, T+6M, T+12M) to view projections and detailed scoring breakdowns.
                 </div>
@@ -357,7 +356,53 @@ export default function StockProjections() {
 
               return (
                 <div key={selectedHorizon} className="bg-gray-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold mb-4">{selectedHorizon.toUpperCase()} Outlook</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">{selectedHorizon.toUpperCase()} Outlook</h3>
+                    
+                    {/* Horizon Selector */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedHorizon("T")}
+                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                          selectedHorizon === "T"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        }`}
+                      >
+                        Now
+                      </button>
+                      <button
+                        onClick={() => setSelectedHorizon("3m")}
+                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                          selectedHorizon === "3m"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        }`}
+                      >
+                        T+3M
+                      </button>
+                      <button
+                        onClick={() => setSelectedHorizon("6m")}
+                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                          selectedHorizon === "6m"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        }`}
+                      >
+                        T+6M
+                      </button>
+                      <button
+                        onClick={() => setSelectedHorizon("12m")}
+                        className={`px-3 py-1 rounded text-sm font-medium transition ${
+                          selectedHorizon === "12m"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        }`}
+                      >
+                        T+12M
+                      </button>
+                    </div>
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="bg-gray-900 rounded p-4">
