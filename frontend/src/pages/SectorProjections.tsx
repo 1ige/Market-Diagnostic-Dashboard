@@ -235,7 +235,7 @@ export default function SectorProjections() {
           
           {/* Smooth Line Chart */}
           <div className="bg-gray-900 rounded-lg p-2 sm:p-3 mb-2 h-72 sm:h-80 lg:h-96">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((y) => (
                 <g key={y}>
