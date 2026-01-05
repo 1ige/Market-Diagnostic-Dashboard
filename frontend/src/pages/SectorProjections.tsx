@@ -126,9 +126,9 @@ export default function SectorProjections() {
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto text-gray-100">
-      <h1 className="text-xl sm:text-2xl font-bold mb-2">Sector Projections</h1>
-      <p className="mb-4 text-gray-400 text-xs sm:text-sm">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
+      <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
+      <p className="mb-4 text-gray-400 text-sm sm:text-base">Identify sector leadership across multiple time horizons with quantified confidence levels</p>
       
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
 
@@ -153,7 +153,7 @@ export default function SectorProjections() {
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}
       {!loading && !error && Object.keys(projections).length > 0 && (
-        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow overflow-hidden">
+        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
           <h2 className="text-base sm:text-lg font-semibold mb-3">Sector Score Trends Across Time Horizons</h2>
           <p className="text-xs text-gray-400 mb-3">Each line shows how a sector's composite score evolves from current to forward projections</p>
           {tInterpolated && (
@@ -163,9 +163,9 @@ export default function SectorProjections() {
           )}
           
           {/* Smooth Line Chart */}
-          <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2 overflow-x-auto -mx-2 sm:mx-0">
-            <div className="w-full min-w-[600px]" style={{ aspectRatio: '2 / 1', maxHeight: '240px' }}>
-              <svg width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="xMinYMid meet">
+          <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2">
+            <div className="w-full" style={{ aspectRatio: '2 / 1', maxHeight: '240px' }}>
+              <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet">
                 {/* Gradient definitions for uncertainty cones */}
                 <defs>
                   {chartData.map((sector: any, idx: number) => {
@@ -197,17 +197,17 @@ export default function SectorProjections() {
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
-                    <line x1="60" y1={260 - (y * 2.4)} x2="780" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="45" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
+                    <line x1="50" y1={260 - (y * 2.4)} x2="960" y2={260 - (y * 2.4)} stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="40" y={264 - (y * 2.4)} fill="#9ca3af" fontSize="10" textAnchor="end">{y}</text>
                   </g>
                 ))}
                 
                 {/* X-axis labels */}
-                <text x="100" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">-3M</text>
-                <text x="250" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">T</text>
-                <text x="380" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
-                <text x="550" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
-                <text x="720" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
+                <text x="150" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">-3M</text>
+                <text x="350" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">T</text>
+                <text x="550" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">3M</text>
+                <text x="725" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">6M</text>
+                <text x="900" y="285" fill="#9ca3af" fontSize="11" textAnchor="middle" fontWeight="500">12M</text>
                 
                 {/* Uncertainty cones and lines for each sector */}
                 {chartData.map((sector: any, idx: number) => {
@@ -227,15 +227,15 @@ export default function SectorProjections() {
                     ? sector.scores["T"]
                     : histScore + ((sector.scores["3m"] - histScore) / 2); // Interpolate midpoint
                   
-                  const xHist = 100;   // -3M
+                  const xHist = 150;   // -3M
                   const yHist = 260 - (histScore * 2.4);
-                  const x0 = 250;      // T (Now)
+                  const x0 = 350;      // T (Now)
                   const y0 = 260 - (scoreT * 2.4);
-                  const x1 = 380;      // 3M
+                  const x1 = 550;      // 3M
                   const y1 = 260 - (sector.scores["3m"] * 2.4);
-                  const x2 = 550;      // 6M
+                  const x2 = 725;      // 6M
                   const y2 = 260 - (sector.scores["6m"] * 2.4);
-                  const x3 = 720;      // 12M
+                  const x3 = 900;      // 12M
                   const y3 = 260 - (sector.scores["12m"] * 2.4);
                   
                   // Calculate expanding uncertainty cone starting from now
