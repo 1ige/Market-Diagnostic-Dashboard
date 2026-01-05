@@ -98,7 +98,7 @@ export default function SectorProjections() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
       <h1 className="text-2xl font-bold mb-2">Sector Projections</h1>
-      <p className="mb-2 text-gray-400">Forward 3, 6, 12 month sector rankings (Option B, v1, transparent model)</p>
+      <p className="mb-2 text-gray-400">Multi-horizon sector performance rankings with uncertainty visualization and transparent scoring methodology</p>
       {data && <p className="mb-6 text-xs text-gray-500">System State: <span className={data.system_state === "RED" ? "text-red-400 font-semibold" : data.system_state === "GREEN" ? "text-green-400 font-semibold" : "text-yellow-400 font-semibold"}>{data.system_state}</span> • As of: {data.as_of_date}</p>}
       
       {loading && <div>Loading...</div>}
