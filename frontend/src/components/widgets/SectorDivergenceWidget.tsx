@@ -235,6 +235,26 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           </div>
         </div>
         <svg width="100%" height="150" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid meet" className="w-full">
+          {/* Gradient definitions for uncertainty cones */}
+          <defs>
+            {chartData.map((sector, idx) => {
+              const isTop = topPerformers.some(p => p.symbol === sector.symbol);
+              const isBottom = bottomPerformers.some(p => p.symbol === sector.symbol);
+              let color = "#6b7280";
+              if (isTop) color = "#10b981";
+              if (isBottom) color = "#ef4444";
+              
+              const gradientId = `grad_${idx}`;
+              return (
+                <linearGradient key={gradientId} id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor={color} stopOpacity="0" />
+                  <stop offset="50%" stopColor={color} stopOpacity="0.05" />
+                  <stop offset="100%" stopColor={color} stopOpacity="0.1" />
+                </linearGradient>
+              );
+            })}
+          </defs>
+          
           {/* Grid lines */}
           {[0, 25, 50, 75, 100].map((y) => (
             <g key={y}>
@@ -249,7 +269,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           <text x="210" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">6M</text>
           <text x="360" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">12M</text>
           
-          {/* Draw all lines */}
+          {/* Draw uncertainty cones and lines */}
           {chartData.map((sector, idx) => {
             const isTop = topPerformers.some(p => p.symbol === sector.symbol);
             const isBottom = bottomPerformers.some(p => p.symbol === sector.symbol);
@@ -269,11 +289,25 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             const x4 = 360;  // 12M
             const y4 = 125 - (sector.scores["12m"] * 1.25);
             
-            const pathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2} Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3} Q ${(x3 + x4) / 2} ${(y3 + y4) / 2}, ${x4} ${y4}`;
+            // Calculate uncertainty cone (expanding triangle from 6M to 12M)
+            // Variance increases as we move further into the future
+            const sigma = Math.abs(sector.scores["12m"] - sector.scores["6m"]) * 0.5 + 5; // Base uncertainty
+            const upperBound = y4 - sigma * 1.25;
+            const lowerBound = y4 + sigma * 1.25;
+            
+            // Cone polygon points
+            const conePoints = `${x3},${y3} ${x4},${upperBound} ${x4},${lowerBound}`;
+            
+            const mainPathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2} Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3} Q ${(x3 + x4) / 2} ${(y3 + y4) / 2}, ${x4} ${y4}`;
             
             return (
               <g key={sector.symbol}>
-                <path d={pathData} stroke={color} strokeWidth={strokeWidth} fill="none" opacity={opacity} strokeLinecap="round" strokeLinejoin="round" />
+                {/* Uncertainty cone (only for top/bottom performers) */}
+                {(isTop || isBottom) && (
+                  <polygon points={conePoints} fill={`url(#grad_${idx})`} opacity={opacity * 0.5} />
+                )}
+                {/* Main trend line */}
+                <path d={mainPathData} stroke={color} strokeWidth={strokeWidth} fill="none" opacity={opacity} strokeLinecap="round" strokeLinejoin="round" />
                 {(isTop || isBottom) && (
                   <text x="368" y={y4 + 3} fill={color} fontSize="9" fontWeight="600" opacity={opacity}>
                     {sector.symbol}
@@ -282,6 +316,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
               </g>
             );
           })}
+        </svg>
         </svg>
       </div>
 
