@@ -545,23 +545,43 @@ const MarketMap = () => {
                       if (!projection3m) return null;
                       
                       const score3m = projection3m.score_total;
+                      const score6m = projection6m?.score_total || score3m;
                       const score12m = projection12m?.score_total || score3m;
-                      const trend = score12m - score3m;
                       
-                      let trendIcon = '→';
-                      let trendColor = 'text-gray-400';
-                      if (trend > 5) {
-                        trendIcon = '↗';
-                        trendColor = 'text-green-400';
-                      } else if (trend < -5) {
-                        trendIcon = '↘';
-                        trendColor = 'text-red-400';
-                      }
+                      // Create sparkline using the 4 data points
+                      const scores = [score3m, score6m, score12m];
+                      const minScore = Math.min(...scores, 30);
+                      const maxScore = Math.max(...scores, 70);
+                      const range = maxScore - minScore || 1;
+                      
+                      // Calculate Y positions for sparkline (0 = top/high score, 100 = bottom/low score)
+                      const sparkPoints = scores.map((score) => 
+                        100 - ((score - minScore) / range) * 100
+                      );
+                      
+                      // Create SVG path for sparkline
+                      const pathData = `M 0,${sparkPoints[0]} L 22,${sparkPoints[1]} L 44,${sparkPoints[2]}`;
                       
                       return (
-                        <div className="flex items-center gap-1">
-                          <span className={`text-xs font-bold ${trendColor}`}>{trendIcon}</span>
-                          <span className="text-xs text-stealth-400">{score3m.toFixed(0)}</span>
+                        <div className="flex items-center gap-2">
+                          {/* Sparkline */}
+                          <svg width="50" height="24" viewBox="0 0 50 24" className="flex-shrink-0">
+                            <polyline
+                              points={`0,${sparkPoints[0]} 22,${sparkPoints[1]} 44,${sparkPoints[2]}`}
+                              fill="none"
+                              stroke={score12m > score3m ? '#10b981' : score12m < score3m ? '#ef4444' : '#6b7280'}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <circle cx="0" cy={sparkPoints[0]} r="1.5" fill="#a4a4b0" />
+                            <circle cx="22" cy={sparkPoints[1]} r="1.5" fill="#a4a4b0" />
+                            <circle cx="44" cy={sparkPoints[2]} r="1.5" fill="#a4a4b0" opacity="0.6" />
+                          </svg>
+                          <div className="text-xs text-stealth-400 text-right">
+                            <div className="font-bold text-stealth-200">{score12m.toFixed(0)}</div>
+                            <div className="text-[10px]">12m</div>
+                          </div>
                         </div>
                       );
                     })()}
