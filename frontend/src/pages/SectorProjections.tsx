@@ -118,7 +118,7 @@ export default function SectorProjections() {
         {methodologyOpen && (
           <div className="px-6 pb-6 text-sm text-gray-300 space-y-5">
             <div>
-              <h3 className="font-semibold text-gray-100 mb-3 text-base">Option B: Transparent Rule-Based Scoring</h3>
+              <h3 className="font-semibold text-gray-100 mb-3 text-base">Transparent Rule-Based Scoring</h3>
               <p className="text-gray-400 mb-2">
                 This model ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) against the SPY benchmark 
                 using 8000 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
@@ -196,6 +196,20 @@ export default function SectorProjections() {
                 <p>
                   All sectors are ranked by composite score (descending). Ranks are assigned 1-11 using minimum rank method (ties get the same rank).
                 </p>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4">
+              <h3 className="font-semibold text-gray-100 mb-3">Uncertainty Cones</h3>
+              <p className="text-xs text-gray-400 mb-3">
+                The interactive chart displays projection confidence intervals visualized as expanding "uncertainty cones" for each sector.
+              </p>
+              <div className="text-xs text-gray-400 space-y-2">
+                <p><strong>What they represent:</strong> The cone boundary shows the range of possible scores based on score volatility across the projection period (3M, 6M, 12M).</p>
+                <p><strong>How they expand:</strong> Each cone starts narrow at the current date (high confidence in today's positioning) and progressively widens toward longer time horizons (lower confidence in distant forecasts).</p>
+                <p><strong>Calculating cone width:</strong> Width is determined by the standard deviation of score changes between time horizons, increasing with forecast distance to reflect growing uncertainty.</p>
+                <p><strong>Interpreting the cone:</strong> A wide cone indicates high forecast uncertainty—the sector score could reasonably vary significantly. A narrow cone suggests more stable, predictable positioning. Analysts should weight sectors with narrower cones more heavily for tactical positioning.</p>
+                <p><strong>Interactive selection:</strong> Click any sector line or legend item to isolate that sector, fade others, and highlight its uncertainty cone for detailed analysis.</p>
               </div>
             </div>
             
