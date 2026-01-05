@@ -544,55 +544,38 @@ const MarketMap = () => {
                       
                       if (!projection3m) return null;
                       
-                      // Get current sector performance as "now" value
-                      const scoreNow = sector.pct_change * 10 + 50;  // Convert -5% to +5% range to 0-100 scale
+                      // Get scores for sparkline
+                      const scoreNow = sector.pct_change * 10 + 50;  // Current performance scaled to 0-100
                       const score3m = projection3m.score_total;
                       const score6m = projection6m?.score_total || score3m;
                       const score12m = projection12m?.score_total || score3m;
                       
-                      // Create sparkline using 4 data points: now, 3m, 6m, 12m
+                      // Use fixed 0-100 range for consistent sparkline heights
                       const scores = [scoreNow, score3m, score6m, score12m];
-                      const minScore = Math.min(...scores, 30);
-                      const maxScore = Math.max(...scores, 70);
-                      const range = maxScore - minScore || 1;
+                      const sparkPoints = scores.map((score) => {
+                        const normalized = Math.max(0, Math.min(100, score));
+                        return 20 - (normalized / 100) * 20;  // 20px height, top=0, bottom=20
+                      });
                       
-                      // Calculate Y positions for sparkline (0 = top/high, 100 = bottom/low)
-                      const sparkPoints = scores.map((score) => 
-                        100 - ((score - minScore) / range) * 100
-                      );
-                      
-                      // Determine color based on overall trend
+                      // Determine color based on trend
                       const trendUp = score12m > scoreNow;
                       const trendDown = score12m < scoreNow;
                       
                       return (
-                        <div className="flex items-center gap-2">
-                          {/* Sparkline SVG with 4 points */}
-                          <svg width="60" height="20" viewBox="0 0 60 20" className="flex-shrink-0" preserveAspectRatio="none">
-                            {/* Grid background */}
-                            <rect width="60" height="20" fill="none" />
-                            
-                            {/* Polyline connecting 4 points */}
-                            <polyline
-                              points={`0,${sparkPoints[0]} 20,${sparkPoints[1]} 40,${sparkPoints[2]} 60,${sparkPoints[3]}`}
-                              fill="none"
-                              stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            
-                            {/* Data points */}
-                            <circle cx="0" cy={sparkPoints[0]} r="2" fill="#a4a4b0" />
-                            <circle cx="20" cy={sparkPoints[1]} r="2" fill="#a4a4b0" />
-                            <circle cx="40" cy={sparkPoints[2]} r="2" fill="#a4a4b0" />
-                            <circle cx="60" cy={sparkPoints[3]} r="2" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
-                          </svg>
-                          <div className="text-xs text-stealth-400 text-right flex-shrink-0">
-                            <div className="font-bold text-stealth-200">{score12m.toFixed(0)}</div>
-                            <div className="text-[10px]">proj</div>
-                          </div>
-                        </div>
+                        <svg width="50" height="20" viewBox="0 0 50 20" className="flex-shrink-0">
+                          {/* Polyline connecting 4 points */}
+                          <polyline
+                            points={`0,${sparkPoints[0]} 17,${sparkPoints[1]} 33,${sparkPoints[2]} 50,${sparkPoints[3]}`}
+                            fill="none"
+                            stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          
+                          {/* Data point circles - only show final point colored */}
+                          <circle cx="50" cy={sparkPoints[3]} r="1.5" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
+                        </svg>
                       );
                     })()}
                   </div>
