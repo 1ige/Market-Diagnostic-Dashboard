@@ -78,7 +78,7 @@ export default function SectorProjections() {
   const getChartData = () => {
     if (!projections["3m"]) return [];
     
-    // Get all unique sectors from 3m data
+    // Get all unique sectors from 3m data (use 3m as reference since it should always exist)
     const sectors = projections["3m"] || [];
     
     return sectors.map((sector: any) => {
@@ -94,10 +94,9 @@ export default function SectorProjections() {
         const match = horizonData.find((s: any) => s.sector_symbol === sector.sector_symbol);
         if (match) {
           sectorData.scores[h] = match.score_total;
-        } else if (h === "T") {
-          sectorData.scores[h] = sector.score_total ?? 50;
         } else {
-          sectorData.scores[h] = 50;
+          // If no data for this horizon, use null to indicate missing data
+          sectorData.scores[h] = null;
         }
       });
       
@@ -199,10 +198,15 @@ export default function SectorProjections() {
                     ? historicalScores[sector.symbol]
                     : sector.scores["3m"] - 8; // Fallback estimation
                   
+                  // For T (current), use data if available, otherwise interpolate from historical and 3m
+                  const scoreT = sector.scores["T"] !== null && sector.scores["T"] !== undefined
+                    ? sector.scores["T"]
+                    : histScore + ((sector.scores["3m"] - histScore) / 2); // Interpolate midpoint
+                  
                   const xHist = 100;   // -3M
                   const yHist = 260 - (histScore * 2.4);
                   const x0 = 250;      // T (Now)
-                  const y0 = 260 - (sector.scores["T"] * 2.4);
+                  const y0 = 260 - (scoreT * 2.4);
                   const x1 = 380;      // 3M
                   const y1 = 260 - (sector.scores["3m"] * 2.4);
                   const x2 = 550;      // 6M
@@ -417,6 +421,17 @@ export default function SectorProjections() {
               ))}
             </div>
           </div>
+          
+          {/* Show warning if T data is not available */}
+          {selectedHorizon === "T" && !projections["T"] && (
+            <div className="mb-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+              <p className="text-xs text-yellow-200/90">
+                <strong>Note:</strong> Current time (T) projections are not available yet. The system needs to compute and store this data.
+                Please select another time horizon or check back after the next scheduled update.
+              </p>
+            </div>
+          )}
+          
           <div className="bg-gray-800 rounded-lg p-4 shadow">
             <div className="hidden md:block">
               <table className="w-full text-sm">
@@ -433,7 +448,7 @@ export default function SectorProjections() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(selectedHorizon === "T" ? projections["T"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                  {(projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                     <tr key={row.sector_symbol} className={
                       row.classification === "Winner"
                         ? "bg-green-900/30"
