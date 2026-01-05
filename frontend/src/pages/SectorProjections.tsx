@@ -260,7 +260,7 @@ export default function SectorProjections() {
                   // Future path (from T forward with uncertainty cone)
                   const pathData = `
                     M ${x0} ${y0}
-                    Q ${(x0 + x1) / 2} ${y0}, ${x1} ${y1}
+                    Q ${(x0 + x1) / 2} ${(y0 + y1) / 2}, ${x1} ${y1}
                     Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
                     Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
                   `;
