@@ -74,14 +74,10 @@ export default function StockProjections() {
       setProjections(projData.projections);
       setHistoricalScore(projData.historical?.score_3m_ago || null);
 
-      // Fetch news filtered by ticker
-      const newsResponse = await fetch(`${apiUrl}/news?hours=720&limit=200`); // Last 30 days
+      // Fetch news filtered by ticker (server-side to avoid missing relevant articles)
+      const newsResponse = await fetch(`${apiUrl}/news?hours=720&limit=50&symbol=${ticker.toUpperCase()}`); // Last 30 days
       if (newsResponse.ok) {
-        const allNews = await newsResponse.json();
-        // Filter news for this specific ticker
-        const tickerNews = allNews.filter((article: NewsArticle) => 
-          article.symbol === ticker.toUpperCase()
-        );
+        const tickerNews = await newsResponse.json();
         setNews(tickerNews.slice(0, 10)); // Show top 10 articles
       }
     } catch (err: any) {
@@ -547,7 +543,7 @@ export default function StockProjections() {
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-gray-900 rounded-lg p-4 hover:bg-gray-850 transition-colors border border-gray-700 hover:border-blue-500/50"
+                    className="block bg-gray-900 rounded-lg p-4 hover:bg-stealth-850 transition-colors border border-gray-700 hover:border-blue-500/50"
                   >
                     <h3 className="text-sm font-semibold text-blue-400 mb-2 line-clamp-2">
                       {article.title}
@@ -572,7 +568,7 @@ export default function StockProjections() {
           <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
             <div className="text-xs text-blue-200/80 space-y-2 leading-relaxed">
-              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment. 70+ is strong, 30- is weak.</p>
+              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength, risk metrics, and market regime alignment.</p>
               <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over the selected time horizon. Positive changes suggest strengthening conditions.</p>
               <p><strong>Uncertainty Cone:</strong> The shaded area represents projection confidence. Tighter cones = higher confidence. Wider cones = greater uncertainty about future path. Cones expand further into the future as predictability decreases.</p>
             </div>

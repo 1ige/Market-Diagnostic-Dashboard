@@ -110,176 +110,6 @@ export default function SectorProjections() {
       {loading && <div>Loading...</div>}
       {error && <div className="text-red-400">Error: {error.message}</div>}
       
-      {/* How to Read This Chart */}
-      <div className="mb-6">
-        <button
-          onClick={() => setReadingGuideOpen(!readingGuideOpen)}
-          className="w-full bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-left hover:bg-blue-900/30 transition"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-blue-200">How to Read This Chart</h3>
-            <span className="text-blue-300 text-xl">{readingGuideOpen ? '−' : '+'}</span>
-          </div>
-        </button>
-        {readingGuideOpen && (
-          <div className="bg-blue-900/20 border border-blue-700/50 border-t-0 rounded-b-lg p-4 text-xs text-blue-200/80 space-y-2 leading-relaxed">
-            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength vs SPY, risk metrics, and market regime alignment. Compare sectors vertically - higher is better.</p>
-            <p><strong>Score Changes:</strong> Lines moving up show improving outlook, lines moving down show deteriorating conditions. Crossing lines indicate sector rotation - leadership shifts.</p>
-            <p><strong>Uncertainty Cones (Click a Sector):</strong> The shaded area shows projection confidence range. Tighter cones = more predictable sector behavior. Wider cones = higher volatility or uncertainty. All cones expand further into the future as predictability decreases.</p>
-            <p><strong>Historical (-3M):</strong> Shows actual scores from 3 months ago, helping you see recent trend direction and momentum.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Methodology Explanation - Collapsible */}
-      <div className="mb-6 bg-gray-800 rounded-lg shadow">
-        <button
-          onClick={() => setMethodologyOpen(!methodologyOpen)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
-        >
-          <h2 className="text-lg font-semibold">Methodology & Algorithm Details</h2>
-          <div className="text-lg font-bold text-gray-500">
-            {methodologyOpen ? '−' : '+'}
-          </div>
-        </button>
-        {methodologyOpen && (
-          <div className="px-6 pb-6 text-sm text-gray-300 space-y-5">
-            <div>
-              <h3 className="font-semibold text-gray-100 mb-3 text-base">Transparent Rule-Based Scoring</h3>
-              <p className="text-gray-400 mb-2">
-                This model ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) against the SPY benchmark 
-                using 8000 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
-              </p>
-              <p className="text-gray-400">
-                Scores are computed independently for three time horizons: 3-month (63 trading days), 6-month (126 days), and 12-month (252 days) lookback periods.
-              </p>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Component Calculations</h3>
-              
-              <div className="space-y-4">
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-yellow-400 mb-2">1. Trend Score (45% weight)</h4>
-                  <p className="text-xs text-gray-400 mb-2">
-                    Measures price momentum and technical positioning relative to moving averages.
-                  </p>
-                  <div className="text-xs text-gray-400 space-y-1 ml-3">
-                    <p><strong>Return:</strong> Total return over the horizon period: (Price_end / Price_start) - 1</p>
-                    <p><strong>SMA Distance:</strong> Distance from 200-day simple moving average: (Price_current / SMA_200) - 1</p>
-                    <p><strong>Composite:</strong> Return + (0.5 × SMA Distance), then percentile-ranked across all sectors and scaled to 0-100</p>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-lime-400 mb-2">2. Relative Strength Score (30% weight)</h4>
-                  <p className="text-xs text-gray-400 mb-2">
-                    Quantifies outperformance versus the broad market (SPY) over the same period.
-                  </p>
-                  <div className="text-xs text-gray-400 space-y-1 ml-3">
-                    <p><strong>Calculation:</strong> Sector Return - SPY Return (both measured over the horizon)</p>
-                    <p><strong>Normalization:</strong> Percentile-ranked across sectors and scaled to 0-100</p>
-                    <p>Higher scores indicate sectors beating the market; lower scores indicate underperformance</p>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-red-400 mb-2">3. Risk Score (20% weight, inverted)</h4>
-                  <p className="text-xs text-gray-400 mb-2">
-                    Evaluates price stability and downside protection. Lower risk = higher score (inverse ranking).
-                  </p>
-                  <div className="text-xs text-gray-400 space-y-1 ml-3">
-                    <p><strong>Realized Volatility:</strong> 20-day rolling standard deviation of daily returns, annualized (× √252)</p>
-                    <p><strong>Max Drawdown:</strong> Largest peak-to-trough decline over the full horizon period</p>
-                    <p><strong>Composite:</strong> Volatility + (0.5 × |Drawdown|), inverted percentile rank scaled to 0-100</p>
-                    <p>Sectors with lower volatility and smaller drawdowns receive higher risk scores</p>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold text-indigo-400 mb-2">4. Regime Adjustment (5% weight)</h4>
-                  <p className="text-xs text-gray-400 mb-2">
-                    Context-aware modifier based on the current system state (RED/YELLOW/GREEN market environment).
-                  </p>
-                  <div className="text-xs text-gray-400 space-y-1 ml-3">
-                    <p><strong>Base Score:</strong> 50 (neutral)</p>
-                    <p><strong>RED Market Adjustments:</strong></p>
-                    <ul className="ml-4 list-disc">
-                      <li>Defensive sectors (Utilities, Consumer Staples, Health Care): +5 points</li>
-                      <li>High-volatility sectors (volatility above median): -5 points</li>
-                    </ul>
-                    <p><strong>YELLOW/GREEN Markets:</strong> No adjustments applied (all sectors score 50)</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Final Score & Ranking</h3>
-              <div className="text-xs text-gray-400 space-y-2">
-                <p className="font-mono bg-gray-950 p-2 rounded">
-                  Composite Score = (0.45 × Trend) + (0.30 × Rel_Strength) + (0.20 × Risk) + (0.05 × Regime)
-                </p>
-                <p>
-                  All sectors are ranked by composite score (descending). Ranks are assigned 1-11 using minimum rank method (ties get the same rank).
-                </p>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-4">
-              <h3 className="font-semibold text-gray-100 mb-3">Uncertainty Cones</h3>
-              <p className="text-xs text-gray-400 mb-3">
-                The interactive chart displays projection confidence intervals visualized as expanding "uncertainty cones" for each sector.
-              </p>
-              <div className="text-xs text-gray-400 space-y-2">
-                <p><strong>What they represent:</strong> The cone boundary shows the range of possible scores based on score volatility across the projection period (3M, 6M, 12M).</p>
-                <p><strong>How they expand:</strong> Each cone starts narrow at the current date (high confidence in today's positioning) and progressively widens toward longer time horizons (lower confidence in distant forecasts).</p>
-                <p><strong>Calculating cone width:</strong> Width is determined by the standard deviation of score changes between time horizons, increasing with forecast distance to reflect growing uncertainty.</p>
-                <p><strong>Interpreting the cone:</strong> A wide cone indicates high forecast uncertainty—the sector score could reasonably vary significantly. A narrow cone suggests more stable, predictable positioning. Analysts should weight sectors with narrower cones more heavily for tactical positioning.</p>
-                <p><strong>Interactive selection:</strong> Click any sector line or legend item to isolate that sector, fade others, and highlight its uncertainty cone for detailed analysis.</p>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-3">
-              <h4 className="font-semibold text-gray-100 mb-2">Classification Thresholds</h4>
-              <div className="grid grid-cols-3 gap-4 text-xs">
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-green-400 font-semibold">Winner</span>
-                  <p className="text-gray-400 mt-1">Ranks 1-3 (top 3 sectors)</p>
-                </div>
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-gray-400 font-semibold">Neutral</span>
-                  <p className="text-gray-400 mt-1">Ranks 4-8 (middle 5 sectors)</p>
-                </div>
-                <div className="bg-gray-950 p-3 rounded">
-                  <span className="text-red-400 font-semibold">Loser</span>
-                  <p className="text-gray-400 mt-1">Ranks 9-11 (bottom 3 sectors)</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 pt-3">
-              <h4 className="font-semibold text-gray-100 mb-2">Data Sources & Frequency</h4>
-              <div className="text-xs text-gray-400 space-y-1">
-                <p><strong>Price Data:</strong> Yahoo Finance API (adjusted close prices)</p>
-                <p><strong>Lookback:</strong> 8000 trading days to ensure sufficient data for 12-month calculations</p>
-                <p><strong>Update Frequency:</strong> Every 4 hours during market hours (Monday-Friday, 8am-8pm ET)</p>
-                <p><strong>System State:</strong> Derived from the Market Stability Dashboard's composite indicator model</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Disclaimer */}
-      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
-        <p className="text-xs text-yellow-200/90 leading-relaxed">
-          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
-          They are not financial advice, investment recommendations, or guarantees of future performance. 
-          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
-          financial advisor before making investment decisions.
-        </p>
-      </div>
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}
       {!loading && !error && Object.keys(projections).length > 0 && (
@@ -668,6 +498,177 @@ export default function SectorProjections() {
           </div>
         </div>
       )}
+
+      {/* How to Read This Chart */}
+      <div className="mb-6">
+        <button
+          onClick={() => setReadingGuideOpen(!readingGuideOpen)}
+          className="w-full bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 text-left hover:bg-blue-900/30 transition"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-blue-200">How to Read This Chart</h3>
+            <span className="text-blue-300 text-xl">{readingGuideOpen ? '−' : '+'}</span>
+          </div>
+        </button>
+        {readingGuideOpen && (
+          <div className="bg-blue-900/20 border border-blue-700/50 border-t-0 rounded-b-lg p-4 text-xs text-blue-200/80 space-y-2 leading-relaxed">
+            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook based on trend, relative strength vs SPY, risk metrics, and market regime alignment. Compare sectors vertically - higher is better.</p>
+            <p><strong>Score Changes:</strong> Lines moving up show improving outlook, lines moving down show deteriorating conditions. Crossing lines indicate sector rotation - leadership shifts.</p>
+            <p><strong>Uncertainty Cones (Click a Sector):</strong> The shaded area shows a confidence range based on how much projected scores diverge across horizons. Larger score gaps create wider cones; smaller gaps keep them tighter.</p>
+            <p><strong>Historical (-3M):</strong> Shows the score from 3 months ago when available; otherwise a small estimated offset is used to preserve the trend shape.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Methodology Explanation - Collapsible */}
+      <div className="mb-6 bg-gray-800 rounded-lg shadow">
+        <button
+          onClick={() => setMethodologyOpen(!methodologyOpen)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-lg"
+        >
+          <h2 className="text-lg font-semibold">Methodology & Algorithm Details</h2>
+          <div className="text-lg font-bold text-gray-500">
+            {methodologyOpen ? '−' : '+'}
+          </div>
+        </button>
+        {methodologyOpen && (
+          <div className="px-6 pb-6 text-sm text-gray-300 space-y-5">
+            <div>
+              <h3 className="font-semibold text-gray-100 mb-3 text-base">Transparent Rule-Based Scoring</h3>
+              <p className="text-gray-400 mb-2">
+                This model ranks 11 sector ETFs (XLE, XLF, XLK, XLY, XLP, XLV, XLI, XLU, XLB, XLRE, XLC) against the SPY benchmark 
+                using 8000 days of historical price data. Each sector receives a composite score (0-100) calculated from four weighted components.
+              </p>
+              <p className="text-gray-400">
+                Scores are computed independently for three time horizons: 3-month (63 trading days), 6-month (126 days), and 12-month (252 days) lookback periods.
+              </p>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4">
+              <h3 className="font-semibold text-gray-100 mb-3">Component Calculations</h3>
+              
+              <div className="space-y-4">
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold text-yellow-400 mb-2">1. Trend Score (45% weight)</h4>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Measures price momentum and technical positioning relative to moving averages.
+                  </p>
+                  <div className="text-xs text-gray-400 space-y-1 ml-3">
+                    <p><strong>Return:</strong> Total return over the horizon period: (Price_end / Price_start) - 1</p>
+                    <p><strong>SMA Distance:</strong> Distance from 200-day simple moving average: (Price_current / SMA_200) - 1</p>
+                    <p><strong>Composite:</strong> Return + (0.5 × SMA Distance), then percentile-ranked across all sectors and scaled to 0-100</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold text-lime-400 mb-2">2. Relative Strength Score (30% weight)</h4>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Quantifies outperformance versus the broad market (SPY) over the same period.
+                  </p>
+                  <div className="text-xs text-gray-400 space-y-1 ml-3">
+                    <p><strong>Calculation:</strong> Sector Return - SPY Return (both measured over the horizon)</p>
+                    <p><strong>Normalization:</strong> Percentile-ranked across sectors and scaled to 0-100</p>
+                    <p>Higher scores indicate sectors beating the market; lower scores indicate underperformance</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold text-red-400 mb-2">3. Risk Score (20% weight, inverted)</h4>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Evaluates price stability and downside protection. Lower risk = higher score (inverse ranking).
+                  </p>
+                  <div className="text-xs text-gray-400 space-y-1 ml-3">
+                    <p><strong>Realized Volatility:</strong> 20-day rolling standard deviation of daily returns, annualized (× √252)</p>
+                    <p><strong>Max Drawdown:</strong> Largest peak-to-trough decline over the full horizon period</p>
+                    <p><strong>Composite:</strong> Volatility + (0.5 × |Drawdown|), inverted percentile rank scaled to 0-100</p>
+                    <p>Sectors with lower volatility and smaller drawdowns receive higher risk scores</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold text-indigo-400 mb-2">4. Regime Adjustment (5% weight)</h4>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Context-aware modifier based on the current system state (RED/YELLOW/GREEN market environment).
+                  </p>
+                  <div className="text-xs text-gray-400 space-y-1 ml-3">
+                    <p><strong>Base Score:</strong> 50 (neutral)</p>
+                    <p><strong>RED Market Adjustments:</strong></p>
+                    <ul className="ml-4 list-disc">
+                      <li>Defensive sectors (Utilities, Consumer Staples, Health Care): +5 points</li>
+                      <li>High-volatility sectors (volatility above median): -5 points</li>
+                    </ul>
+                    <p><strong>YELLOW/GREEN Markets:</strong> No adjustments applied (all sectors score 50)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4">
+              <h3 className="font-semibold text-gray-100 mb-3">Final Score & Ranking</h3>
+              <div className="text-xs text-gray-400 space-y-2">
+                <p className="font-mono bg-gray-950 p-2 rounded">
+                  Composite Score = (0.45 × Trend) + (0.30 × Rel_Strength) + (0.20 × Risk) + (0.05 × Regime)
+                </p>
+                <p>
+                  All sectors are ranked by composite score (descending). Ranks are assigned 1-11 using minimum rank method (ties get the same rank).
+                </p>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-4">
+              <h3 className="font-semibold text-gray-100 mb-3">Uncertainty Cones</h3>
+              <p className="text-xs text-gray-400 mb-3">
+                The interactive chart displays projection confidence intervals visualized as expanding "uncertainty cones" for each sector.
+              </p>
+              <div className="text-xs text-gray-400 space-y-2">
+                <p><strong>What they represent:</strong> The cone boundary shows the range of possible scores based on score volatility across the projection period (3M, 6M, 12M).</p>
+                <p><strong>How they expand:</strong> Each cone starts narrow at the current date (high confidence in today's positioning) and progressively widens toward longer time horizons (lower confidence in distant forecasts).</p>
+                <p><strong>Calculating cone width:</strong> Width scales with absolute score changes between 3M, 6M, and 12M projections, expanding further into the future to reflect rising uncertainty.</p>
+                <p><strong>Interpreting the cone:</strong> A wide cone indicates high forecast uncertainty—the sector score could reasonably vary significantly. A narrow cone suggests more stable, predictable positioning. Analysts should weight sectors with narrower cones more heavily for tactical positioning.</p>
+                <p><strong>Interactive selection:</strong> Click any sector line or legend item to isolate that sector, fade others, and highlight its uncertainty cone for detailed analysis.</p>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-3">
+              <h4 className="font-semibold text-gray-100 mb-2">Classification Thresholds</h4>
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div className="bg-gray-950 p-3 rounded">
+                  <span className="text-green-400 font-semibold">Winner</span>
+                  <p className="text-gray-400 mt-1">Ranks 1-3 (top 3 sectors)</p>
+                </div>
+                <div className="bg-gray-950 p-3 rounded">
+                  <span className="text-gray-400 font-semibold">Neutral</span>
+                  <p className="text-gray-400 mt-1">Ranks 4-8 (middle 5 sectors)</p>
+                </div>
+                <div className="bg-gray-950 p-3 rounded">
+                  <span className="text-red-400 font-semibold">Loser</span>
+                  <p className="text-gray-400 mt-1">Ranks 9-11 (bottom 3 sectors)</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-700 pt-3">
+              <h4 className="font-semibold text-gray-100 mb-2">Data Sources & Frequency</h4>
+              <div className="text-xs text-gray-400 space-y-1">
+                <p><strong>Price Data:</strong> Yahoo Finance API (adjusted close prices)</p>
+                <p><strong>Lookback:</strong> 8000 trading days to ensure sufficient data for 12-month calculations</p>
+                <p><strong>Update Frequency:</strong> Every 4 hours during market hours (Monday-Friday, 8am-8pm ET)</p>
+                <p><strong>System State:</strong> Derived from the Market Stability Dashboard's composite indicator model</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Disclaimer */}
+      <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+        <p className="text-xs text-yellow-200/90 leading-relaxed">
+          <strong>Disclaimer:</strong> These projections are theoretical models for educational and informational purposes only. 
+          They are not financial advice, investment recommendations, or guarantees of future performance. 
+          Sector ETF performance does not guarantee individual stock returns. Always conduct your own research and consult with a qualified 
+          financial advisor before making investment decisions.
+        </p>
+      </div>
     </div>
   );
 }
