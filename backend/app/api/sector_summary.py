@@ -43,14 +43,15 @@ def get_sector_summary():
         values = db.query(SectorProjectionValue).filter_by(run_id=run.id).all()
         
         # Organize by horizon
-        by_horizon = {"3m": [], "6m": [], "12m": []}
+        by_horizon = {"T": [], "3m": [], "6m": [], "12m": []}
         for v in values:
-            by_horizon[v.horizon].append({
-                "symbol": v.sector_symbol,
-                "name": v.sector_name,
-                "score": v.score_total,
-                "rank": v.rank,
-            })
+            if v.horizon in by_horizon:
+                by_horizon[v.horizon].append({
+                    "symbol": v.sector_symbol,
+                    "name": v.sector_name,
+                    "score": v.score_total,
+                    "rank": v.rank,
+                })
         
         # Calculate defensive vs cyclical split (using 3m scores)
         data_3m = by_horizon["3m"]

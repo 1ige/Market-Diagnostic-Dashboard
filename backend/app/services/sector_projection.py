@@ -44,11 +44,12 @@ BENCHMARK = {"symbol": "SPY", "name": "S&P 500"}
 
 # Time horizons mapped to trading days (assuming ~252 trading days per year)
 HORIZONS = {
-    "T": 0,    #Today
+    "T": 0,    # Today (uses T_WINDOW_DAYS for calculation)
     "3m": 63,
     "6m": 126,
     "12m": 252,
 }
+T_WINDOW_DAYS = 21
 
 # Model versioning for tracking projection methodology changes
 MODEL_VERSION = "option_b_v1"
@@ -148,6 +149,7 @@ def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state
     
     # Process each time horizon independently
     for horizon, lookback in HORIZONS.items():
+        effective_lookback = T_WINDOW_DAYS if lookback == 0 else lookback
         # ------------------------------------------------------------------
         # STEP 1: Collect raw metrics for all sectors at this horizon
         # ------------------------------------------------------------------
@@ -159,7 +161,7 @@ def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state
             spy = price_data.get(BENCHMARK["symbol"])
             
             # Data validation
-            if df is None or len(df) < lookback + 10 or spy is None:
+            if df is None or len(df) < effective_lookback + 10 or spy is None:
                 continue
                 
             df = df.sort_values("date").reset_index(drop=True)
@@ -170,12 +172,12 @@ def compute_sector_projections(price_data: Dict[str, pd.DataFrame], system_state
             df = df[df["date"].isin(common_dates)]
             spy = spy[spy["date"].isin(common_dates)]
             
-            if len(df) < lookback:
+            if len(df) < effective_lookback:
                 continue
                 
             # Use most recent lookback+1 days (need +1 to calculate returns)
-            df = df.iloc[-(lookback+1):]
-            spy = spy.iloc[-(lookback+1):]
+            df = df.iloc[-(effective_lookback + 1):]
+            spy = spy.iloc[-(effective_lookback + 1):]
             # ------------------------------------------------------------------
             # STEP 2: Calculate raw financial metrics
             # ------------------------------------------------------------------

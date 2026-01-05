@@ -106,6 +106,7 @@ export default function StockProjections() {
       ticker: searchTicker,
       name: projections["3m"].name,
       scores: {
+        "T": projections["T"]?.score_total || projections["3m"]?.score_total || 50,
         "3m": projections["3m"]?.score_total || 50,
         "6m": projections["6m"]?.score_total || 50,
         "12m": projections["12m"]?.score_total || 50,
@@ -192,7 +193,7 @@ export default function StockProjections() {
                   const xHist = 150;   // -3M
                   const yHist = 260 - (histScore * 2.4);
                   const x0 = 375;      // Now (T)
-                  const y0 = 260 - (chartData.scores["3m"] * 2.4);
+                  const y0 = 260 - (chartData.scores["T"] * 2.4);
                   const x1 = 525;      // +3M
                   const y1 = 260 - (chartData.scores["3m"] * 2.4);
                   const x2 = 675;      // +6M

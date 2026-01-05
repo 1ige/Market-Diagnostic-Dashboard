@@ -37,6 +37,7 @@ import { useApi } from "../hooks/useApi";
 import "../index.css";
 
 const HORIZONS = ["3m", "6m", "12m"];
+const CHART_HORIZONS = ["T", "3m", "6m", "12m"];
 
 /**
  * Visual score bar component for displaying normalized 0-100 scores
@@ -88,10 +89,16 @@ export default function SectorProjections() {
       };
       
       // Collect scores for each horizon
-      HORIZONS.forEach((h) => {
+      CHART_HORIZONS.forEach((h) => {
         const horizonData = projections[h] || [];
         const match = horizonData.find((s: any) => s.sector_symbol === sector.sector_symbol);
-        sectorData.scores[h] = match ? match.score_total : 50;
+        if (match) {
+          sectorData.scores[h] = match.score_total;
+        } else if (h === "T") {
+          sectorData.scores[h] = sector.score_total ?? 50;
+        } else {
+          sectorData.scores[h] = 50;
+        }
       });
       
       return sectorData;
@@ -195,7 +202,7 @@ export default function SectorProjections() {
                   const xHist = 100;   // -3M
                   const yHist = 260 - (histScore * 2.4);
                   const x0 = 250;      // T (Now)
-                  const y0 = 260 - (sector.scores["3m"] * 2.4);
+                  const y0 = 260 - (sector.scores["T"] * 2.4);
                   const x1 = 380;      // 3M
                   const y1 = 260 - (sector.scores["3m"] * 2.4);
                   const x2 = 550;      // 6M
@@ -390,7 +397,7 @@ export default function SectorProjections() {
       )}
 
       {/* Detailed Tables with Horizon Selector */}
-      {(projections[selectedHorizon === "T" ? "3m" : selectedHorizon] || selectedHorizon === "T") && (
+      {(projections[selectedHorizon === "T" ? "T" : selectedHorizon] || selectedHorizon === "T") && (
         <div className="mb-8">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold">Sector Rankings</h2>
@@ -426,7 +433,7 @@ export default function SectorProjections() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(selectedHorizon === "T" ? projections["3m"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+                  {(selectedHorizon === "T" ? projections["T"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                     <tr key={row.sector_symbol} className={
                       row.classification === "Winner"
                         ? "bg-green-900/30"
@@ -460,7 +467,7 @@ export default function SectorProjections() {
               </table>
             </div>
             <div className="md:hidden space-y-3">
-              {(selectedHorizon === "T" ? projections["3m"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
+              {(selectedHorizon === "T" ? projections["T"] : projections[selectedHorizon])?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                 <div
                   key={row.sector_symbol}
                   className={`rounded-lg border border-gray-700 overflow-hidden ${

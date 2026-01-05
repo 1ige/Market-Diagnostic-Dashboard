@@ -23,11 +23,12 @@ from app.utils.db_helpers import get_db_session
 router = APIRouter()
 
 HORIZONS = {
-    "T": 0,    # Today
+    "T": 0,    # Today (uses T_WINDOW_DAYS for calculation)
     "3m": 63,
     "6m": 126,
     "12m": 252,
 }
+T_WINDOW_DAYS = 21
 
 def fetch_stock_data(ticker: str, days: int = 2000) -> pd.DataFrame:
     """Fetch historical price data for a stock"""
@@ -168,7 +169,8 @@ def get_stock_projections(
     projections = {}
     for horizon_name, horizon_days in HORIZONS.items():
         try:
-            projection = compute_stock_projection(ticker, df, spy_df, horizon_days, system_state)
+            effective_days = T_WINDOW_DAYS if horizon_days == 0 else horizon_days
+            projection = compute_stock_projection(ticker, df, spy_df, effective_days, system_state)
             projection.update({
                 "ticker": ticker,
                 "name": stock_name,
