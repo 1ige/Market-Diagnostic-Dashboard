@@ -60,6 +60,7 @@ export default function SectorProjections() {
   const { data, loading, error } = useApi("/sectors/projections/latest");
   const [projections, setProjections] = useState<any>({});
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   useEffect(() => {
     if (data && data.projections) setProjections(data.projections);
@@ -394,7 +395,7 @@ export default function SectorProjections() {
               {projections[h]?.sort((a:any,b:any)=>a.rank-b.rank).map((row:any) => (
                 <div
                   key={row.sector_symbol}
-                  className={`rounded-lg p-3 border border-gray-700 ${
+                  className={`rounded-lg border border-gray-700 overflow-hidden ${
                     row.classification === "Winner"
                       ? "bg-green-900/20"
                       : row.classification === "Loser"
@@ -402,30 +403,47 @@ export default function SectorProjections() {
                       : "bg-gray-900/40"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+                  <button
+                    onClick={() => setExpandedCard(expandedCard === row.sector_symbol ? null : row.sector_symbol)}
+                    className="w-full p-3 flex items-start justify-between gap-3 hover:bg-black/20 transition-colors"
+                  >
+                    <div className="text-left">
                       <div className="text-sm font-semibold text-gray-100">
                         #{row.rank} {row.sector_name}
                       </div>
                       <div className="text-xs text-gray-500">{row.sector_symbol}</div>
                     </div>
-                    <span className={
-                      row.classification === "Winner"
-                        ? "text-green-400 text-xs font-semibold"
-                        : row.classification === "Loser"
-                        ? "text-red-400 text-xs font-semibold"
-                        : "text-gray-400 text-xs font-semibold"
-                    }>
-                      {row.classification}
-                    </span>
-                  </div>
-                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className={
+                        row.classification === "Winner"
+                          ? "text-green-400 text-xs font-semibold"
+                          : row.classification === "Loser"
+                          ? "text-red-400 text-xs font-semibold"
+                          : "text-gray-400 text-xs font-semibold"
+                      }>
+                        {row.classification}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 text-gray-500 transition-transform ${expandedCard === row.sector_symbol ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </div>
+                  </button>
+                  <div className="px-3 pt-0 pb-3">
                     <ScoreBar label="Total" value={row.score_total} color="#38bdf8" />
-                    <ScoreBar label="Trend" value={row.score_trend} color="#facc15" />
-                    <ScoreBar label="Rel" value={row.score_rel} color="#a3e635" />
-                    <ScoreBar label="Risk" value={row.score_risk} color="#f87171" />
-                    <ScoreBar label="Regime" value={row.score_regime} color="#818cf8" />
                   </div>
+                  {expandedCard === row.sector_symbol && (
+                    <div className="border-t border-gray-700 bg-black/20 p-3 space-y-2">
+                      <ScoreBar label="Trend" value={row.score_trend} color="#facc15" />
+                      <ScoreBar label="Rel" value={row.score_rel} color="#a3e635" />
+                      <ScoreBar label="Risk" value={row.score_risk} color="#f87171" />
+                      <ScoreBar label="Regime" value={row.score_regime} color="#818cf8" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
