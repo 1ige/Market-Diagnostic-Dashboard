@@ -562,20 +562,23 @@ const MarketMap = () => {
                       const trendDown = score12m < scoreNow;
                       
                       return (
-                        <svg width="50" height="20" viewBox="0 0 50 20" className="flex-shrink-0">
-                          {/* Smooth bezier curve connecting 4 points */}
-                          <path
-                            d={`M 0,${sparkPoints[0]} Q 8,${(sparkPoints[0] + sparkPoints[1]) / 2} 17,${sparkPoints[1]} Q 25,${(sparkPoints[1] + sparkPoints[2]) / 2} 33,${sparkPoints[2]} Q 42,${(sparkPoints[2] + sparkPoints[3]) / 2} 50,${sparkPoints[3]}`}
-                            fill="none"
-                            stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          
-                          {/* Data point circles - only show final point colored */}
-                          <circle cx="50" cy={sparkPoints[3]} r="1.5" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
-                        </svg>
+                        <div className="flex flex-col items-end">
+                          <svg width="50" height="20" viewBox="0 0 50 20" className="flex-shrink-0">
+                            {/* Smooth bezier curve connecting 4 points */}
+                            <path
+                              d={`M 0,${sparkPoints[0]} Q 8,${(sparkPoints[0] + sparkPoints[1]) / 2} 17,${sparkPoints[1]} Q 25,${(sparkPoints[1] + sparkPoints[2]) / 2} 33,${sparkPoints[2]} Q 42,${(sparkPoints[2] + sparkPoints[3]) / 2} 50,${sparkPoints[3]}`}
+                              fill="none"
+                              stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            
+                            {/* Data point circles - only show final point colored */}
+                            <circle cx="50" cy={sparkPoints[3]} r="1.5" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
+                          </svg>
+                          <div className="text-[9px] text-stealth-500">T + 12M</div>
+                        </div>
                       );
                     })()}
                   </div>
