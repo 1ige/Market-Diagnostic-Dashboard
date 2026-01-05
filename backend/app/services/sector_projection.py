@@ -44,6 +44,7 @@ BENCHMARK = {"symbol": "SPY", "name": "S&P 500"}
 
 # Time horizons mapped to trading days (assuming ~252 trading days per year)
 HORIZONS = {
+    "T": 0,    #Today
     "3m": 63,
     "6m": 126,
     "12m": 252,

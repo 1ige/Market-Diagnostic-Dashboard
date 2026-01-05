@@ -23,6 +23,7 @@ from app.utils.db_helpers import get_db_session
 router = APIRouter()
 
 HORIZONS = {
+    "T": 0,    # Today
     "3m": 63,
     "6m": 126,
     "12m": 252,
