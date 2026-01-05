@@ -36,6 +36,7 @@ export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
+  const [historicalScore, setHistoricalScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -50,7 +51,6 @@ export default function StockProjections() {
     setError(null);
 
     try {
-      // TODO: Replace with actual API endpoint when backend is ready
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const response = await fetch(`${apiUrl}/stocks/${ticker.toUpperCase()}/projections`);
       
@@ -60,9 +60,11 @@ export default function StockProjections() {
 
       const data = await response.json();
       setProjections(data.projections);
+      setHistoricalScore(data.historical?.score_3m_ago || null);
     } catch (err: any) {
       setError(err.message || "Failed to fetch stock data");
       setProjections({});
+      setHistoricalScore(null);
     } finally {
       setLoading(false);
     }
@@ -154,8 +156,10 @@ export default function StockProjections() {
                   const color = "#3b82f6"; // Blue color for stock
                   
                   // Calculate points - 5 data points total: -3M, T(now), 3M, 6M, 12M
-                  // Simulate historical decline for demonstration (in real app, fetch from backend)
-                  const histScore = chartData.scores["3m"] - 8; // -3M ago (lower score)
+                  // Use real historical score from backend, fallback to estimation if unavailable
+                  const histScore = historicalScore !== null 
+                    ? historicalScore 
+                    : chartData.scores["3m"] - 8; // Fallback estimation
                   
                   const xHist = 150;   // -3M
                   const yHist = 260 - (histScore * 2.4);

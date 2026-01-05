@@ -60,11 +60,44 @@ def get_latest_projections():
                 "metrics": {k: clean_float(val) for k, val in (v.metrics_json or {}).items()},
                 "classification": classify_rank(v.rank, n_sectors),
             })
+        
+        # Compute historical scores (what scores were 3 months ago)
+        historical_scores = {}
+        try:
+            price_data = fetch_sector_price_history(days=500)
+            
+            # For each sector, compute what the 3M score was 90 days ago
+            for sector_symbol in price_data.keys():
+                sector_df = price_data[sector_symbol]
+                if len(sector_df) > 153:  # Need 90 days ago + 63 days lookback
+                    # Get data up to 90 days ago
+                    cutoff_idx = len(sector_df) - 90
+                    historical_df = sector_df.iloc[:cutoff_idx]
+                    
+                    # Build historical price_data dict for this computation
+                    hist_price_data = {sector_symbol: historical_df}
+                    # Also need SPY for relative strength
+                    if "SPY" in price_data and len(price_data["SPY"]) > cutoff_idx:
+                        hist_price_data["SPY"] = price_data["SPY"].iloc[:cutoff_idx]
+                    
+                    # Compute projections from that historical point
+                    if len(hist_price_data) > 1:  # Have sector + SPY
+                        hist_projections = compute_sector_projections(hist_price_data, run.system_state)
+                        # Find the 3m projection for this sector
+                        for proj in hist_projections:
+                            if proj["sector_symbol"] == sector_symbol and proj["horizon"] == "3m":
+                                historical_scores[sector_symbol] = clean_float(proj["score_total"])
+                                break
+        except Exception as e:
+            print(f"Warning: Could not compute historical sector scores: {str(e)}")
+            # Continue without historical data - not critical
+        
         return {
             "as_of_date": str(run.as_of_date),
             "model_version": run.model_version,
             "system_state": run.system_state,
             "projections": result,
+            "historical": historical_scores,  # {sector_symbol: score_3m_ago}
         }
 
 def classify_rank(rank, n):

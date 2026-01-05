@@ -157,9 +157,31 @@ def get_stock_projections(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error computing {horizon_name} projection: {str(e)}")
     
+    # Compute HISTORICAL score from 3 months ago (for chart visualization)
+    historical_score = None
+    try:
+        # Calculate what the 3M score was 90 days ago
+        three_months_ago_idx = len(df) - 90  # Go back 90 days from today
+        if three_months_ago_idx > 63:  # Need at least 63 days of lookback data
+            historical_df = df.iloc[:three_months_ago_idx]
+            historical_spy = spy_df.iloc[:three_months_ago_idx]
+            historical_score = compute_stock_projection(
+                ticker, 
+                historical_df, 
+                historical_spy, 
+                HORIZONS["3m"],  # 63 days
+                system_state
+            )["score_total"]
+    except Exception as e:
+        # If we can't compute historical, that's okay - frontend will handle it
+        print(f"Warning: Could not compute historical score for {ticker}: {str(e)}")
+    
     return {
         "ticker": ticker,
         "name": stock_name,
         "as_of_date": datetime.now().isoformat(),
         "projections": projections,
+        "historical": {
+            "score_3m_ago": historical_score  # What the score was 90 days ago
+        }
     }

@@ -59,13 +59,17 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
 export default function SectorProjections() {
   const { data, loading, error } = useApi("/sectors/projections/latest");
   const [projections, setProjections] = useState<any>({});
+  const [historicalScores, setHistoricalScores] = useState<Record<string, number>>({});
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
   useEffect(() => {
-    if (data && data.projections) setProjections(data.projections);
+    if (data && data.projections) {
+      setProjections(data.projections);
+      setHistoricalScores(data.historical || {});
+    }
   }, [data]);
 
   // Prepare data for line chart: track each sector's score across horizons
@@ -305,8 +309,10 @@ export default function SectorProjections() {
                   const opacity = !selectedSector || isSelected ? 0.7 : 0.1;
                   
                   // Calculate points - 5 data points: -3M, T(now), 3M, 6M, 12M
-                  // Simulate historical decline for demonstration
-                  const histScore = sector.scores["3m"] - 8; // -3M ago (lower score)
+                  // Use real historical score from backend, fallback to estimation if unavailable
+                  const histScore = historicalScores[sector.symbol] !== undefined
+                    ? historicalScores[sector.symbol]
+                    : sector.scores["3m"] - 8; // Fallback estimation
                   
                   const xHist = 100;   // -3M
                   const yHist = 260 - (histScore * 2.4);
