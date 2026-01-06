@@ -47,6 +47,86 @@ def fetch_stock_data(ticker: str, days: int = 2000) -> pd.DataFrame:
         raise HTTPException(status_code=404, detail=f"Unable to fetch data for {ticker}: {str(e)}")
 
 
+def calculate_atr(df: pd.DataFrame, period: int = 14) -> float:
+    """Calculate Average True Range for volatility measurement"""
+    high_low = df['High'] - df['Low']
+    high_close = abs(df['High'] - df['Close'].shift())
+    low_close = abs(df['Low'] - df['Close'].shift())
+    
+    ranges = pd.concat([high_low, high_close, low_close], axis=1)
+    true_range = ranges.max(axis=1)
+    atr = true_range.rolling(period).mean()
+    
+    return atr.iloc[-1] if not pd.isna(atr.iloc[-1]) else 0
+
+
+def compute_conviction(trend_score: float, rel_strength_score: float, risk_score: float, volatility: float, composite_score: float) -> float:
+    """
+    Calculate conviction (confidence) in the projection (0-100)
+    High conviction = strong signals aligned, low volatility
+    Low conviction = mixed signals, high volatility
+    """
+    # Score alignment: how close are the component scores to the composite?
+    component_scores = [trend_score, rel_strength_score, risk_score]
+    avg_component = np.mean(component_scores)
+    alignment = 100 - np.std(component_scores)  # Lower std = better alignment = higher conviction
+    
+    # Volatility factor: lower volatility = higher conviction
+    volatility_factor = max(0, 100 - (volatility * 2))
+    
+    # Strength factor: scores far from neutral (50) = higher conviction
+    strength = abs(composite_score - 50) / 50 * 100
+    
+    # Weighted conviction
+    conviction = (
+        0.40 * alignment +           # Component alignment (40%)
+        0.35 * volatility_factor +   # Low volatility confidence (35%)
+        0.25 * strength              # Signal strength (25%)
+    )
+    
+    return np.clip(conviction, 0, 100)
+
+
+def calculate_take_profit(current_price: float, return_pct: float, volatility: float, horizon_days: int) -> float:
+    """
+    Calculate take profit target based on:
+    - Expected return over horizon
+    - Volatility adjustment
+    - Time horizon scaling
+    """
+    # Base target from return
+    base_target = current_price * (1 + return_pct)
+    
+    # Volatility-adjusted upside (reduce profits in high vol)
+    vol_adjustment = 1 - (volatility / 100 * 0.1)  # Reduce by up to 10% for very high vol
+    
+    # Horizon scaling (longer horizons can justify higher targets)
+    horizon_multiplier = 1 + (horizon_days / 252 * 0.15)
+    
+    target = base_target * vol_adjustment * horizon_multiplier
+    return target
+
+
+def calculate_stop_loss(current_price: float, volatility: float, risk_score: float, horizon_days: int) -> float:
+    """
+    Calculate stop loss based on:
+    - Volatility (higher vol = wider stops)
+    - Risk score (higher risk = tighter stops)
+    - Time horizon
+    """
+    # Base stop: 2 ATR equivalent
+    atr_equivalent = current_price * (volatility / 100) * 0.5
+    
+    # Risk adjustment (low risk score = higher stop loss, allowing more room)
+    risk_adjustment = (100 - risk_score) / 100 * 1.5  # Up to 1.5x ATR for low-risk assets
+    
+    # Horizon adjustment (shorter horizons = tighter stops)
+    horizon_factor = 1 + (min(horizon_days, 252) / 252 * 0.3)
+    
+    stop_loss = current_price - (atr_equivalent * (1 + risk_adjustment) * horizon_factor)
+    return stop_loss
+
+
 def compute_stock_projection(ticker: str, df: pd.DataFrame, spy_df: pd.DataFrame, horizon_days: int, system_state: str) -> dict:
     """Compute projection scores for a single stock at a given horizon"""
     
@@ -103,6 +183,36 @@ def compute_stock_projection(ticker: str, df: pd.DataFrame, spy_df: pd.DataFrame
         0.05 * regime_score
     )
     
+    # CONVICTION CALCULATION (confidence in the projection)
+    # Based on score consistency and direction strength
+    conviction = compute_conviction(
+        trend_score, 
+        rel_strength_score, 
+        risk_score, 
+        volatility,
+        composite_score
+    )
+    
+    # PRICE TARGETS (Take Profit and Stop Loss)
+    current_price = df['Close'].iloc[-1]
+    atr_20 = calculate_atr(df, 20)
+    
+    # Take profit: based on positive return + volatility adjustment
+    take_profit = calculate_take_profit(
+        current_price,
+        total_return,
+        volatility,
+        horizon_days
+    )
+    
+    # Stop loss: based on volatility and risk score
+    stop_loss = calculate_stop_loss(
+        current_price,
+        volatility,
+        risk_score,
+        horizon_days
+    )
+    
     return {
         "score_total": round(composite_score, 2),
         "score_trend": round(trend_score, 2),
@@ -112,6 +222,10 @@ def compute_stock_projection(ticker: str, df: pd.DataFrame, spy_df: pd.DataFrame
         "return_pct": round(total_return * 100, 2),
         "volatility": round(volatility, 2),
         "max_drawdown": round(max_drawdown, 2),
+        "conviction": round(conviction, 2),
+        "current_price": round(current_price, 2),
+        "take_profit": round(take_profit, 2),
+        "stop_loss": round(stop_loss, 2),
     }
 
 

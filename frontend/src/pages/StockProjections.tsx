@@ -8,11 +8,14 @@
  * - Stock ticker search and lookup
  * - Multi-horizon analysis: 3-month, 6-month, and 12-month projections
  * - Interactive chart with uncertainty cones
- * - Detailed scoring breakdown
+ * - Detailed scoring breakdown with conviction metrics
+ * - Price analysis with take profit and stop loss targets
  * - Comparison against SPY benchmark
  */
 
 import { useState } from "react";
+import { PriceAnalysisChart } from "../components/widgets/PriceAnalysisChart";
+import { ConvictionSnapshot } from "../components/widgets/ConvictionSnapshot";
 import "../index.css";
 
 const HORIZONS = ["3m", "6m", "12m"];
@@ -29,6 +32,10 @@ interface StockProjection {
   return_pct: number;
   volatility: number;
   max_drawdown: number;
+  conviction: number;
+  current_price: number;
+  take_profit: number;
+  stop_loss: number;
 }
 
 interface NewsArticle {
@@ -482,6 +489,23 @@ export default function StockProjections() {
                     </div>
                   </div>
 
+                  {/* Price Analysis & Conviction Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                    <PriceAnalysisChart
+                      currentPrice={projection.current_price}
+                      takeProfit={projection.take_profit}
+                      stopLoss={projection.stop_loss}
+                      projectedReturn={projection.return_pct}
+                      horizon={selectedHorizon.toUpperCase()}
+                    />
+                    <ConvictionSnapshot
+                      conviction={projection.conviction}
+                      score={projection.score_total}
+                      volatility={projection.volatility}
+                      horizon={selectedHorizon.toUpperCase()}
+                    />
+                  </div>
+
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                       <span className="text-gray-400 w-24 sm:w-32 truncate">Trend (45%)</span>
@@ -577,12 +601,14 @@ export default function StockProjections() {
           {/* Understanding the Projections */}
           <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 sm:p-4">
             <h3 className="text-xs sm:text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
-          <div className="text-xs text-blue-200/80 space-y-1 sm:space-y-2 leading-relaxed">
-            <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook.</p>
-            <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over time.</p>
-            <p><strong>Uncertainty Cone:</strong> Tighter cones = higher confidence. Wider cones = greater uncertainty.</p>
+            <div className="text-xs text-blue-200/80 space-y-1 sm:space-y-2 leading-relaxed">
+              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook.</p>
+              <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over time.</p>
+              <p><strong>Uncertainty Cone:</strong> Tighter cones = higher confidence. Wider cones = greater uncertainty.</p>
+              <p><strong>Conviction:</strong> Confidence level in the projection (0-100). Based on signal alignment, volatility, and score strength.</p>
+              <p><strong>Price Targets:</strong> Take Profit and Stop Loss levels calculated from volatility-adjusted returns and risk metrics.</p>
+            </div>
           </div>
-        </div>
 
         {dataWarnings.length > 0 && (
           <div className="mt-6 bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 sm:p-4">
@@ -621,6 +647,25 @@ export default function StockProjections() {
                     <li><strong>Relative Strength (30%):</strong> Outperformance vs SPY benchmark</li>
                     <li><strong>Risk (20%):</strong> Volatility and drawdown analysis (inverted scoring)</li>
                     <li><strong>Regime (5%):</strong> Context-aware adjustments based on market environment</li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold mb-2">Conviction Metric</h4>
+                  <p className="text-xs mb-2">
+                    Measures confidence in the projection (0-100) based on three factors:
+                  </p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• <strong>Component Alignment (40%):</strong> How well the scoring components agree with each other</li>
+                    <li>• <strong>Volatility Factor (35%):</strong> Lower volatility = higher conviction in predictions</li>
+                    <li>• <strong>Signal Strength (25%):</strong> How far the score deviates from neutral (50 = stronger signal)</li>
+                  </ul>
+                </div>
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold mb-2">Price Targets</h4>
+                  <ul className="space-y-2 text-xs">
+                    <li><strong>Take Profit:</strong> Calculated from projected return with volatility and horizon adjustments. Represents upside potential.</li>
+                    <li><strong>Stop Loss:</strong> Based on volatility (ATR), risk score, and time horizon. Defines acceptable downside risk.</li>
+                    <li><strong>Risk/Reward Ratio:</strong> Take Profit upside divided by Stop Loss downside. Higher is better.</li>
                   </ul>
                 </div>
                 <div className="bg-gray-900 rounded p-4">
