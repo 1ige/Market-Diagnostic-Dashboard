@@ -762,7 +762,7 @@ export default function StockProjections() {
             {methodologyOpen && (
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 text-sm text-gray-300 space-y-3 sm:space-y-4">
                 <div className="bg-blue-900/20 rounded p-3 sm:p-4 border border-blue-700/30">
-                  <h4 className="text-sm sm:text-base font-semibold mb-2 text-blue-200">📊 What This Analysis Achieves</h4>
+                  <h4 className="text-sm sm:text-base font-semibold mb-2 text-blue-200">What This Analysis Achieves</h4>
                   <p className="text-xs sm:text-sm mb-3">
                     This tool transforms raw market data into actionable intelligence by combining technical analysis, 
                     relative strength measurement, and volatility assessment into a single transparent framework. 
@@ -777,7 +777,7 @@ export default function StockProjections() {
                 </div>
 
                 <div className="bg-gray-900 rounded p-3 sm:p-4">
-                  <h4 className="text-sm sm:text-base font-semibold mb-2">🔧 How It Works: Scoring Components</h4>
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">How It Works: Scoring Components</h4>
                   <p className="text-xs sm:text-sm mb-3">The 0-100 score combines four weighted factors evaluated over 3M, 6M, and 12M lookback periods:</p>
                   <ul className="space-y-2 text-xs sm:text-sm">
                     <li><strong>Trend (45%):</strong> Measures price momentum and position relative to 50-day and 200-day moving averages</li>
@@ -788,7 +788,7 @@ export default function StockProjections() {
                 </div>
 
                 <div className="bg-gray-900 rounded p-3 sm:p-4">
-                  <h4 className="text-sm sm:text-base font-semibold mb-2">🎯 Conviction: How Confident Is This Projection?</h4>
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">Conviction: How Confident Is This Projection?</h4>
                   <p className="text-xs sm:text-sm mb-3">
                     Conviction (0-100%) measures reliability by analyzing signal consistency and market conditions:
                   </p>
@@ -801,7 +801,7 @@ export default function StockProjections() {
                 </div>
 
                 <div className="bg-gray-900 rounded p-3 sm:p-4">
-                  <h4 className="text-sm sm:text-base font-semibold mb-2">💰 Price Targets: Where to Enter and Exit</h4>
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">Price Targets: Where to Enter and Exit</h4>
                   <ul className="space-y-2 text-xs sm:text-sm">
                     <li><strong>Take Profit:</strong> Conservative upside target using 60% of projected return, adjusted for volatility and time horizon</li>
                     <li><strong>Stop Loss:</strong> Downside protection level calculated from Average True Range (ATR) and risk metrics</li>
@@ -811,7 +811,7 @@ export default function StockProjections() {
                 </div>
 
                 <div className="bg-gray-900 rounded p-3 sm:p-4">
-                  <h4 className="text-sm sm:text-base font-semibold mb-2">📈 Uncertainty Cones: Visualizing Confidence</h4>
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">Uncertainty Cones: Visualizing Confidence</h4>
                   <p className="text-xs sm:text-sm">
                     The expanding cone in the Score Trends chart shows confidence intervals. Narrow cones mean high predictability; 
                     wide cones reflect greater uncertainty. Width increases with time horizon because longer-term predictions 
