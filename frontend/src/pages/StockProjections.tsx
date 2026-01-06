@@ -305,14 +305,6 @@ export default function StockProjections() {
             </div>
           )}
 
-          {/* Technical Indicators */}
-          {projections["T"] && (
-            <TechnicalIndicators
-              technicalData={technicalData}
-              optionsFlow={optionsFlow}
-            />
-          )}
-
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
             <h3 className="text-base sm:text-lg font-semibold mb-4">Score Trends</h3>
@@ -687,6 +679,14 @@ export default function StockProjections() {
               );
             })()}
           </div>
+
+          {/* Technical Indicators */}
+          {projections["T"] && (
+            <TechnicalIndicators
+              technicalData={technicalData}
+              optionsFlow={optionsFlow}
+            />
+          )}
 
           {/* Recent News */}
           {news.length > 0 && (
