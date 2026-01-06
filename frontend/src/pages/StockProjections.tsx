@@ -174,7 +174,7 @@ export default function StockProjections() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
       <h1 className="text-2xl font-bold mb-2">Stock Projections</h1>
-      <p className="mb-4 text-gray-400">Analyze individual stocks across multiple time horizons with quantified confidence levels</p>
+      <p className="mb-4 text-gray-400">Get data-driven price targets and quantified conviction scores for any stock across 3, 6, and 12-month horizons</p>
       
       {/* Stock Search */}
       <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6 shadow-lg">
@@ -723,15 +723,15 @@ export default function StockProjections() {
             </div>
           )}
 
-          {/* Understanding the Projections */}
+          {/* What You Get */}
           <div className="mt-6 bg-blue-900/20 border border-blue-700/50 rounded-lg p-3 sm:p-4">
-            <h3 className="text-xs sm:text-sm font-semibold text-blue-200 mb-2">Understanding the Projections</h3>
+            <h3 className="text-xs sm:text-sm font-semibold text-blue-200 mb-2">What You Get</h3>
             <div className="text-xs text-blue-200/80 space-y-1 sm:space-y-2 leading-relaxed">
-              <p><strong>Score (0-100):</strong> Higher scores indicate stronger technical outlook.</p>
-              <p><strong>Score Change:</strong> Shows whether the outlook is improving (+) or deteriorating (−) over time.</p>
-              <p><strong>Uncertainty Cone:</strong> Tighter cones = higher confidence. Wider cones = greater uncertainty.</p>
-              <p><strong>Conviction:</strong> Confidence level in the projection (0-100). Based on signal alignment, volatility, and score strength.</p>
-              <p><strong>Price Targets:</strong> Take Profit and Stop Loss levels calculated from volatility-adjusted returns and risk metrics.</p>
+              <p><strong>Transparent Scoring:</strong> 0-100 composite score revealing technical strength without black-box algorithms.</p>
+              <p><strong>Realistic Price Targets:</strong> Volatility-adjusted Take Profit and Stop Loss levels with Risk/Reward ratios.</p>
+              <p><strong>Conviction Metrics:</strong> Know exactly how confident the model is in each projection (0-100%).</p>
+              <p><strong>Full Technical Analysis:</strong> 252-day price history, RSI trends, MACD momentum, and live options flow data.</p>
+              <p><strong>Multi-Horizon View:</strong> Compare current position against 3M, 6M, and 12M projections with uncertainty cones showing confidence intervals.</p>
             </div>
           </div>
 
@@ -761,43 +761,61 @@ export default function StockProjections() {
             </button>
             {methodologyOpen && (
               <div className="px-6 pb-6 text-sm text-gray-300 space-y-4">
-                <p>
-                  Stock projections use the same transparent scoring methodology as sector analysis, 
-                  evaluating performance across 3-month, 6-month, and 12-month lookback periods.
-                </p>
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">Scoring Components</h4>
-                  <ul className="space-y-2 text-xs">
-                    <li><strong>Trend (45%):</strong> Price momentum and technical positioning relative to moving averages</li>
-                    <li><strong>Relative Strength (30%):</strong> Outperformance vs SPY benchmark</li>
-                    <li><strong>Risk (20%):</strong> Volatility and drawdown analysis (inverted scoring)</li>
-                    <li><strong>Regime (5%):</strong> Context-aware adjustments based on market environment</li>
+                <div className="bg-blue-900/20 rounded p-4 border border-blue-700/30">
+                  <h4 className="font-semibold mb-2 text-blue-200">📊 What This Analysis Achieves</h4>
+                  <p className="text-xs mb-3">
+                    This tool transforms raw market data into actionable intelligence by combining technical analysis, 
+                    relative strength measurement, and volatility assessment into a single transparent framework. 
+                    You get clear buy/sell zones, confidence levels, and full visibility into the calculation logic.
+                  </p>
+                  <ul className="space-y-1.5 text-xs">
+                    <li>✓ <strong>Eliminates guesswork:</strong> Every score is calculated from observable price data and explained component-by-component</li>
+                    <li>✓ <strong>Quantifies uncertainty:</strong> Conviction scores tell you exactly how reliable each projection is</li>
+                    <li>✓ <strong>Provides clear entry/exit points:</strong> Take Profit and Stop Loss levels based on actual volatility, not arbitrary percentages</li>
+                    <li>✓ <strong>Shows the full picture:</strong> Technical indicators (RSI, MACD), options positioning, and sentiment all in one view</li>
                   </ul>
                 </div>
+
                 <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">Conviction Metric</h4>
-                  <p className="text-xs mb-2">
-                    Measures confidence in the projection (0-100) based on three factors:
+                  <h4 className="font-semibold mb-2">🔧 How It Works: Scoring Components</h4>
+                  <p className="text-xs mb-3">The 0-100 score combines four weighted factors evaluated over 3M, 6M, and 12M lookback periods:</p>
+                  <ul className="space-y-2 text-xs">
+                    <li><strong>Trend (45%):</strong> Measures price momentum and position relative to 50-day and 200-day moving averages</li>
+                    <li><strong>Relative Strength (30%):</strong> Compares stock performance against SPY benchmark to identify market leaders</li>
+                    <li><strong>Risk (20%):</strong> Evaluates volatility and maximum drawdown (lower risk = higher score)</li>
+                    <li><strong>Regime (5%):</strong> Applies market environment context for better accuracy</li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-900 rounded p-4">
+                  <h4 className="font-semibold mb-2">🎯 Conviction: How Confident Is This Projection?</h4>
+                  <p className="text-xs mb-3">
+                    Conviction (0-100%) measures reliability by analyzing signal consistency and market conditions:
                   </p>
                   <ul className="space-y-1 text-xs">
-                    <li>• <strong>Component Alignment (40%):</strong> How well the scoring components agree with each other</li>
-                    <li>• <strong>Volatility Factor (35%):</strong> Lower volatility = higher conviction in predictions</li>
-                    <li>• <strong>Signal Strength (25%):</strong> How far the score deviates from neutral (50 = stronger signal)</li>
+                    <li>• <strong>Component Alignment (40%):</strong> Do trend, strength, and risk all agree? High alignment = high conviction</li>
+                    <li>• <strong>Volatility Factor (35%):</strong> Stable stocks get higher conviction; erratic moves reduce confidence</li>
+                    <li>• <strong>Signal Strength (25%):</strong> Strong signals (scores far from 50) increase conviction</li>
                   </ul>
+                  <p className="text-xs mt-2 text-gray-400">Example: 85% conviction means tight signal alignment, low volatility, and clear directional bias</p>
                 </div>
+
                 <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">Price Targets</h4>
+                  <h4 className="font-semibold mb-2">💰 Price Targets: Where to Enter and Exit</h4>
                   <ul className="space-y-2 text-xs">
-                    <li><strong>Take Profit:</strong> Calculated from projected return with volatility and horizon adjustments. Represents upside potential.</li>
-                    <li><strong>Stop Loss:</strong> Based on volatility (ATR), risk score, and time horizon. Defines acceptable downside risk.</li>
-                    <li><strong>Risk/Reward Ratio:</strong> Take Profit upside divided by Stop Loss downside. Higher is better.</li>
+                    <li><strong>Take Profit:</strong> Conservative upside target using 60% of projected return, adjusted for volatility and time horizon</li>
+                    <li><strong>Stop Loss:</strong> Downside protection level calculated from Average True Range (ATR) and risk metrics</li>
+                    <li><strong>Risk/Reward Ratio:</strong> Potential gain divided by potential loss. Ratios above 2:1 are favorable</li>
                   </ul>
+                  <p className="text-xs mt-2 text-gray-400">Note: Targets are tightened from raw projections to provide realistic, achievable levels</p>
                 </div>
+
                 <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">Uncertainty Cones</h4>
+                  <h4 className="font-semibold mb-2">📈 Uncertainty Cones: Visualizing Confidence</h4>
                   <p className="text-xs">
-                    The expanding cone represents projection confidence intervals. Width increases with forecast horizon, 
-                    reflecting growing uncertainty. Narrower cones indicate more predictable price behavior.
+                    The expanding cone in the Score Trends chart shows confidence intervals. Narrow cones mean high predictability; 
+                    wide cones reflect greater uncertainty. Width increases with time horizon because longer-term predictions 
+                    are inherently less reliable.
                   </p>
                 </div>
               </div>
