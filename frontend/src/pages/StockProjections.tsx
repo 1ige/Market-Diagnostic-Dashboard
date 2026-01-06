@@ -58,6 +58,7 @@ export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
+  const [technicalData, setTechnicalData] = useState<any>(null);
   const [historicalScore, setHistoricalScore] = useState<number | null>(null);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [dataWarnings, setDataWarnings] = useState<DataWarning[]>([]);
@@ -87,6 +88,7 @@ export default function StockProjections() {
       const projData = await projResponse.json();
       setProjections(projData.projections);
       setHistoricalScore(projData.historical?.score_3m_ago || null);
+      setTechnicalData(projData.technical || null);
       setDataWarnings(projData.data_warnings || []);
 
       // Fetch news filtered by ticker (server-side to avoid missing relevant articles)
@@ -99,6 +101,7 @@ export default function StockProjections() {
       setError(err.message || "Failed to fetch stock data");
       setProjections({});
       setHistoricalScore(null);
+      setTechnicalData(null);
       setNews([]);
       setDataWarnings([]);
     } finally {
@@ -202,8 +205,7 @@ export default function StockProjections() {
           {/* Technical Indicators */}
           {projections["T"] && (
             <TechnicalIndicators
-              ticker={searchTicker}
-              currentPrice={projections["T"].current_price}
+              technicalData={technicalData}
               volatility={projections["T"].volatility}
               maxDrawdown={projections["T"].max_drawdown}
             />

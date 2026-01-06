@@ -127,6 +127,101 @@ def calculate_stop_loss(current_price: float, volatility: float, risk_score: flo
     return stop_loss
 
 
+def calculate_rsi(df: pd.DataFrame, period: int = 14) -> tuple:
+    """Calculate RSI and return current value and historical values"""
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    
+    return rsi.iloc[-1], rsi
+
+
+def calculate_macd(df: pd.DataFrame) -> dict:
+    """Calculate MACD, signal line, and histogram"""
+    ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
+    
+    macd = ema_12 - ema_26
+    signal = macd.ewm(span=9, adjust=False).mean()
+    histogram = macd - signal
+    
+    return {
+        "macd": macd.iloc[-1],
+        "signal": signal.iloc[-1],
+        "histogram": histogram.iloc[-1],
+        "macd_series": macd.tail(50).tolist(),
+        "signal_series": signal.tail(50).tolist(),
+        "histogram_series": histogram.tail(50).tolist(),
+    }
+
+
+def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -> dict:
+    """Calculate all technical indicators for 252-day lookback"""
+    
+    # Get last 252 days of data
+    lookback_df = df.tail(lookback_days).copy()
+    
+    if len(lookback_df) < 50:
+        return {"error": "Insufficient data for technical analysis"}
+    
+    # OHLC data for candlestick chart (sample every N bars to show ~50 candles)
+    sample_rate = max(1, len(lookback_df) // 50)
+    candles = []
+    
+    for idx, (date, row) in enumerate(lookback_df.iterrows()):
+        if idx % sample_rate == 0:
+            candles.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": int(row.get('Volume', 0)) if 'Volume' in row else 0,
+            })
+    
+    # RSI
+    rsi_current, rsi_series = calculate_rsi(lookback_df)
+    
+    # MACD
+    macd_data = calculate_macd(lookback_df)
+    
+    # SMA 50 and 200
+    sma_50 = lookback_df['Close'].rolling(50).mean().iloc[-1]
+    sma_200 = lookback_df['Close'].rolling(200).mean().iloc[-1] if len(lookback_df) >= 200 else None
+    
+    # Price levels
+    current_price = lookback_df['Close'].iloc[-1]
+    high_52w = lookback_df['High'].max()
+    low_52w = lookback_df['Low'].min()
+    
+    # Trend
+    trend = "uptrend" if current_price > sma_50 else "downtrend" if sma_200 and current_price < sma_200 else "neutral"
+    
+    return {
+        "lookback_days": len(lookback_df),
+        "current_price": float(current_price),
+        "high_52w": float(high_52w),
+        "low_52w": float(low_52w),
+        "sma_50": float(sma_50),
+        "sma_200": float(sma_200) if sma_200 else None,
+        "trend": trend,
+        "rsi": {
+            "current": float(rsi_current),
+            "status": "overbought" if rsi_current > 70 else "oversold" if rsi_current < 30 else "neutral",
+        },
+        "macd": {
+            "current": float(macd_data["macd"]),
+            "signal": float(macd_data["signal"]),
+            "histogram": float(macd_data["histogram"]),
+            "status": "bullish" if macd_data["histogram"] > 0 else "bearish",
+        },
+        "candles": candles,
+    }
+
+
 def compute_stock_projection(ticker: str, df: pd.DataFrame, spy_df: pd.DataFrame, horizon_days: int, system_state: str) -> dict:
     """Compute projection scores for a single stock at a given horizon"""
     
@@ -313,6 +408,9 @@ def get_stock_projections(
         # If we can't compute historical, that's okay - frontend will handle it
         print(f"Warning: Could not compute historical score for {ticker}: {str(e)}")
     
+    # Calculate technical indicators for 252-day lookback
+    technical_data = calculate_technical_indicators(df, lookback_days=252)
+    
     return {
         "ticker": ticker,
         "name": stock_name,
@@ -322,5 +420,6 @@ def get_stock_projections(
         "projections": projections,
         "historical": {
             "score_3m_ago": historical_score  # What the score was 90 days ago
-        }
+        },
+        "technical": technical_data,
     }
