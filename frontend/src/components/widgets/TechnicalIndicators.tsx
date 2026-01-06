@@ -295,6 +295,9 @@ export function TechnicalIndicators({
                   <text x={padding.left - 10} y={y + 4} fill="#9ca3af" fontSize="10" textAnchor="end">
                     ${price.toFixed(0)}
                   </text>
+                  <text x={chartWidth - padding.right + 10} y={y + 4} fill="#9ca3af" fontSize="10" textAnchor="start">
+                    ${price.toFixed(0)}
+                  </text>
                 </g>
               );
             })}
@@ -364,6 +367,7 @@ export function TechnicalIndicators({
 
             {/* Axes */}
             <line x1={padding.left} y1={padding.top} x2={padding.left} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
+            <line x1={chartWidth - padding.right} y1={padding.top} x2={chartWidth - padding.right} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
             <line x1={padding.left} y1={chartHeight - padding.bottom} x2={chartWidth - padding.right} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
             </svg>
           </div>
@@ -507,6 +511,15 @@ export function TechnicalIndicators({
                           >
                             {level}
                           </text>
+                          <text
+                            x={chartWidth - rsiPadding.right + 10}
+                            y={y + 4}
+                            fill="#9ca3af"
+                            fontSize="10"
+                            textAnchor="start"
+                          >
+                            {level}
+                          </text>
                         </g>
                       );
                     })}
@@ -530,6 +543,14 @@ export function TechnicalIndicators({
                       x1={rsiPadding.left}
                       y1={rsiPadding.top}
                       x2={rsiPadding.left}
+                      y2={150 - rsiPadding.bottom}
+                      stroke="#4b5563"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1={chartWidth - rsiPadding.right}
+                      y1={rsiPadding.top}
+                      x2={chartWidth - rsiPadding.right}
                       y2={150 - rsiPadding.bottom}
                       stroke="#4b5563"
                       strokeWidth="2"
@@ -596,6 +617,15 @@ export function TechnicalIndicators({
                   >
                     {formatCompact(v)}
                   </text>
+                  <text
+                    x={chartWidth - volumePadding.right + 10}
+                    y={y + 4}
+                    fill="#9ca3af"
+                    fontSize="10"
+                    textAnchor="start"
+                  >
+                    {formatCompact(v)}
+                  </text>
                 </g>
               );
             })}
@@ -623,6 +653,14 @@ export function TechnicalIndicators({
               x1={volumePadding.left}
               y1={volumePadding.top}
               x2={volumePadding.left}
+              y2={volumeChartHeight - volumePadding.bottom}
+              stroke="#4b5563"
+              strokeWidth="2"
+            />
+            <line
+              x1={chartWidth - volumePadding.right}
+              y1={volumePadding.top}
+              x2={chartWidth - volumePadding.right}
               y2={volumeChartHeight - volumePadding.bottom}
               stroke="#4b5563"
               strokeWidth="2"
@@ -744,6 +782,15 @@ export function TechnicalIndicators({
                         >
                           {value.toFixed(2)}
                         </text>
+                        <text
+                          x={chartWidth - macdPadding.right + 10}
+                          y={y + 4}
+                          fill="#9ca3af"
+                          fontSize="10"
+                          textAnchor="start"
+                        >
+                          {value.toFixed(2)}
+                        </text>
                       </g>
                     );
                   })}
@@ -810,6 +857,14 @@ export function TechnicalIndicators({
                       x1={macdPadding.left}
                       y1={macdPadding.top}
                       x2={macdPadding.left}
+                      y2={200 - macdPadding.bottom}
+                      stroke="#4b5563"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1={chartWidth - macdPadding.right}
+                      y1={macdPadding.top}
+                      x2={chartWidth - macdPadding.right}
                       y2={200 - macdPadding.bottom}
                       stroke="#4b5563"
                       strokeWidth="2"
