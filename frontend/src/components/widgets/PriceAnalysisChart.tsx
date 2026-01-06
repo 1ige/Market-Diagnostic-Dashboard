@@ -40,18 +40,18 @@ export function PriceAnalysisChart({
     : 0);
   
   return (
-    <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+    <div className="bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-700">
       {/* Header */}
-      <div className="mb-4">
-        <p className="text-xs text-gray-400 mb-2">Price Analysis for {horizon}</p>
+      <div className="mb-3">
+        <p className="text-xs text-gray-400 mb-1">Price Analysis for {horizon}</p>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-sm text-gray-300">Current Price</p>
-            <p className="text-2xl font-bold text-white">${currentPrice.toFixed(2)}</p>
+            <p className="text-xs text-gray-400">Current Price</p>
+            <p className="text-xl font-bold text-white">${currentPrice.toFixed(2)}</p>
           </div>
-          <div className={`text-right px-3 py-2 rounded ${projectionBg} border ${projectionBorder}`}>
-            <p className="text-xs text-gray-300 mb-1">Projected Return</p>
-            <p className={`text-lg font-bold ${projectionColor}`}>
+          <div className={`text-right px-2 py-1 rounded text-xs ${projectionBg} border ${projectionBorder}`}>
+            <p className="text-xs text-gray-300 mb-0.5">Return</p>
+            <p className={`text-base font-bold ${projectionColor}`}>
               {projectedReturn > 0 ? "+" : ""}{projectedPercent.toFixed(1)}%
             </p>
           </div>
@@ -59,14 +59,14 @@ export function PriceAnalysisChart({
       </div>
       
       {/* Chart */}
-      <div className="mb-4">
-        <div className="flex items-flex-end justify-between h-48 gap-4 px-2">
+      <div className="mb-3">
+        <div className="flex items-flex-end justify-between h-32 gap-2 px-1">
           {/* Stop Loss Bar */}
           <div className="flex flex-col items-center flex-1">
-            <div className="w-full flex flex-col-reverse items-center justify-end h-48 mb-2">
+            <div className="w-full flex flex-col-reverse items-center justify-end h-32 mb-1">
               <div
                 className="w-full bg-red-500/30 border border-red-500/50 rounded-sm transition-all"
-                style={{ height: `${slHeight}%`, minHeight: '4px' }}
+                style={{ height: `${slHeight}%`, minHeight: '3px' }}
               />
             </div>
             <div className="text-center">
@@ -78,14 +78,14 @@ export function PriceAnalysisChart({
           
           {/* Projected Return Bar */}
           <div className="flex flex-col items-center flex-1">
-            <div className="w-full flex flex-col-reverse items-center justify-end h-48 mb-2">
+            <div className="w-full flex flex-col-reverse items-center justify-end h-32 mb-1">
               <div
                 className={`w-full rounded-sm transition-all ${
                   isPositive
                     ? "bg-green-500/30 border border-green-500/50"
                     : "bg-red-500/30 border border-red-500/50"
                 }`}
-                style={{ height: `${projHeight}%`, minHeight: '4px' }}
+                style={{ height: `${projHeight}%`, minHeight: '3px' }}
               />
             </div>
             <div className="text-center">
@@ -103,10 +103,10 @@ export function PriceAnalysisChart({
           
           {/* Take Profit Bar */}
           <div className="flex flex-col items-center flex-1">
-            <div className="w-full flex flex-col-reverse items-center justify-end h-48 mb-2">
+            <div className="w-full flex flex-col-reverse items-center justify-end h-32 mb-1">
               <div
                 className="w-full bg-green-500/30 border border-green-500/50 rounded-sm transition-all"
-                style={{ height: `${tpHeight}%`, minHeight: '4px' }}
+                style={{ height: `${tpHeight}%`, minHeight: '3px' }}
               />
             </div>
             <div className="text-center">
@@ -119,17 +119,17 @@ export function PriceAnalysisChart({
       </div>
       
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-red-500/10 border border-red-500/30 rounded p-2">
-          <p className="text-red-300 mb-1">Risk/Reward Ratio</p>
-          <p className="text-red-200 font-semibold">
+      <div className="grid grid-cols-2 gap-1 text-xs">
+        <div className="bg-red-500/10 border border-red-500/30 rounded p-1.5">
+          <p className="text-red-300 text-xs mb-0.5">Risk/Reward</p>
+          <p className="text-red-200 font-semibold text-xs">
             1 : {(tpUpside / slDownside).toFixed(2)}
           </p>
         </div>
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
-          <p className="text-blue-300 mb-1">Risk per Trade</p>
-          <p className="text-blue-200 font-semibold">
-            {slDownside.toFixed(1)}% downside
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-1.5">
+          <p className="text-blue-300 text-xs mb-0.5">Risk</p>
+          <p className="text-blue-200 font-semibold text-xs">
+            {slDownside.toFixed(1)}%
           </p>
         </div>
       </div>

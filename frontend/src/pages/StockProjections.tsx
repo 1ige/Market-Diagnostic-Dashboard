@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { PriceAnalysisChart } from "../components/widgets/PriceAnalysisChart";
 import { ConvictionSnapshot } from "../components/widgets/ConvictionSnapshot";
+import { TechnicalIndicators } from "../components/widgets/TechnicalIndicators";
 import "../index.css";
 
 const HORIZONS = ["3m", "6m", "12m"];
@@ -162,11 +163,51 @@ export default function StockProjections() {
       {/* Results */}
       {chartData && (
         <>
-          {/* Stock Header */}
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-1">{chartData.ticker}</h2>
-            <p className="text-gray-400">{chartData.name}</p>
+          {/* Stock Header with Price Analysis & Conviction - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            {/* Stock Info */}
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h2 className="text-xl font-bold mb-1">{chartData.ticker}</h2>
+              <p className="text-gray-400">{chartData.name}</p>
+              {projections["T"] && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <p className="text-sm text-gray-400 mb-1">Current Price</p>
+                  <p className="text-2xl font-bold text-blue-400">${projections["T"].current_price?.toFixed(2) || 'N/A'}</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Price Analysis Chart */}
+            {projections["T"] && (
+              <PriceAnalysisChart
+                currentPrice={projections["T"].current_price}
+                takeProfit={projections["T"].take_profit}
+                stopLoss={projections["T"].stop_loss}
+                projectedReturn={projections["T"].return_pct}
+                horizon="T"
+              />
+            )}
+            
+            {/* Conviction Snapshot */}
+            {projections["T"] && (
+              <ConvictionSnapshot
+                conviction={projections["T"].conviction}
+                score={projections["T"].score_total}
+                volatility={projections["T"].volatility}
+                horizon="T"
+              />
+            )}
           </div>
+
+          {/* Technical Indicators */}
+          {projections["T"] && (
+            <TechnicalIndicators
+              ticker={searchTicker}
+              currentPrice={projections["T"].current_price}
+              volatility={projections["T"].volatility}
+              maxDrawdown={projections["T"].max_drawdown}
+            />
+          )}
 
           {/* Interactive Chart */}
           <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">

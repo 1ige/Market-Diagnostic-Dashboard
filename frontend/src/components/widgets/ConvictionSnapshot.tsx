@@ -52,26 +52,26 @@ export function ConvictionSnapshot({
   const volStatus = getVolatilityStatus(volatility);
   
   return (
-    <div className={`rounded-lg p-4 border ${convictionLevel.border} ${convictionLevel.bg}`}>
+    <div className={`rounded-lg p-3 sm:p-4 border ${convictionLevel.border} ${convictionLevel.bg}`}>
       {/* Header */}
-      <div className="mb-4">
-        <p className="text-xs text-gray-400 mb-2">AI Snapshot</p>
-        <p className="text-xs text-gray-300">Confidence in {horizon} projection</p>
+      <div className="mb-3">
+        <p className="text-xs text-gray-400 mb-1">AI Snapshot</p>
+        <p className="text-xs text-gray-300">Confidence in {horizon}</p>
       </div>
       
       {/* Main Conviction Display */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         {/* Conviction Gauge */}
         <div className="col-span-2">
-          <div className="flex items-end justify-between mb-2">
+          <div className="flex items-end justify-between mb-1.5">
             <span className="text-xs text-gray-400">Conviction</span>
-            <span className={`text-2xl font-bold ${convictionLevel.color}`}>
+            <span className={`text-lg font-bold ${convictionLevel.color}`}>
               {conviction.toFixed(0)}%
             </span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-gray-700 rounded-full h-1.5">
             <div
-              className={`h-2 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-all ${
                 conviction >= 75
                   ? "bg-green-500"
                   : conviction >= 60
@@ -91,56 +91,46 @@ export function ConvictionSnapshot({
         </div>
         
         {/* Signal Indicator */}
-        <div className="flex flex-col items-center justify-center bg-gray-800/50 rounded p-2">
-          <span className={`text-2xl font-bold ${signal.color} mb-1`}>{signal.icon}</span>
-          <p className={`text-xs font-semibold ${signal.color} text-center`}>
+        <div className="flex flex-col items-center justify-center bg-gray-800/50 rounded p-1.5">
+          <span className={`text-xl font-bold ${signal.color} mb-0.5`}>{signal.icon}</span>
+          <p className={`text-xs font-semibold ${signal.color} text-center leading-tight`}>
             {signal.label}
           </p>
         </div>
       </div>
       
       {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+      <div className="grid grid-cols-2 gap-1.5 mb-3 text-xs">
         {/* Score */}
-        <div className="bg-gray-800/30 rounded p-2 border border-gray-700/50">
-          <p className="text-gray-400 mb-1">Total Score</p>
+        <div className="bg-gray-800/30 rounded p-1.5 border border-gray-700/50">
+          <p className="text-gray-400 mb-0.5 text-xs">Score</p>
           <p className="text-sm font-bold text-blue-300">{score.toFixed(0)}/100</p>
         </div>
         
         {/* Volatility */}
-        <div className="bg-gray-800/30 rounded p-2 border border-gray-700/50">
-          <p className="text-gray-400 mb-1">Volatility</p>
+        <div className="bg-gray-800/30 rounded p-1.5 border border-gray-700/50">
+          <p className="text-gray-400 mb-0.5 text-xs">Vol</p>
           <p className={`text-sm font-bold ${volStatus.color}`}>
-            {volStatus.label}
-            <br />
-            <span className="text-xs text-gray-400">{volatility.toFixed(1)}%</span>
+            {volatility.toFixed(1)}%
           </p>
         </div>
       </div>
       
       {/* Conviction Explanation */}
       <div className="bg-gray-800/20 rounded p-2 border border-gray-700/30 text-xs text-gray-300">
-        <p className="mb-1">
-          <span className="font-semibold">Why this conviction?</span>
-        </p>
-        <ul className="space-y-1 text-gray-400">
+        <p className="mb-1 font-semibold text-xs">Why?</p>
+        <ul className="space-y-0.5 text-gray-400 text-xs">
           {conviction >= 60 && (
-            <li>✓ Strong signal alignment across indicators</li>
+            <li>✓ Good signal alignment</li>
           )}
           {conviction < 60 && (
-            <li>✗ Mixed signals from technical indicators</li>
+            <li>✗ Mixed signals</li>
           )}
           {volatility < 20 && (
-            <li>✓ Stable price action supports confidence</li>
+            <li>✓ Stable price action</li>
           )}
           {volatility >= 20 && (
-            <li>✗ High volatility reduces confidence</li>
-          )}
-          {score >= 60 && (
-            <li>✓ Positive technical setup</li>
-          )}
-          {score < 60 && (
-            <li>✗ Neutral or negative setup</li>
+            <li>✗ High volatility</li>
           )}
         </ul>
       </div>
