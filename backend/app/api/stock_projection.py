@@ -148,13 +148,16 @@ def calculate_macd(df: pd.DataFrame, lookback_days: int = 252) -> dict:
     signal = macd.ewm(span=9, adjust=False).mean()
     histogram = macd - signal
     
+    # Get the actual length to return (minimum of requested and available)
+    actual_length = min(lookback_days, len(df))
+    
     return {
-        "macd": macd.iloc[-1],
-        "signal": signal.iloc[-1],
-        "histogram": histogram.iloc[-1],
-        "macd_series": macd.tail(lookback_days).tolist(),
-        "signal_series": signal.tail(lookback_days).tolist(),
-        "histogram_series": histogram.tail(lookback_days).tolist(),
+        "macd": float(macd.iloc[-1]) if not pd.isna(macd.iloc[-1]) else 0.0,
+        "signal": float(signal.iloc[-1]) if not pd.isna(signal.iloc[-1]) else 0.0,
+        "histogram": float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
+        "macd_series": macd.tail(actual_length).fillna(0).tolist(),
+        "signal_series": signal.tail(actual_length).fillna(0).tolist(),
+        "histogram_series": histogram.tail(actual_length).fillna(0).tolist(),
     }
 
 
@@ -184,7 +187,7 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
     rsi_current, rsi_series = calculate_rsi(lookback_df)
     
     # MACD
-    macd_data = calculate_macd(lookback_df, lookback_days)
+    macd_data = calculate_macd(lookback_df, len(lookback_df))
     
     # SMA 50 and 200
     sma_50 = lookback_df['Close'].rolling(50).mean().iloc[-1]
@@ -207,9 +210,9 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
         "sma_200": float(sma_200) if sma_200 else None,
         "trend": trend,
         "rsi": {
-            "current": float(rsi_current),
+            "current": float(rsi_current) if not pd.isna(rsi_current) else 50.0,
             "status": "overbought" if rsi_current > 70 else "oversold" if rsi_current < 30 else "neutral",
-            "series": rsi_series.tail(lookback_days).tolist(),
+            "series": rsi_series.tail(len(lookback_df)).fillna(50).tolist(),
         },
         "macd": {
             "current": float(macd_data["macd"]),
