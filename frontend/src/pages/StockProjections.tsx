@@ -16,10 +16,8 @@
 import { useState } from "react";
 import { PriceAnalysisChart } from "../components/widgets/PriceAnalysisChart";
 import { ConvictionSnapshot } from "../components/widgets/ConvictionSnapshot";
-import { TechnicalIndicators } from "../components/widgets/TechnicalIndicators";
+import { TechnicalIndicators } from "../components/widgets/TechnicalIndicators.tsx";
 import "../index.css";
-
-const HORIZONS = ["3m", "6m", "12m"];
 
 interface StockProjection {
   ticker: string;
@@ -54,11 +52,30 @@ interface DataWarning {
   details?: any;
 }
 
+interface OptionsWall {
+  strike: number;
+  open_interest: number;
+  volume: number;
+}
+
+interface OptionsFlowData {
+  expiry: string;
+  as_of: string;
+  call_walls: OptionsWall[];
+  put_walls: OptionsWall[];
+  call_open_interest_total: number;
+  put_open_interest_total: number;
+  call_volume_total: number;
+  put_volume_total: number;
+  put_call_oi_ratio: number | null;
+}
+
 export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
   const [technicalData, setTechnicalData] = useState<any>(null);
+  const [optionsFlow, setOptionsFlow] = useState<OptionsFlowData | null>(null);
   const [historicalScore, setHistoricalScore] = useState<number | null>(null);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [dataWarnings, setDataWarnings] = useState<DataWarning[]>([]);
@@ -89,6 +106,7 @@ export default function StockProjections() {
       setProjections(projData.projections);
       setHistoricalScore(projData.historical?.score_3m_ago || null);
       setTechnicalData(projData.technical || null);
+      setOptionsFlow(projData.options_flow || null);
       setDataWarnings(projData.data_warnings || []);
 
       // Fetch news filtered by ticker (server-side to avoid missing relevant articles)
@@ -102,6 +120,7 @@ export default function StockProjections() {
       setProjections({});
       setHistoricalScore(null);
       setTechnicalData(null);
+      setOptionsFlow(null);
       setNews([]);
       setDataWarnings([]);
     } finally {
@@ -126,6 +145,8 @@ export default function StockProjections() {
   };
 
   const chartData = getChartData();
+
+  const isSelectedHorizon = (h: "T" | "3m" | "6m" | "12m") => selectedHorizon === h;
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
@@ -166,48 +187,70 @@ export default function StockProjections() {
       {/* Results */}
       {chartData && (
         <>
-          {/* Stock Header with Price Analysis & Conviction - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            {/* Stock Info */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-1">{chartData.ticker}</h2>
-              <p className="text-gray-400">{chartData.name}</p>
-              {projections["T"] && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <p className="text-sm text-gray-400 mb-1">Current Price</p>
-                  <p className="text-2xl font-bold text-blue-400">${projections["T"].current_price?.toFixed(2) || 'N/A'}</p>
+          {/* Fundamentals Summary */}
+          {projections["T"] && (
+            <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 shadow-lg">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold">{chartData.ticker}</h2>
+                  <p className="text-gray-400">{chartData.name}</p>
                 </div>
-              )}
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">Current Price</p>
+                  <p className="text-2xl font-bold text-blue-400">${projections["T"].current_price.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">52W Range</p>
+                  <p className="font-semibold">
+                    {technicalData?.low_52w !== undefined && technicalData?.high_52w !== undefined
+                      ? `$${Number(technicalData.low_52w).toFixed(2)} – $${Number(technicalData.high_52w).toFixed(2)}`
+                      : "n/a"}
+                  </p>
+                </div>
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">Trend</p>
+                  <p
+                    className={`font-semibold capitalize ${
+                      technicalData?.trend === "uptrend"
+                        ? "text-green-400"
+                        : technicalData?.trend === "downtrend"
+                          ? "text-red-400"
+                          : "text-gray-300"
+                    }`}
+                  >
+                    {technicalData?.trend ?? "n/a"}
+                  </p>
+                </div>
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">Conviction</p>
+                  <p className="font-semibold text-purple-300">{Math.round(projections["T"].conviction)}%</p>
+                </div>
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">Take Profit</p>
+                  <p className="font-semibold text-green-400">${projections["T"].take_profit.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">Stop Loss</p>
+                  <p className="font-semibold text-red-400">${projections["T"].stop_loss.toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-900 rounded p-3 border border-gray-700">
+                  <p className="text-gray-400 mb-1">Risk</p>
+                  <p className="font-semibold text-gray-200">
+                    Vol {projections["T"].volatility.toFixed(1)}% · DD {projections["T"].max_drawdown.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            {/* Price Analysis Chart */}
-            {projections["T"] && (
-              <PriceAnalysisChart
-                currentPrice={projections["T"].current_price}
-                takeProfit={projections["T"].take_profit}
-                stopLoss={projections["T"].stop_loss}
-                projectedReturn={projections["T"].return_pct}
-                horizon="T"
-              />
-            )}
-            
-            {/* Conviction Snapshot */}
-            {projections["T"] && (
-              <ConvictionSnapshot
-                conviction={projections["T"].conviction}
-                score={projections["T"].score_total}
-                volatility={projections["T"].volatility}
-                horizon="T"
-              />
-            )}
-          </div>
+          )}
 
           {/* Technical Indicators */}
           {projections["T"] && (
             <TechnicalIndicators
               technicalData={technicalData}
-              volatility={projections["T"].volatility}
-              maxDrawdown={projections["T"].max_drawdown}
+              optionsFlow={optionsFlow}
             />
           )}
 
@@ -274,13 +317,6 @@ export default function StockProjections() {
                   `;
                   
                   // Future path - full (from T through all horizons)
-                  const futurePath = `
-                    M ${x0} ${y0}
-                    L ${x1} ${y1}
-                    Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2}
-                    Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3}
-                  `;
-                  
                   // Path from T to 6M (solid, normal opacity)
                   const pathToSixMonth = `
                     M ${x0} ${y0}
@@ -417,7 +453,7 @@ export default function StockProjections() {
                     <button
                       onClick={() => setSelectedHorizon("T")}
                       className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                        selectedHorizon === "T"
+                        isSelectedHorizon("T")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                       }`}
@@ -427,7 +463,7 @@ export default function StockProjections() {
                     <button
                       onClick={() => setSelectedHorizon("3m")}
                       className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                        selectedHorizon === "3m"
+                        isSelectedHorizon("3m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                       }`}
@@ -437,7 +473,7 @@ export default function StockProjections() {
                     <button
                       onClick={() => setSelectedHorizon("6m")}
                       className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                        selectedHorizon === "6m"
+                        isSelectedHorizon("6m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                       }`}
@@ -447,7 +483,7 @@ export default function StockProjections() {
                     <button
                       onClick={() => setSelectedHorizon("12m")}
                       className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                        selectedHorizon === "12m"
+                        isSelectedHorizon("12m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                       }`}
@@ -476,7 +512,7 @@ export default function StockProjections() {
                       <button
                         onClick={() => setSelectedHorizon("T")}
                         className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                          selectedHorizon === "T"
+                          isSelectedHorizon("T")
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}
@@ -486,7 +522,7 @@ export default function StockProjections() {
                       <button
                         onClick={() => setSelectedHorizon("3m")}
                         className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                          selectedHorizon === "3m"
+                          isSelectedHorizon("3m")
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}
@@ -496,7 +532,7 @@ export default function StockProjections() {
                       <button
                         onClick={() => setSelectedHorizon("6m")}
                         className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                          selectedHorizon === "6m"
+                          isSelectedHorizon("6m")
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}
@@ -506,7 +542,7 @@ export default function StockProjections() {
                       <button
                         onClick={() => setSelectedHorizon("12m")}
                         className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
-                          selectedHorizon === "12m"
+                          isSelectedHorizon("12m")
                             ? "bg-blue-600 text-white"
                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}

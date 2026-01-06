@@ -34,18 +34,34 @@ interface TechnicalData {
   candles: Candle[];
 }
 
+interface OptionsWall {
+  strike: number;
+  open_interest: number;
+  volume: number;
+}
+
+interface OptionsFlowData {
+  expiry: string;
+  as_of: string;
+  call_walls: OptionsWall[];
+  put_walls: OptionsWall[];
+  call_open_interest_total: number;
+  put_open_interest_total: number;
+  call_volume_total: number;
+  put_volume_total: number;
+  put_call_oi_ratio: number | null;
+}
+
 interface TechnicalIndicatorsProps {
   technicalData?: TechnicalData;
-  volatility: number;
-  maxDrawdown: number;
+  optionsFlow?: OptionsFlowData | null;
 }
 
 export function TechnicalIndicators({
   technicalData,
-  volatility,
-  maxDrawdown,
+  optionsFlow,
 }: TechnicalIndicatorsProps) {
-  if (!technicalData) {
+  if (!technicalData && !optionsFlow) {
     return (
       <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
         <p className="text-gray-400">Loading technical analysis...</p>
@@ -53,7 +69,143 @@ export function TechnicalIndicators({
     );
   }
 
-  const { candles, rsi, macd, current_price, sma_50, sma_200, trend, high_52w, low_52w } = technicalData;
+  const optionsAvailable = !!optionsFlow && (
+    (optionsFlow.call_walls?.length ?? 0) > 0 || (optionsFlow.put_walls?.length ?? 0) > 0
+  );
+  const callWall = optionsFlow?.call_walls?.[0];
+  const putWall = optionsFlow?.put_walls?.[0];
+  const currentPrice = technicalData?.current_price;
+
+  const formatCompact = (value: number) =>
+    new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+
+  const formatExpiry = (dateStr: string) => {
+    const parsed = new Date(dateStr);
+    if (Number.isNaN(parsed.getTime())) return dateStr;
+    return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const formatDistance = (strike: number) => {
+    if (!currentPrice) return "n/a";
+    const diffPct = ((strike - currentPrice) / currentPrice) * 100;
+    const direction = diffPct >= 0 ? "above" : "below";
+    return `${Math.abs(diffPct).toFixed(1)}% ${direction}`;
+  };
+
+  const maxCallOi = Math.max(...(optionsFlow?.call_walls?.map((wall) => wall.open_interest) || [0]));
+  const maxPutOi = Math.max(...(optionsFlow?.put_walls?.map((wall) => wall.open_interest) || [0]));
+
+  const optionsFlowCard = (
+    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-400 font-semibold">Options Flow</p>
+        {optionsFlow?.expiry && (
+          <span className="text-[10px] text-gray-500">Exp {formatExpiry(optionsFlow.expiry)}</span>
+        )}
+      </div>
+      {optionsAvailable ? (
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-gray-900 rounded p-2 border border-gray-700">
+              <p className="text-[10px] text-gray-400 mb-1">Call wall (resistance)</p>
+              <p className="text-sm font-bold text-green-400">
+                ${callWall?.strike.toFixed(2)}
+              </p>
+              <p className="text-[10px] text-gray-500">OI {formatCompact(callWall?.open_interest || 0)}</p>
+              {callWall && (
+                <p className="text-[10px] text-gray-500">{formatDistance(callWall.strike)} vs price</p>
+              )}
+            </div>
+            <div className="bg-gray-900 rounded p-2 border border-gray-700">
+              <p className="text-[10px] text-gray-400 mb-1">Put wall (support)</p>
+              <p className="text-sm font-bold text-red-400">
+                ${putWall?.strike.toFixed(2)}
+              </p>
+              <p className="text-[10px] text-gray-500">OI {formatCompact(putWall?.open_interest || 0)}</p>
+              {putWall && (
+                <p className="text-[10px] text-gray-500">{formatDistance(putWall.strike)} vs price</p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-3 text-[10px]">
+            <div>
+              <p className="text-gray-400 mb-1">Top call walls</p>
+              <div className="space-y-1">
+                {(optionsFlow?.call_walls || []).slice(0, 3).map((wall) => (
+                  <div key={`call-${wall.strike}`} className="flex items-center gap-1.5">
+                    <span className="w-12 text-gray-400">${wall.strike.toFixed(0)}</span>
+                    <div className="flex-1 bg-gray-700 rounded h-1">
+                      <div
+                        className="bg-green-500 h-1 rounded"
+                        style={{ width: `${maxCallOi ? (wall.open_interest / maxCallOi) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-gray-500">{formatCompact(wall.open_interest)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-gray-400 mb-1">Top put walls</p>
+              <div className="space-y-1">
+                {(optionsFlow?.put_walls || []).slice(0, 3).map((wall) => (
+                  <div key={`put-${wall.strike}`} className="flex items-center gap-1.5">
+                    <span className="w-12 text-gray-400">${wall.strike.toFixed(0)}</span>
+                    <div className="flex-1 bg-gray-700 rounded h-1">
+                      <div
+                        className="bg-red-500 h-1 rounded"
+                        style={{ width: `${maxPutOi ? (wall.open_interest / maxPutOi) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-gray-500">{formatCompact(wall.open_interest)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-1 text-[10px] text-gray-400">
+            <div className="flex justify-between">
+              <span>Call OI</span>
+              <span className="text-green-300">{formatCompact(optionsFlow?.call_open_interest_total || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Put OI</span>
+              <span className="text-red-300">{formatCompact(optionsFlow?.put_open_interest_total || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Put/Call OI</span>
+              <span className="text-gray-300">
+                {optionsFlow?.put_call_oi_ratio !== null && optionsFlow?.put_call_oi_ratio !== undefined
+                  ? optionsFlow.put_call_oi_ratio.toFixed(2)
+                  : "n/a"}
+              </span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-gray-400">Options flow data unavailable for this ticker.</p>
+      )}
+    </div>
+  );
+
+  if (!technicalData) {
+    return (
+      <div className="space-y-4 mb-6">
+        <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+          <p className="text-gray-400">Technical analysis unavailable for this ticker.</p>
+        </div>
+        {optionsFlowCard}
+      </div>
+    );
+  }
+
+  const {
+    candles,
+    rsi,
+    macd,
+    sma_50,
+    sma_200,
+  } = technicalData;
 
   // Calculate chart dimensions
   const chartWidth = 1000;
@@ -78,22 +230,31 @@ export function TechnicalIndicators({
     return padding.left + (index / (candles.length - 1)) * plotWidth;
   };
 
+  const volumes = candles
+    .map((candle) => candle.volume)
+    .filter((value) => Number.isFinite(value) && value >= 0);
+  const maxVolume = Math.max(...volumes, 0);
+  const latestVolume = volumes.length ? volumes[volumes.length - 1] : 0;
+  const sortedVolumes = [...volumes].sort((a, b) => a - b);
+  const medianVolume = sortedVolumes.length
+    ? sortedVolumes[Math.floor(sortedVolumes.length / 2)]
+    : 0;
+
+  const volumeChartHeight = 160;
+  const volumePadding = { top: 10, right: 30, bottom: 25, left: 55 };
+  const volumePlotHeight = volumeChartHeight - volumePadding.top - volumePadding.bottom;
+  const scaleVolumeY = (volume: number) => {
+    if (!maxVolume) return volumeChartHeight - volumePadding.bottom;
+    const normalized = volume / maxVolume;
+    return volumePadding.top + (1 - normalized) * volumePlotHeight;
+  };
+
   return (
     <div className="space-y-4 mb-6">
       {/* Price History Chart */}
       <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base sm:text-lg font-semibold">Price History & Technical Analysis (252-Day)</h3>
-          <div className="flex gap-3 text-xs">
-            <div className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 bg-lime-500/50 rounded"></span>
-              <span className="text-gray-400">Bullish</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 bg-red-500/50 rounded"></span>
-              <span className="text-gray-400">Bearish</span>
-            </div>
-          </div>
+          <h3 className="text-base sm:text-lg font-semibold">Price History ({technicalData.lookback_days}-Day)</h3>
         </div>
 
         <div className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto">
@@ -190,119 +351,187 @@ export function TechnicalIndicators({
         </div>
 
         {/* Price Info Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
           <div className="bg-gray-900 rounded p-2 border border-gray-700">
             <p className="text-gray-400 mb-1">Current</p>
-            <p className="text-sm font-bold text-blue-300">${current_price.toFixed(2)}</p>
+            <p className="text-sm font-bold text-blue-300">${technicalData.current_price.toFixed(2)}</p>
           </div>
           <div className="bg-gray-900 rounded p-2 border border-gray-700">
             <p className="text-gray-400 mb-1">52W High</p>
-            <p className="text-sm font-bold text-green-400">${high_52w.toFixed(2)}</p>
+            <p className="text-sm font-bold text-green-400">${technicalData.high_52w.toFixed(2)}</p>
           </div>
           <div className="bg-gray-900 rounded p-2 border border-gray-700">
             <p className="text-gray-400 mb-1">52W Low</p>
-            <p className="text-sm font-bold text-red-400">${low_52w.toFixed(2)}</p>
+            <p className="text-sm font-bold text-red-400">${technicalData.low_52w.toFixed(2)}</p>
           </div>
           <div className="bg-gray-900 rounded p-2 border border-gray-700">
             <p className="text-gray-400 mb-1">SMA50</p>
-            <p className="text-sm font-bold text-amber-400">${sma_50.toFixed(2)}</p>
+            <p className="text-sm font-bold text-amber-400">${technicalData.sma_50.toFixed(2)}</p>
+          </div>
+          <div className="bg-gray-900 rounded p-2 border border-gray-700">
+            <p className="text-gray-400 mb-1">SMA200</p>
+            <p className="text-sm font-bold text-purple-400">
+              {technicalData.sma_200 !== null ? `$${technicalData.sma_200.toFixed(2)}` : "n/a"}
+            </p>
           </div>
           <div className="bg-gray-900 rounded p-2 border border-gray-700">
             <p className="text-gray-400 mb-1">Trend</p>
-            <p className={`text-sm font-bold capitalize ${trend === 'uptrend' ? 'text-green-400' : trend === 'downtrend' ? 'text-red-400' : 'text-gray-400'}`}>
-              {trend}
+            <p
+              className={`text-sm font-bold capitalize ${
+                technicalData.trend === "uptrend"
+                  ? "text-green-400"
+                  : technicalData.trend === "downtrend"
+                    ? "text-red-400"
+                    : "text-gray-400"
+              }`}
+            >
+              {technicalData.trend}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Indicators Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* RSI */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <p className="text-xs text-gray-400 mb-3 font-semibold">RSI (14)</p>
-          <div className="mb-4">
-            <p className="text-3xl font-bold text-blue-400 mb-2">{rsi.current.toFixed(1)}</p>
-            <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
-              <div
-                className={`h-2.5 rounded-full transition-all ${
-                  rsi.current > 70 ? "bg-red-500" : rsi.current < 30 ? "bg-green-500" : "bg-yellow-500"
-                }`}
-                style={{ width: `${rsi.current}%` }}
-              />
-            </div>
-            <p className={`text-xs font-semibold capitalize ${
-              rsi.status === 'overbought' ? 'text-red-400' : rsi.status === 'oversold' ? 'text-green-400' : 'text-yellow-400'
-            }`}>
-              {rsi.status}
-            </p>
+      {/* RSI */}
+      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <p className="text-xs text-gray-400 mb-3 font-semibold">RSI (14)</p>
+        <div className="mb-4">
+          <p className="text-3xl font-bold text-blue-400 mb-2">{rsi.current.toFixed(1)}</p>
+          <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+            <div
+              className={`h-2.5 rounded-full transition-all ${
+                rsi.current > 70 ? "bg-red-500" : rsi.current < 30 ? "bg-green-500" : "bg-yellow-500"
+              }`}
+              style={{ width: `${Math.min(Math.max(rsi.current, 0), 100)}%` }}
+            />
           </div>
-          <div className="space-y-1 text-xs text-gray-400">
-            <p>70 = Overbought</p>
-            <p>30 = Oversold</p>
-          </div>
+          <p
+            className={`text-xs font-semibold capitalize ${
+              rsi.status === "overbought"
+                ? "text-red-400"
+                : rsi.status === "oversold"
+                  ? "text-green-400"
+                  : "text-yellow-400"
+            }`}
+          >
+            {rsi.status}
+          </p>
         </div>
-
-        {/* MACD */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <p className="text-xs text-gray-400 mb-3 font-semibold">MACD</p>
-          <div className="mb-4">
-            <div className="space-y-1.5 mb-3">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">MACD:</span>
-                <span className="text-blue-300 font-mono">{macd.current.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Signal:</span>
-                <span className="text-green-300 font-mono">{macd.signal.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Histogram:</span>
-                <span className={`font-mono ${macd.histogram > 0 ? "text-green-300" : "text-red-300"}`}>
-                  {macd.histogram.toFixed(4)}
-                </span>
-              </div>
-            </div>
-            <p className={`text-xs font-semibold capitalize ${macd.status === 'bullish' ? 'text-green-400' : 'text-red-400'}`}>
-              {macd.status}
-            </p>
-          </div>
-        </div>
-
-        {/* Volatility & Drawdown */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <p className="text-xs text-gray-400 mb-3 font-semibold">Risk Metrics</p>
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-gray-400">Volatility</span>
-                <span className="text-xs font-bold text-yellow-400">{volatility.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-yellow-500 h-2 rounded-full"
-                  style={{ width: `${Math.min(volatility, 100)}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-gray-400">Max Drawdown</span>
-                <span className="text-xs font-bold text-red-400">{maxDrawdown.toFixed(1)}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-red-500 h-2 rounded-full"
-                  style={{ width: `${Math.min(maxDrawdown, 100)}%` }}
-                />
-              </div>
-            </div>
-            <div className="pt-2 text-xs text-gray-400 border-t border-gray-700">
-              <p>Data: {technicalData.lookback_days} days</p>
-            </div>
-          </div>
+        <div className="space-y-1 text-xs text-gray-400">
+          <p>70 = Overbought</p>
+          <p>30 = Oversold</p>
         </div>
       </div>
+
+      {/* Volume */}
+      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-gray-400 font-semibold">Volume</p>
+          <div className="text-[10px] text-gray-500">
+            Latest {volumes.length ? formatCompact(latestVolume) : "n/a"} · Median {volumes.length ? formatCompact(medianVolume) : "n/a"}
+          </div>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${chartWidth} ${volumeChartHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ minWidth: "800px" }}
+          >
+            {/* Y-axis labels */}
+            {[0, 0.5, 1].map((t) => {
+              const y = volumePadding.top + t * volumePlotHeight;
+              const v = (1 - t) * maxVolume;
+              return (
+                <g key={`vol-grid-${t}`}>
+                  <line
+                    x1={volumePadding.left}
+                    y1={y}
+                    x2={chartWidth - volumePadding.right}
+                    y2={y}
+                    stroke="#374151"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={volumePadding.left - 10}
+                    y={y + 4}
+                    fill="#9ca3af"
+                    fontSize="10"
+                    textAnchor="end"
+                  >
+                    {formatCompact(v)}
+                  </text>
+                </g>
+              );
+            })}
+
+            {candles.map((candle, idx) => {
+              const x = scaleX(idx);
+              const y = scaleVolumeY(candle.volume);
+              const barWidth = plotWidth / candles.length;
+              const height = volumeChartHeight - volumePadding.bottom - y;
+              const isGreen = candle.close >= candle.open;
+              return (
+                <rect
+                  key={`vol-${idx}`}
+                  x={x - barWidth / 2}
+                  y={y}
+                  width={Math.max(barWidth * 0.8, 1)}
+                  height={Math.max(height, 0)}
+                  fill={isGreen ? "#22c55e" : "#ef4444"}
+                  opacity="0.65"
+                />
+              );
+            })}
+
+            <line
+              x1={volumePadding.left}
+              y1={volumePadding.top}
+              x2={volumePadding.left}
+              y2={volumeChartHeight - volumePadding.bottom}
+              stroke="#4b5563"
+              strokeWidth="2"
+            />
+            <line
+              x1={volumePadding.left}
+              y1={volumeChartHeight - volumePadding.bottom}
+              x2={chartWidth - volumePadding.right}
+              y2={volumeChartHeight - volumePadding.bottom}
+              stroke="#4b5563"
+              strokeWidth="2"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* MACD */}
+      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <p className="text-xs text-gray-400 mb-3 font-semibold">MACD</p>
+        <div className="mb-2">
+          <div className="space-y-1.5 mb-3">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">MACD:</span>
+              <span className="text-blue-300 font-mono">{macd.current.toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Signal:</span>
+              <span className="text-green-300 font-mono">{macd.signal.toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Histogram:</span>
+              <span className={`font-mono ${macd.histogram > 0 ? "text-green-300" : "text-red-300"}`}>
+                {macd.histogram.toFixed(4)}
+              </span>
+            </div>
+          </div>
+          <p className={`text-xs font-semibold capitalize ${macd.status === "bullish" ? "text-green-400" : "text-red-400"}`}>
+            {macd.status}
+          </p>
+        </div>
+      </div>
+
+      {optionsFlowCard}
     </div>
   );
 }
