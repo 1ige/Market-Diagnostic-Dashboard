@@ -310,7 +310,7 @@ export default function StockProjections() {
             <h3 className="text-base sm:text-lg font-semibold mb-4">Score Trends</h3>
             <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-2">
               <div className="w-full" style={{ aspectRatio: '4 / 3', maxHeight: '240px' }}>
-                <svg width="100%" height="100%" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet">
+                <svg className="w-full h-auto block" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet">
                 {/* Grid lines */}
                 {[0, 25, 50, 75, 100].map((y) => (
                   <g key={y}>
