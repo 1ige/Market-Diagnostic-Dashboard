@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 /**
  * Technical Indicators Component
  * 
@@ -76,6 +78,12 @@ export function TechnicalIndicators({
   const optionsAvailable = !!optionsFlow && (
     (optionsFlow.call_walls?.length ?? 0) > 0 || (optionsFlow.put_walls?.length ?? 0) > 0
   );
+  const scrollRefs = useRef<HTMLDivElement[]>([]);
+  useEffect(() => {
+    scrollRefs.current.forEach((el) => {
+      if (el) el.scrollLeft = el.scrollWidth;
+    });
+  }, [technicalData?.candles?.length, technicalData?.rsi?.series?.length, technicalData?.macd?.macd_series?.length]);
   const callWall = optionsFlow?.call_walls?.[0];
   const putWall = optionsFlow?.put_walls?.[0];
   const currentPrice = technicalData?.current_price;
@@ -261,7 +269,12 @@ export function TechnicalIndicators({
           <h3 className="text-base sm:text-lg font-semibold">Price History ({technicalData.lookback_days}-Day)</h3>
         </div>
 
-        <div className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto">
+        <div
+          className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto"
+          ref={(el) => {
+            if (el) scrollRefs.current[0] = el;
+          }}
+        >
           <div className="w-full" style={{ aspectRatio: '5 / 3', minHeight: '220px', maxHeight: '320px' }}>
             <svg className="w-full h-full min-w-[720px]" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
             {/* Grid lines */}
@@ -429,7 +442,12 @@ export function TechnicalIndicators({
 
         {/* RSI Line Chart */}
         {rsi.series && rsi.series.length > 0 && (
-          <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3">
+          <div
+            className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3"
+            ref={(el) => {
+              if (el) scrollRefs.current[1] = el;
+            }}
+          >
             <div className="w-full" style={{ aspectRatio: '4 / 1.5', minHeight: '160px', maxHeight: '220px' }}>
               <svg
                 className="w-full h-full min-w-[720px]"
@@ -541,7 +559,12 @@ export function TechnicalIndicators({
             Latest {volumes.length ? formatCompact(latestVolume) : "n/a"} · Median {volumes.length ? formatCompact(medianVolume) : "n/a"}
           </div>
         </div>
-        <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+        <div
+          className="bg-gray-900 rounded-lg p-3 overflow-x-auto"
+          ref={(el) => {
+            if (el) scrollRefs.current[2] = el;
+          }}
+        >
           <svg
             width="100%"
             height="100%"
@@ -642,7 +665,12 @@ export function TechnicalIndicators({
         </div>
 
         {/* MACD Chart with Histogram */}
-        <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+        <div
+          className="bg-gray-900 rounded-lg p-3 overflow-x-auto"
+          ref={(el) => {
+            if (el) scrollRefs.current[3] = el;
+          }}
+        >
           <div className="w-full" style={{ aspectRatio: '5 / 2', minHeight: '200px', maxHeight: '280px' }}>
             <svg
               className="w-full h-full min-w-[720px]"
