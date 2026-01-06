@@ -139,6 +139,95 @@ def calculate_rsi(df: pd.DataFrame, period: int = 14) -> tuple:
     return rsi.iloc[-1], rsi
 
 
+def get_options_flow(ticker: str) -> dict:
+    """Fetch options data and calculate key metrics"""
+    try:
+        stock = yf.Ticker(ticker)
+        
+        # Get available expiration dates
+        expirations = stock.options
+        if not expirations or len(expirations) == 0:
+            return None
+        
+        # Use the nearest expiration (first in the list)
+        expiry = expirations[0]
+        
+        # Fetch options chain
+        opt_chain = stock.option_chain(expiry)
+        calls = opt_chain.calls
+        puts = opt_chain.puts
+        
+        if calls.empty and puts.empty:
+            return None
+        
+        # Get current stock price for reference
+        current_price = stock.info.get('currentPrice') or stock.info.get('regularMarketPrice')
+        if not current_price:
+            return None
+        
+        # Find top call and put walls by open interest
+        # Filter for strikes within reasonable range (±20% of current price)
+        price_range = current_price * 0.2
+        
+        calls_filtered = calls[
+            (calls['strike'] >= current_price - price_range) & 
+            (calls['strike'] <= current_price + price_range)
+        ].copy()
+        
+        puts_filtered = puts[
+            (puts['strike'] >= current_price - price_range) & 
+            (puts['strike'] <= current_price + price_range)
+        ].copy()
+        
+        # Sort by open interest and get top 5 for each
+        top_calls = calls_filtered.nlargest(5, 'openInterest')[['strike', 'openInterest', 'volume']].to_dict('records')
+        top_puts = puts_filtered.nlargest(5, 'openInterest')[['strike', 'openInterest', 'volume']].to_dict('records')
+        
+        # Calculate totals
+        call_oi_total = int(calls['openInterest'].sum())
+        put_oi_total = int(puts['openInterest'].sum())
+        call_volume_total = int(calls['volume'].fillna(0).sum())
+        put_volume_total = int(puts['volume'].fillna(0).sum())
+        
+        # Calculate put/call ratio
+        pc_ratio = put_oi_total / call_oi_total if call_oi_total > 0 else None
+        
+        # Format walls
+        call_walls = [
+            {
+                "strike": float(wall['strike']),
+                "open_interest": int(wall['openInterest']),
+                "volume": int(wall['volume']) if pd.notna(wall['volume']) else 0
+            }
+            for wall in top_calls
+        ]
+        
+        put_walls = [
+            {
+                "strike": float(wall['strike']),
+                "open_interest": int(wall['openInterest']),
+                "volume": int(wall['volume']) if pd.notna(wall['volume']) else 0
+            }
+            for wall in top_puts
+        ]
+        
+        return {
+            "expiry": expiry,
+            "as_of": datetime.now().isoformat(),
+            "call_walls": call_walls,
+            "put_walls": put_walls,
+            "call_open_interest_total": call_oi_total,
+            "put_open_interest_total": put_oi_total,
+            "call_volume_total": call_volume_total,
+            "put_volume_total": put_volume_total,
+            "put_call_oi_ratio": round(pc_ratio, 2) if pc_ratio else None
+        }
+        
+    except Exception as e:
+        print(f"Warning: Could not fetch options data for {ticker}: {str(e)}")
+        return None
+
+
 def calculate_macd(df: pd.DataFrame, lookback_days: int = 252) -> dict:
     """Calculate MACD, signal line, and histogram for full lookback period"""
     ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
@@ -416,6 +505,9 @@ def get_stock_projections(
     # Calculate technical indicators for 252-day lookback
     technical_data = calculate_technical_indicators(df, lookback_days=252)
     
+    # Fetch options flow data
+    options_flow = get_options_flow(ticker)
+    
     return {
         "ticker": ticker,
         "name": stock_name,
@@ -427,4 +519,5 @@ def get_stock_projections(
             "score_3m_ago": historical_score  # What the score was 90 days ago
         },
         "technical": technical_data,
+        "options_flow": options_flow,
     }
