@@ -262,7 +262,8 @@ export function TechnicalIndicators({
         </div>
 
         <div className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto">
-          <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet" style={{ minWidth: '800px' }}>
+          <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '220px', maxHeight: '320px' }}>
+            <svg className="w-full h-full min-w-[720px]" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
               const y = padding.top + percent * plotHeight;
@@ -351,7 +352,8 @@ export function TechnicalIndicators({
             {/* Axes */}
             <line x1={padding.left} y1={padding.top} x2={padding.left} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
             <line x1={padding.left} y1={chartHeight - padding.bottom} x2={chartWidth - padding.right} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
-          </svg>
+            </svg>
+          </div>
         </div>
 
         {/* Price Info Row */}
@@ -428,13 +430,12 @@ export function TechnicalIndicators({
         {/* RSI Line Chart */}
         {rsi.series && rsi.series.length > 0 && (
           <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox={`0 0 ${chartWidth} 150`}
-              preserveAspectRatio="xMidYMid meet"
-              style={{ minWidth: "800px" }}
-            >
+            <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '160px', maxHeight: '220px' }}>
+              <svg
+                className="w-full h-full min-w-[720px]"
+                viewBox={`0 0 ${chartWidth} 150`}
+                preserveAspectRatio="xMidYMid meet"
+              >
               {(() => {
                 const rsiPadding = { top: 15, right: 50, bottom: 25, left: 50 };
                 const rsiPlotHeight = 150 - rsiPadding.top - rsiPadding.bottom;
@@ -526,7 +527,8 @@ export function TechnicalIndicators({
                   </>
                 );
               })()}
-            </svg>
+                </svg>
+              </div>
           </div>
         )}
       </div>
@@ -641,14 +643,13 @@ export function TechnicalIndicators({
 
         {/* MACD Chart with Histogram */}
         <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
-          <svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${chartWidth} 200`}
-            preserveAspectRatio="xMidYMid meet"
-            style={{ minWidth: "800px" }}
-          >
-            {(() => {
+          <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '200px', maxHeight: '280px' }}>
+            <svg
+              className="w-full h-full min-w-[720px]"
+              viewBox={`0 0 ${chartWidth} 200`}
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {(() => {
               const macdPadding = { top: 20, right: 50, bottom: 30, left: 50 };
               const macdPlotHeight = 200 - macdPadding.top - macdPadding.bottom;
               const macdPlotWidth = chartWidth - macdPadding.left - macdPadding.right;
@@ -769,35 +770,36 @@ export function TechnicalIndicators({
                   />
 
                   {/* Legend */}
-                  <text x={chartWidth - macdPadding.right - 120} y={macdPadding.top} fill="#3b82f6" fontSize="11">
-                    MACD
-                  </text>
-                  <text x={chartWidth - macdPadding.right - 60} y={macdPadding.top} fill="#f97316" fontSize="11">
-                    Signal
-                  </text>
+                    <text x={chartWidth - macdPadding.right - 120} y={macdPadding.top} fill="#3b82f6" fontSize="11">
+                      MACD
+                    </text>
+                    <text x={chartWidth - macdPadding.right - 60} y={macdPadding.top} fill="#f97316" fontSize="11">
+                      Signal
+                    </text>
 
-                  {/* Axes */}
-                  <line
-                    x1={macdPadding.left}
-                    y1={macdPadding.top}
-                    x2={macdPadding.left}
-                    y2={200 - macdPadding.bottom}
-                    stroke="#4b5563"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1={macdPadding.left}
-                    y1={200 - macdPadding.bottom}
-                    x2={chartWidth - macdPadding.right}
-                    y2={200 - macdPadding.bottom}
-                    stroke="#4b5563"
-                    strokeWidth="2"
-                  />
-                </>
-              );
-            })()}
-          </svg>
-        </div>
+                    {/* Axes */}
+                    <line
+                      x1={macdPadding.left}
+                      y1={macdPadding.top}
+                      x2={macdPadding.left}
+                      y2={200 - macdPadding.bottom}
+                      stroke="#4b5563"
+                      strokeWidth="2"
+                    />
+                    <line
+                      x1={macdPadding.left}
+                      y1={200 - macdPadding.bottom}
+                      x2={chartWidth - macdPadding.right}
+                      y2={200 - macdPadding.bottom}
+                      stroke="#4b5563"
+                      strokeWidth="2"
+                    />
+                  </>
+                );
+              })()}
+              </svg>
+            </div>
+          </div>
       </div>
 
       {optionsFlowCard}
