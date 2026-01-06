@@ -493,17 +493,17 @@ export default function StockProjections() {
           </div>
 
           {/* Score Breakdown Tables - Conditional based on selected horizon */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6 mb-6">
             {selectedHorizon === "T" && projections["3m"] && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Current Position</h3>
+              <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold">Current Position</h3>
                   
                   {/* Horizon Selector */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setSelectedHorizon("T")}
-                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
+                      className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition ${
                         isSelectedHorizon("T")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -513,7 +513,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("3m")}
-                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
+                      className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition ${
                         isSelectedHorizon("3m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -523,7 +523,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("6m")}
-                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
+                      className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition ${
                         isSelectedHorizon("6m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -533,7 +533,7 @@ export default function StockProjections() {
                     </button>
                     <button
                       onClick={() => setSelectedHorizon("12m")}
-                      className={`px-4 py-2 rounded text-xs sm:text-sm font-medium transition min-h-10 ${
+                      className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition ${
                         isSelectedHorizon("12m")
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -554,9 +554,9 @@ export default function StockProjections() {
               if (!projection) return null;
 
               return (
-                <div key={selectedHorizon} className="bg-gray-800 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">{selectedHorizon.toUpperCase()} Outlook</h3>
+                <div key={selectedHorizon} className="bg-gray-800 rounded-lg p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold">{selectedHorizon.toUpperCase()} Outlook</h3>
                     
                     {/* Horizon Selector */}
                     <div className="flex gap-2">
@@ -665,7 +665,7 @@ export default function StockProjections() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                  <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div>
                       <span className="text-gray-400">Volatility:</span>
                       <span className="ml-2 font-semibold">{projection.volatility.toFixed(1)}%</span>
@@ -760,15 +760,15 @@ export default function StockProjections() {
               </div>
             </button>
             {methodologyOpen && (
-              <div className="px-6 pb-6 text-sm text-gray-300 space-y-4">
-                <div className="bg-blue-900/20 rounded p-4 border border-blue-700/30">
-                  <h4 className="font-semibold mb-2 text-blue-200">📊 What This Analysis Achieves</h4>
-                  <p className="text-xs mb-3">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 text-sm text-gray-300 space-y-3 sm:space-y-4">
+                <div className="bg-blue-900/20 rounded p-3 sm:p-4 border border-blue-700/30">
+                  <h4 className="text-sm sm:text-base font-semibold mb-2 text-blue-200">📊 What This Analysis Achieves</h4>
+                  <p className="text-xs sm:text-sm mb-3">
                     This tool transforms raw market data into actionable intelligence by combining technical analysis, 
                     relative strength measurement, and volatility assessment into a single transparent framework. 
                     You get clear buy/sell zones, confidence levels, and full visibility into the calculation logic.
                   </p>
-                  <ul className="space-y-1.5 text-xs">
+                  <ul className="space-y-1.5 text-xs sm:text-sm">
                     <li>✓ <strong>Eliminates guesswork:</strong> Every score is calculated from observable price data and explained component-by-component</li>
                     <li>✓ <strong>Quantifies uncertainty:</strong> Conviction scores tell you exactly how reliable each projection is</li>
                     <li>✓ <strong>Provides clear entry/exit points:</strong> Take Profit and Stop Loss levels based on actual volatility, not arbitrary percentages</li>
@@ -776,10 +776,10 @@ export default function StockProjections() {
                   </ul>
                 </div>
 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">🔧 How It Works: Scoring Components</h4>
-                  <p className="text-xs mb-3">The 0-100 score combines four weighted factors evaluated over 3M, 6M, and 12M lookback periods:</p>
-                  <ul className="space-y-2 text-xs">
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">🔧 How It Works: Scoring Components</h4>
+                  <p className="text-xs sm:text-sm mb-3">The 0-100 score combines four weighted factors evaluated over 3M, 6M, and 12M lookback periods:</p>
+                  <ul className="space-y-2 text-xs sm:text-sm">
                     <li><strong>Trend (45%):</strong> Measures price momentum and position relative to 50-day and 200-day moving averages</li>
                     <li><strong>Relative Strength (30%):</strong> Compares stock performance against SPY benchmark to identify market leaders</li>
                     <li><strong>Risk (20%):</strong> Evaluates volatility and maximum drawdown (lower risk = higher score)</li>
@@ -787,32 +787,32 @@ export default function StockProjections() {
                   </ul>
                 </div>
 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">🎯 Conviction: How Confident Is This Projection?</h4>
-                  <p className="text-xs mb-3">
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">🎯 Conviction: How Confident Is This Projection?</h4>
+                  <p className="text-xs sm:text-sm mb-3">
                     Conviction (0-100%) measures reliability by analyzing signal consistency and market conditions:
                   </p>
-                  <ul className="space-y-1 text-xs">
+                  <ul className="space-y-1 text-xs sm:text-sm">
                     <li>• <strong>Component Alignment (40%):</strong> Do trend, strength, and risk all agree? High alignment = high conviction</li>
                     <li>• <strong>Volatility Factor (35%):</strong> Stable stocks get higher conviction; erratic moves reduce confidence</li>
                     <li>• <strong>Signal Strength (25%):</strong> Strong signals (scores far from 50) increase conviction</li>
                   </ul>
-                  <p className="text-xs mt-2 text-gray-400">Example: 85% conviction means tight signal alignment, low volatility, and clear directional bias</p>
+                  <p className="text-xs sm:text-sm mt-2 text-gray-400">Example: 85% conviction means tight signal alignment, low volatility, and clear directional bias</p>
                 </div>
 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">💰 Price Targets: Where to Enter and Exit</h4>
-                  <ul className="space-y-2 text-xs">
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">💰 Price Targets: Where to Enter and Exit</h4>
+                  <ul className="space-y-2 text-xs sm:text-sm">
                     <li><strong>Take Profit:</strong> Conservative upside target using 60% of projected return, adjusted for volatility and time horizon</li>
                     <li><strong>Stop Loss:</strong> Downside protection level calculated from Average True Range (ATR) and risk metrics</li>
                     <li><strong>Risk/Reward Ratio:</strong> Potential gain divided by potential loss. Ratios above 2:1 are favorable</li>
                   </ul>
-                  <p className="text-xs mt-2 text-gray-400">Note: Targets are tightened from raw projections to provide realistic, achievable levels</p>
+                  <p className="text-xs sm:text-sm mt-2 text-gray-400">Note: Targets are tightened from raw projections to provide realistic, achievable levels</p>
                 </div>
 
-                <div className="bg-gray-900 rounded p-4">
-                  <h4 className="font-semibold mb-2">📈 Uncertainty Cones: Visualizing Confidence</h4>
-                  <p className="text-xs">
+                <div className="bg-gray-900 rounded p-3 sm:p-4">
+                  <h4 className="text-sm sm:text-base font-semibold mb-2">📈 Uncertainty Cones: Visualizing Confidence</h4>
+                  <p className="text-xs sm:text-sm">
                     The expanding cone in the Score Trends chart shows confidence intervals. Narrow cones mean high predictability; 
                     wide cones reflect greater uncertainty. Width increases with time horizon because longer-term predictions 
                     are inherently less reliable.
