@@ -83,6 +83,8 @@ export default function StockProjections() {
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
   const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [dataAsOf, setDataAsOf] = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +110,8 @@ export default function StockProjections() {
       setTechnicalData(projData.technical || null);
       setOptionsFlow(projData.options_flow || null);
       setDataWarnings(projData.data_warnings || []);
+      setLastUpdated(new Date().toISOString());
+      setDataAsOf(projData.as_of_date || projData.created_at || null);
 
       // Fetch news filtered by ticker (server-side to avoid missing relevant articles)
       const newsResponse = await fetch(`${apiUrl}/news?hours=720&limit=50&symbol=${ticker.toUpperCase()}`); // Last 30 days
@@ -123,6 +127,8 @@ export default function StockProjections() {
       setOptionsFlow(null);
       setNews([]);
       setDataWarnings([]);
+      setLastUpdated(null);
+      setDataAsOf(null);
     } finally {
       setLoading(false);
     }
@@ -147,6 +153,23 @@ export default function StockProjections() {
   const chartData = getChartData();
 
   const isSelectedHorizon = (h: "T" | "3m" | "6m" | "12m") => selectedHorizon === h;
+
+  // Format relative time for timestamps
+  const getRelativeTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return "1d ago";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
@@ -191,9 +214,26 @@ export default function StockProjections() {
           {projections["T"] && (
             <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-4 shadow-lg">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold">{chartData.ticker}</h2>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h2 className="text-xl font-bold">{chartData.ticker}</h2>
+                    {lastUpdated && (
+                      <span className="text-[10px] text-gray-500 bg-gray-900 px-2 py-0.5 rounded">
+                        Updated {new Date(lastUpdated).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400">{chartData.name}</p>
+                  {dataAsOf && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Market data as of {new Date(dataAsOf).toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-400">Current Price</p>
@@ -243,6 +283,25 @@ export default function StockProjections() {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Price Analysis & Conviction Grid */}
+          {projections[selectedHorizon] && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <PriceAnalysisChart
+                currentPrice={projections[selectedHorizon].current_price}
+                takeProfit={projections[selectedHorizon].take_profit}
+                stopLoss={projections[selectedHorizon].stop_loss}
+                projectedReturn={projections[selectedHorizon].return_pct}
+                horizon={selectedHorizon.toUpperCase()}
+              />
+              <ConvictionSnapshot
+                conviction={projections[selectedHorizon].conviction}
+                score={projections[selectedHorizon].score_total}
+                volatility={projections[selectedHorizon].volatility}
+                horizon={selectedHorizon.toUpperCase()}
+              />
             </div>
           )}
 
@@ -568,23 +627,6 @@ export default function StockProjections() {
                     </div>
                   </div>
 
-                  {/* Price Analysis & Conviction Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    <PriceAnalysisChart
-                      currentPrice={projection.current_price}
-                      takeProfit={projection.take_profit}
-                      stopLoss={projection.stop_loss}
-                      projectedReturn={projection.return_pct}
-                      horizon={selectedHorizon.toUpperCase()}
-                    />
-                    <ConvictionSnapshot
-                      conviction={projection.conviction}
-                      score={projection.score_total}
-                      volatility={projection.volatility}
-                      horizon={selectedHorizon.toUpperCase()}
-                    />
-                  </div>
-
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                       <span className="text-gray-400 w-24 sm:w-32 truncate">Trend (45%)</span>
@@ -649,7 +691,14 @@ export default function StockProjections() {
           {/* Recent News */}
           {news.length > 0 && (
             <div className="mt-6 bg-gray-800 rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-4">Recent News for {searchTicker}</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base sm:text-lg font-semibold">Recent News for {searchTicker}</h2>
+                {lastUpdated && (
+                  <span className="text-[10px] text-gray-500">
+                    Updated {getRelativeTime(lastUpdated)}
+                  </span>
+                )}
+              </div>
               <div className="space-y-2 sm:space-y-3">
                 {news.map((article) => (
                   <a
@@ -665,10 +714,7 @@ export default function StockProjections() {
                     <div className="flex items-center justify-between text-xs text-gray-400 gap-2">
                       <span className="font-medium truncate">{article.source}</span>
                       <span className="whitespace-nowrap">
-                        {new Date(article.published_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        {getRelativeTime(article.published_at)}
                       </span>
                     </div>
                   </a>

@@ -94,14 +94,14 @@ def calculate_take_profit(current_price: float, return_pct: float, volatility: f
     - Volatility adjustment
     - Time horizon scaling
     """
-    # Base target from return
-    base_target = current_price * (1 + return_pct)
+    # Base target from return (more conservative)
+    base_target = current_price * (1 + return_pct * 0.6)  # Use 60% of projected return
     
     # Volatility-adjusted upside (reduce profits in high vol)
-    vol_adjustment = 1 - (volatility / 100 * 0.1)  # Reduce by up to 10% for very high vol
+    vol_adjustment = 1 - (volatility / 100 * 0.15)  # Reduce by up to 15% for very high vol
     
-    # Horizon scaling (longer horizons can justify higher targets)
-    horizon_multiplier = 1 + (horizon_days / 252 * 0.15)
+    # Horizon scaling (minimal scaling for tighter targets)
+    horizon_multiplier = 1 + (horizon_days / 252 * 0.05)
     
     target = base_target * vol_adjustment * horizon_multiplier
     return target
@@ -114,14 +114,14 @@ def calculate_stop_loss(current_price: float, volatility: float, risk_score: flo
     - Risk score (higher risk = tighter stops)
     - Time horizon
     """
-    # Base stop: 2 ATR equivalent
-    atr_equivalent = current_price * (volatility / 100) * 0.5
+    # Base stop: 1.5 ATR equivalent (tighter than before)
+    atr_equivalent = current_price * (volatility / 100) * 0.35
     
-    # Risk adjustment (low risk score = higher stop loss, allowing more room)
-    risk_adjustment = (100 - risk_score) / 100 * 1.5  # Up to 1.5x ATR for low-risk assets
+    # Risk adjustment (more conservative)
+    risk_adjustment = (100 - risk_score) / 100 * 0.8  # Up to 0.8x ATR for low-risk assets
     
-    # Horizon adjustment (shorter horizons = tighter stops)
-    horizon_factor = 1 + (min(horizon_days, 252) / 252 * 0.3)
+    # Horizon adjustment (tighter multiplier)
+    horizon_factor = 1 + (min(horizon_days, 252) / 252 * 0.15)
     
     stop_loss = current_price - (atr_equivalent * (1 + risk_adjustment) * horizon_factor)
     return stop_loss
@@ -139,8 +139,8 @@ def calculate_rsi(df: pd.DataFrame, period: int = 14) -> tuple:
     return rsi.iloc[-1], rsi
 
 
-def calculate_macd(df: pd.DataFrame) -> dict:
-    """Calculate MACD, signal line, and histogram"""
+def calculate_macd(df: pd.DataFrame, lookback_days: int = 252) -> dict:
+    """Calculate MACD, signal line, and histogram for full lookback period"""
     ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
     ema_26 = df['Close'].ewm(span=26, adjust=False).mean()
     
@@ -152,9 +152,9 @@ def calculate_macd(df: pd.DataFrame) -> dict:
         "macd": macd.iloc[-1],
         "signal": signal.iloc[-1],
         "histogram": histogram.iloc[-1],
-        "macd_series": macd.tail(50).tolist(),
-        "signal_series": signal.tail(50).tolist(),
-        "histogram_series": histogram.tail(50).tolist(),
+        "macd_series": macd.tail(lookback_days).tolist(),
+        "signal_series": signal.tail(lookback_days).tolist(),
+        "histogram_series": histogram.tail(lookback_days).tolist(),
     }
 
 
@@ -167,26 +167,24 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
     if len(lookback_df) < 50:
         return {"error": "Insufficient data for technical analysis"}
     
-    # OHLC data for candlestick chart (sample every N bars to show ~50 candles)
-    sample_rate = max(1, len(lookback_df) // 50)
+    # OHLC data for candlestick chart (return all candles, no sampling)
     candles = []
     
-    for idx, (date, row) in enumerate(lookback_df.iterrows()):
-        if idx % sample_rate == 0:
-            candles.append({
-                "date": date.strftime("%Y-%m-%d"),
-                "open": float(row['Open']),
-                "high": float(row['High']),
-                "low": float(row['Low']),
-                "close": float(row['Close']),
-                "volume": int(row.get('Volume', 0)) if 'Volume' in row else 0,
-            })
+    for date, row in lookback_df.iterrows():
+        candles.append({
+            "date": date.strftime("%Y-%m-%d"),
+            "open": float(row['Open']),
+            "high": float(row['High']),
+            "low": float(row['Low']),
+            "close": float(row['Close']),
+            "volume": int(row.get('Volume', 0)) if 'Volume' in row else 0,
+        })
     
     # RSI
     rsi_current, rsi_series = calculate_rsi(lookback_df)
     
     # MACD
-    macd_data = calculate_macd(lookback_df)
+    macd_data = calculate_macd(lookback_df, lookback_days)
     
     # SMA 50 and 200
     sma_50 = lookback_df['Close'].rolling(50).mean().iloc[-1]
@@ -211,12 +209,16 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
         "rsi": {
             "current": float(rsi_current),
             "status": "overbought" if rsi_current > 70 else "oversold" if rsi_current < 30 else "neutral",
+            "series": rsi_series.tail(lookback_days).tolist(),
         },
         "macd": {
             "current": float(macd_data["macd"]),
             "signal": float(macd_data["signal"]),
             "histogram": float(macd_data["histogram"]),
             "status": "bullish" if macd_data["histogram"] > 0 else "bearish",
+            "macd_series": macd_data["macd_series"],
+            "signal_series": macd_data["signal_series"],
+            "histogram_series": macd_data["histogram_series"],
         },
         "candles": candles,
     }
