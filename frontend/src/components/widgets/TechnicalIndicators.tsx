@@ -262,8 +262,8 @@ export function TechnicalIndicators({
         </div>
 
         <div className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto">
-          <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '220px', maxHeight: '320px' }}>
-            <svg className="w-full h-auto block" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
+          <div className="w-full" style={{ aspectRatio: '5 / 3', minHeight: '220px', maxHeight: '320px' }}>
+            <svg className="w-full h-full min-w-[720px]" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
               const y = padding.top + percent * plotHeight;
@@ -430,9 +430,9 @@ export function TechnicalIndicators({
         {/* RSI Line Chart */}
         {rsi.series && rsi.series.length > 0 && (
           <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3">
-            <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '160px', maxHeight: '220px' }}>
+            <div className="w-full" style={{ aspectRatio: '4 / 1.5', minHeight: '160px', maxHeight: '220px' }}>
               <svg
-                className="w-full h-auto block"
+                className="w-full h-full min-w-[720px]"
                 viewBox={`0 0 ${chartWidth} 150`}
                 preserveAspectRatio="xMidYMid meet"
               >
@@ -643,9 +643,9 @@ export function TechnicalIndicators({
 
         {/* MACD Chart with Histogram */}
         <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
-          <div className="w-full" style={{ aspectRatio: '4 / 3', minHeight: '200px', maxHeight: '280px' }}>
+          <div className="w-full" style={{ aspectRatio: '5 / 2', minHeight: '200px', maxHeight: '280px' }}>
             <svg
-              className="w-full h-auto block"
+              className="w-full h-full min-w-[720px]"
               viewBox={`0 0 ${chartWidth} 200`}
               preserveAspectRatio="xMidYMid meet"
             >
