@@ -3,7 +3,17 @@
  * 
  * Displays stock price with take profit and stop loss targets
  * Visual representation of upside/downside potential and risk levels
+ * Includes analyst consensus comparison
  */
+
+interface AnalystConsensus {
+  target_price: number;
+  current_price: number;
+  number_of_analysts: number;
+  rating: string;
+  upside_downside: number;
+  as_of_date: string;
+}
 
 interface PriceAnalysisChartProps {
   currentPrice: number;
@@ -11,6 +21,7 @@ interface PriceAnalysisChartProps {
   stopLoss: number;
   projectedReturn: number;
   horizon: string;
+  analystConsensus?: AnalystConsensus | null;
 }
 
 export function PriceAnalysisChart({
@@ -19,6 +30,7 @@ export function PriceAnalysisChart({
   stopLoss,
   projectedReturn,
   horizon,
+  analystConsensus,
 }: PriceAnalysisChartProps) {
   // Calculate percentages for visualization
   const tpUpside = ((takeProfit - currentPrice) / currentPrice) * 100;
@@ -133,6 +145,56 @@ export function PriceAnalysisChart({
           </p>
         </div>
       </div>
+
+      {/* Analyst Consensus Comparison */}
+      {analystConsensus && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-gray-400">Analyst Consensus</p>
+            <p className="text-[10px] text-gray-500">{analystConsensus.number_of_analysts} analysts</p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            {/* Analyst Target */}
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded p-2">
+              <p className="text-purple-300 text-xs mb-1">Target Price</p>
+              <p className="text-purple-200 font-semibold text-sm">${analystConsensus.target_price.toFixed(2)}</p>
+              <p className={`text-xs font-semibold ${
+                analystConsensus.upside_downside > 0 
+                  ? "text-green-400" 
+                  : analystConsensus.upside_downside < 0 
+                    ? "text-red-400" 
+                    : "text-gray-400"
+              }`}>
+                {analystConsensus.upside_downside > 0 ? "+" : ""}{analystConsensus.upside_downside.toFixed(1)}%
+              </p>
+            </div>
+
+            {/* Analyst Rating */}
+            <div className="bg-indigo-500/10 border border-indigo-500/30 rounded p-2">
+              <p className="text-indigo-300 text-xs mb-1">Consensus Rating</p>
+              <p className="text-indigo-200 font-semibold text-sm">{analystConsensus.rating}</p>
+              <p className="text-xs text-indigo-400">
+                {analystConsensus.upside_downside > 10 && "↑ Bullish"}
+                {analystConsensus.upside_downside > 0 && analystConsensus.upside_downside <= 10 && "→ Neutral"}
+                {analystConsensus.upside_downside <= 0 && "↓ Bearish"}
+              </p>
+            </div>
+          </div>
+
+          {/* Alignment Indicator */}
+          <div className="mt-2 p-2 bg-gray-900/50 rounded text-xs text-gray-400">
+            <p className="mb-1 font-semibold">Your Score vs Analysts:</p>
+            <p>
+              {Math.abs(projectedReturn - analystConsensus.upside_downside) <= 5 
+                ? "✓ Strong alignment" 
+                : Math.abs(projectedReturn - analystConsensus.upside_downside) <= 15 
+                  ? "~ Moderate alignment" 
+                  : "✗ Diverging outlooks"}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

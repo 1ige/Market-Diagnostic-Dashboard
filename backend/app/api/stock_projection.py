@@ -139,6 +139,56 @@ def calculate_rsi(df: pd.DataFrame, period: int = 14) -> tuple:
     return rsi.iloc[-1], rsi
 
 
+def get_analyst_consensus(ticker: str) -> dict | None:
+    """
+    Fetch analyst consensus data: target price and rating recommendations
+    Returns: { "target_price": float, "number_of_analysts": int, "rating": str, "upside_downside": float }
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # Extract analyst data from yfinance
+        target_price = info.get('targetMeanPrice') or info.get('targetPrice')
+        num_analysts = info.get('numberOfAnalystOpinions')
+        
+        # Get consensus rating
+        # Common rating field names in yfinance
+        recommendation = info.get('recommendationKey')  # 'strong-buy', 'buy', 'hold', 'sell', 'strong-sell'
+        
+        if not target_price or not num_analysts or num_analysts < 1:
+            return None
+        
+        current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+        if not current_price:
+            return None
+        
+        # Calculate upside/downside
+        upside_downside = ((target_price - current_price) / current_price) * 100
+        
+        # Map recommendation key to human-readable rating
+        rating_map = {
+            'strong-buy': 'Strong Buy',
+            'buy': 'Buy',
+            'hold': 'Hold',
+            'sell': 'Sell',
+            'strong-sell': 'Strong Sell'
+        }
+        rating = rating_map.get(recommendation, 'No Consensus')
+        
+        return {
+            "target_price": float(target_price),
+            "current_price": float(current_price),
+            "number_of_analysts": int(num_analysts),
+            "rating": rating,
+            "upside_downside": float(upside_downside),
+            "as_of_date": datetime.now().isoformat()
+        }
+    except Exception as e:
+        print(f"Warning: Could not fetch analyst consensus for {ticker}: {str(e)}")
+        return None
+
+
 def get_options_flow(ticker: str) -> dict:
     """Fetch options data and calculate key metrics"""
     try:
@@ -508,6 +558,9 @@ def get_stock_projections(
     # Fetch options flow data
     options_flow = get_options_flow(ticker)
     
+    # Fetch analyst consensus data
+    analyst_consensus = get_analyst_consensus(ticker)
+    
     return {
         "ticker": ticker,
         "name": stock_name,
@@ -519,5 +572,6 @@ def get_stock_projections(
             "score_3m_ago": historical_score  # What the score was 90 days ago
         },
         "technical": technical_data,
+        "analyst_consensus": analyst_consensus,
         "options_flow": options_flow,
     }

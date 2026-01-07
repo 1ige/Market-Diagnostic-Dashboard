@@ -70,12 +70,22 @@ interface OptionsFlowData {
   put_call_oi_ratio: number | null;
 }
 
+interface AnalystConsensus {
+  target_price: number;
+  current_price: number;
+  number_of_analysts: number;
+  rating: string;
+  upside_downside: number;
+  as_of_date: string;
+}
+
 export default function StockProjections() {
   const [ticker, setTicker] = useState("");
   const [searchTicker, setSearchTicker] = useState("");
   const [projections, setProjections] = useState<Record<string, StockProjection>>({});
   const [technicalData, setTechnicalData] = useState<any>(null);
   const [optionsFlow, setOptionsFlow] = useState<OptionsFlowData | null>(null);
+  const [analystConsensus, setAnalystConsensus] = useState<AnalystConsensus | null>(null);
   const [historicalScore, setHistoricalScore] = useState<number | null>(null);
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [dataWarnings, setDataWarnings] = useState<DataWarning[]>([]);
@@ -109,6 +119,7 @@ export default function StockProjections() {
       setHistoricalScore(projData.historical?.score_3m_ago || null);
       setTechnicalData(projData.technical || null);
       setOptionsFlow(projData.options_flow || null);
+      setAnalystConsensus(projData.analyst_consensus || null);
       setDataWarnings(projData.data_warnings || []);
       setLastUpdated(new Date().toISOString());
       setDataAsOf(projData.as_of_date || projData.created_at || null);
@@ -125,6 +136,7 @@ export default function StockProjections() {
       setHistoricalScore(null);
       setTechnicalData(null);
       setOptionsFlow(null);
+      setAnalystConsensus(null);
       setNews([]);
       setDataWarnings([]);
       setLastUpdated(null);
@@ -295,6 +307,7 @@ export default function StockProjections() {
                 stopLoss={projections[selectedHorizon].stop_loss}
                 projectedReturn={projections[selectedHorizon].return_pct}
                 horizon={selectedHorizon.toUpperCase()}
+                analystConsensus={analystConsensus}
               />
               <ConvictionSnapshot
                 conviction={projections[selectedHorizon].conviction}
