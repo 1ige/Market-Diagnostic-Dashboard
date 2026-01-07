@@ -55,7 +55,7 @@ export function ConvictionSnapshot({
     <div className={`rounded-lg p-3 sm:p-4 border ${convictionLevel.border} ${convictionLevel.bg}`}>
       {/* Header */}
       <div className="mb-3">
-        <p className="text-xs text-gray-400 mb-1">AI Snapshot</p>
+        <p className="text-xs text-gray-400 mb-1">Conviction Snapshot</p>
         <p className="text-xs text-gray-300">Confidence in {horizon}</p>
       </div>
       
