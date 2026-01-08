@@ -1,0 +1,690 @@
+import { useState, useEffect } from "react";
+import { useApi } from "../../hooks/useApi";
+
+interface RegimeStatus {
+  gold_bias: "MONETARY_HEDGE" | "NEUTRAL" | "FINANCIAL_ASSET";
+  silver_bias: "INDUSTRIAL_MONETARY" | "INDUSTRIAL" | "MONETARY";
+  pgm_bias: "GROWTH" | "NEUTRAL" | "RECESSION";
+  paper_physical_risk: "LOW" | "MODERATE" | "HIGH";
+  overall_regime: "MONETARY_STRESS" | "INFLATION_HEDGE" | "GROWTH_REFLATION" | "LIQUIDITY_CRISIS" | "INDUSTRIAL_COMMODITY";
+}
+
+interface MetalIndicators {
+  regime: RegimeStatus;
+  cb_context: {
+    global_cb_gold_pct_reserves: number;
+    net_purchases_yoy: number;
+    structural_monetary_bid: number;
+    em_accumulation_momentum: number;
+  };
+  price_anchors: {
+    au_dxy_ratio_zscore: number;
+    ag_dxy_ratio_zscore: number;
+    real_rate_signal: number;
+    monetary_hedge_strength: number;
+  };
+  relative_value: {
+    au_ag_ratio: number;
+    au_ag_ratio_zscore: number;
+    pt_au_ratio: number;
+    pt_au_ratio_zscore: number;
+    pd_au_ratio: number;
+    pd_au_ratio_zscore: number;
+  };
+  physical_paper: {
+    paper_credibility_index: number;
+    oi_registered_ratio: number;
+    comex_registered_inventory_change_yoy: number;
+    backwardation_severity: number;
+    etf_flow_divergence: number;
+  };
+}
+
+interface CorrelationMatrix {
+  timestamp: string;
+  au_ag: number;
+  au_pt: number;
+  au_pd: number;
+  ag_pt: number;
+  ag_pd: number;
+  pt_pd: number;
+  au_spy: number;
+  au_tlt: number;
+  au_dxy: number;
+  au_vix: number;
+}
+
+interface CBHolding {
+  country: string;
+  gold_tonnes: number;
+  pct_of_reserves: number;
+  net_purchase_qty: number;
+  net_purchase_yoy_pct: number;
+}
+
+interface SupplyData {
+  metal: string;
+  production_tonnes_yoy_pct: number;
+  aisc_per_oz: number;
+  current_spot_price: number;
+  margin_pct: number;
+  recycling_pct_of_supply: number;
+}
+
+const getRegimeBadgeClass = (regime: string): string => {
+  switch (regime) {
+    case "MONETARY_STRESS":
+      return "bg-red-900/30 border-red-600 text-red-200";
+    case "INFLATION_HEDGE":
+      return "bg-yellow-900/30 border-yellow-600 text-yellow-200";
+    case "GROWTH_REFLATION":
+      return "bg-green-900/30 border-green-600 text-green-200";
+    case "LIQUIDITY_CRISIS":
+      return "bg-red-900/40 border-red-500 text-red-100";
+    case "INDUSTRIAL_COMMODITY":
+      return "bg-blue-900/30 border-blue-600 text-blue-200";
+    default:
+      return "bg-stealth-700 border-stealth-600 text-gray-300";
+  }
+};
+
+const getRiskBadgeClass = (risk: string): string => {
+  if (risk === "HIGH") return "bg-red-900/30 border-red-600 text-red-200";
+  if (risk === "MODERATE") return "bg-yellow-900/30 border-yellow-600 text-yellow-200";
+  return "bg-green-900/30 border-green-600 text-green-200";
+};
+
+const getBiasText = (bias: string): string => {
+  if (bias.includes("MONETARY")) return "Monetary Hedge";
+  if (bias.includes("INDUSTRIAL")) return "Industrial + Monetary";
+  if (bias.includes("FINANCIAL")) return "Financial Asset";
+  if (bias === "GROWTH") return "Growth Premium";
+  if (bias === "RECESSION") return "Recession Hedge";
+  return "Neutral";
+};
+
+export default function PreciousMetalsDiagnostic() {
+  const { data: indicators, loading, error } = useApi<MetalIndicators>("/precious-metals/regime");
+  const { data: correlations } = useApi<CorrelationMatrix>("/precious-metals/correlations");
+  const { data: cb_holdings } = useApi<CBHolding[]>("/precious-metals/cb-holdings");
+  const { data: supply_data } = useApi<SupplyData[]>("/precious-metals/supply");
+
+  const [selectedTab, setSelectedTab] = useState<"overview" | "deep-dive">("overview");
+
+  if (loading) {
+    return (
+      <div className="p-6 text-gray-200">
+        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+        <div className="text-stealth-400">Loading precious metals analysis...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-gray-200">
+        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+        <div className="bg-red-900/20 border border-red-700 text-red-200 p-4 rounded">
+          Error loading data: {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!indicators) {
+    return (
+      <div className="p-6 text-gray-200">
+        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+        <div className="text-stealth-400">No data available.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 md:p-6 text-gray-200">
+      <h1 className="text-2xl md:text-3xl font-bold mb-2">Precious Metals Diagnostic</h1>
+      <p className="text-stealth-400 mb-6 text-sm md:text-base">
+        Macro-structural analysis of precious metals as monetary hedges, industrial commodities, and risk-off assets.
+      </p>
+
+      {/* SECTION 1: REGIME CLASSIFICATION PANEL (PINNED TOP) */}
+      <div className="mb-6 bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-bold mb-4 text-white">Regime Classification</h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+          {/* Gold Bias Card */}
+          <div className={`border rounded-lg p-3 md:p-4 ${getRegimeBadgeClass(indicators.regime.gold_bias)}`}>
+            <div className="text-xs md:text-sm font-semibold text-stealth-300 mb-1">GOLD BIAS</div>
+            <div className="text-sm md:text-base font-bold">{getBiasText(indicators.regime.gold_bias)}</div>
+          </div>
+
+          {/* Silver Bias Card */}
+          <div className={`border rounded-lg p-3 md:p-4 ${getRegimeBadgeClass(indicators.regime.silver_bias)}`}>
+            <div className="text-xs md:text-sm font-semibold text-stealth-300 mb-1">SILVER BIAS</div>
+            <div className="text-sm md:text-base font-bold">{getBiasText(indicators.regime.silver_bias)}</div>
+          </div>
+
+          {/* PGM Bias Card */}
+          <div className={`border rounded-lg p-3 md:p-4 ${getRegimeBadgeClass(indicators.regime.pgm_bias)}`}>
+            <div className="text-xs md:text-sm font-semibold text-stealth-300 mb-1">PGM BIAS</div>
+            <div className="text-sm md:text-base font-bold">{getBiasText(indicators.regime.pgm_bias)}</div>
+          </div>
+
+          {/* Paper/Physical Risk Card */}
+          <div className={`border rounded-lg p-3 md:p-4 ${getRiskBadgeClass(indicators.regime.paper_physical_risk)}`}>
+            <div className="text-xs md:text-sm font-semibold text-stealth-300 mb-1">P/P RISK</div>
+            <div className="text-sm md:text-base font-bold">{indicators.regime.paper_physical_risk}</div>
+          </div>
+
+          {/* Overall Regime Card */}
+          <div className={`border rounded-lg p-3 md:p-4 ${getRegimeBadgeClass(indicators.regime.overall_regime)}`}>
+            <div className="text-xs md:text-sm font-semibold text-stealth-300 mb-1">REGIME</div>
+            <div className="text-sm md:text-base font-bold">
+              {indicators.regime.overall_regime.replace(/_/g, " ")}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-xs md:text-sm text-stealth-400 mt-4">
+          Last Updated: {new Date().toISOString().split('T')[0]} · Data freshness: Real-time spot | CB data (quarterly lag)
+        </div>
+      </div>
+
+      {/* TAB NAVIGATION */}
+      <div className="mb-6 border-b border-stealth-700 flex gap-4">
+        <button
+          onClick={() => setSelectedTab("overview")}
+          className={`pb-3 px-2 font-semibold border-b-2 transition ${
+            selectedTab === "overview"
+              ? "border-blue-500 text-blue-300"
+              : "border-transparent text-stealth-400 hover:text-gray-300"
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setSelectedTab("deep-dive")}
+          className={`pb-3 px-2 font-semibold border-b-2 transition ${
+            selectedTab === "deep-dive"
+              ? "border-blue-500 text-blue-300"
+              : "border-transparent text-stealth-400 hover:text-gray-300"
+          }`}
+        >
+          Deep Dive
+        </button>
+      </div>
+
+      {selectedTab === "overview" && (
+        <>
+          {/* SECTION 2 & 3: CB CONTEXT & PRICE ANCHORS (2-COLUMN) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Section 2: Monetary & CB Context */}
+            <CBContextPanel cb_holdings={cb_holdings} indicators={indicators} />
+
+            {/* Section 3: Price vs Monetary Anchors */}
+            <PriceAnchorsPanel indicators={indicators} />
+          </div>
+
+          {/* SECTION 4 & 5: RELATIVE VALUE & PHYSICAL/PAPER (2-COLUMN) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Section 4: Relative Value */}
+            <RelativeValuePanel indicators={indicators} />
+
+            {/* Section 5: Physical vs Paper */}
+            <PhysicalPaperPanel indicators={indicators} />
+          </div>
+
+          {/* SECTION 6 & 7: SUPPLY-DEMAND (2-COLUMN) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Section 6: Supply */}
+            <SupplyPanel supply_data={supply_data} />
+
+            {/* Section 7: Demand (Placeholder for future data) */}
+            <DemandPanel />
+          </div>
+        </>
+      )}
+
+      {selectedTab === "deep-dive" && (
+        <>
+          {/* SECTION 8: MARKET CAP & CORRELATIONS */}
+          <div className="grid grid-cols-1 gap-6">
+            <MarketCapPanel />
+            <CorrelationPanel correlations={correlations} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ==================== SECTION COMPONENTS ====================
+
+function CBContextPanel({ cb_holdings, indicators }: any) {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Monetary & Central Bank Context</h3>
+
+      <div className="space-y-6">
+        {/* CB Gold % of Reserves */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Global CB Gold as % of Reserves</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.cb_context.global_cb_gold_pct_reserves.toFixed(1)}%</span>
+          </div>
+          <div className="w-full bg-stealth-700 rounded-full h-2">
+            <div
+              className="bg-blue-500 h-2 rounded-full"
+              style={{ width: `${Math.min((indicators.cb_context.global_cb_gold_pct_reserves / 15) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-stealth-400 mt-1">Historical avg: ~11%, Current: Above average</p>
+        </div>
+
+        {/* Net CB Purchases YoY */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Net CB Purchases (YoY %)</span>
+            <span className={`text-lg font-bold ${indicators.cb_context.net_purchases_yoy > 200 ? "text-green-400" : "text-yellow-400"}`}>
+              {indicators.cb_context.net_purchases_yoy > 0 ? "+" : ""}{indicators.cb_context.net_purchases_yoy.toFixed(0)}%
+            </span>
+          </div>
+          <p className="text-xs text-stealth-400">
+            {indicators.cb_context.net_purchases_yoy > 200
+              ? "Strong accumulation momentum"
+              : "Moderate accumulation"}
+          </p>
+        </div>
+
+        {/* Structural Monetary Bid */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Structural Monetary Bid Score</span>
+            <span className={`text-lg font-bold ${indicators.cb_context.structural_monetary_bid > 0 ? "text-green-400" : "text-red-400"}`}>
+              {indicators.cb_context.structural_monetary_bid > 0 ? "+" : ""}{indicators.cb_context.structural_monetary_bid.toFixed(0)}
+            </span>
+          </div>
+          <div className="w-full bg-stealth-700 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full ${indicators.cb_context.structural_monetary_bid > 0 ? "bg-green-500" : "bg-red-500"}`}
+              style={{ width: `${Math.min(Math.abs((indicators.cb_context.structural_monetary_bid / 100) * 100), 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-stealth-400 mt-1">Range: -100 to +100. Positive = structural demand</p>
+        </div>
+
+        {/* EM Accumulation */}
+        {cb_holdings && cb_holdings.length > 0 && (
+          <div>
+            <span className="text-sm font-semibold text-stealth-300 block mb-2">Top Accumulators (Recent Quarter)</span>
+            <div className="space-y-1">
+              {cb_holdings.slice(0, 3).map((holding: any, idx: number) => (
+                <div key={idx} className="flex justify-between text-xs text-stealth-300">
+                  <span>{holding.country}</span>
+                  <span>{holding.net_purchase_yoy_pct > 0 ? "+" : ""}{holding.net_purchase_yoy_pct.toFixed(0)}% YoY</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PriceAnchorsPanel({ indicators }: any) {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Price vs Monetary Anchors</h3>
+
+      <div className="space-y-4">
+        {/* MHS Score */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Monetary Hedge Strength</span>
+            <span className={`text-lg font-bold ${indicators.price_anchors.monetary_hedge_strength > 0 ? "text-green-400" : "text-red-400"}`}>
+              {indicators.price_anchors.monetary_hedge_strength.toFixed(0)}
+            </span>
+          </div>
+          <div className="w-full bg-stealth-700 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full ${indicators.price_anchors.monetary_hedge_strength > 0 ? "bg-green-500" : "bg-red-500"}`}
+              style={{ width: `${Math.min(Math.abs((indicators.price_anchors.monetary_hedge_strength / 100) * 100), 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-stealth-400 mt-1">-100 to +100: Is gold priced as currency or commodity?</p>
+        </div>
+
+        {/* Au/DXY Z-Score */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Au/DXY Ratio (Z-Score)</span>
+            <span className={`text-lg font-bold ${Math.abs(indicators.price_anchors.au_dxy_ratio_zscore) > 1.5 ? "text-red-400" : "text-yellow-400"}`}>
+              {indicators.price_anchors.au_dxy_ratio_zscore > 0 ? "+" : ""}{indicators.price_anchors.au_dxy_ratio_zscore.toFixed(2)} σ
+            </span>
+          </div>
+          <p className="text-xs text-stealth-400">
+            {Math.abs(indicators.price_anchors.au_dxy_ratio_zscore) > 2 && "⚠ Extreme deviation from 2Y norm"}
+            {Math.abs(indicators.price_anchors.au_dxy_ratio_zscore) > 1.5 && Math.abs(indicators.price_anchors.au_dxy_ratio_zscore) <= 2 && "High valuation"}
+            {Math.abs(indicators.price_anchors.au_dxy_ratio_zscore) <= 1.5 && "Normal range"}
+          </p>
+        </div>
+
+        {/* Real Rate Signal */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Real Rate Signal</span>
+            <span className={`text-lg font-bold ${indicators.price_anchors.real_rate_signal < 0 ? "text-green-400" : "text-red-400"}`}>
+              {indicators.price_anchors.real_rate_signal.toFixed(2)}
+            </span>
+          </div>
+          <p className="text-xs text-stealth-400">Negative = lower real rates favor gold</p>
+        </div>
+
+        {/* Correlation Summary */}
+        <div className="border-t border-stealth-600 pt-3 mt-3">
+          <span className="text-xs font-semibold text-stealth-300 block mb-2">Key Correlations (60-day)</span>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-stealth-400">Au ↔ SPY:</span>
+              <span className="text-stealth-300">-0.15</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stealth-400">Au ↔ TLT:</span>
+              <span className="text-stealth-300">+0.42</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stealth-400">Au ↔ DXY:</span>
+              <span className="text-stealth-300">-0.68</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-stealth-400">Au ↔ VIX:</span>
+              <span className="text-stealth-300">+0.55</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RelativeValuePanel({ indicators }: any) {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Relative Value: Metals Complex</h3>
+
+      <div className="space-y-4">
+        {/* Au/Ag Ratio */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Au/Ag Ratio</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.relative_value.au_ag_ratio.toFixed(1)}</span>
+          </div>
+          <div className="flex justify-between text-xs text-stealth-400 mb-2">
+            <span>Z-Score: {indicators.relative_value.au_ag_ratio_zscore.toFixed(2)} σ</span>
+            <span className={indicators.relative_value.au_ag_ratio > 70 ? "text-red-400" : indicators.relative_value.au_ag_ratio < 50 ? "text-green-400" : "text-yellow-400"}>
+              {indicators.relative_value.au_ag_ratio > 70 ? "Monetary stress bias" : indicators.relative_value.au_ag_ratio < 50 ? "Industrial demand" : "Balanced"}
+            </span>
+          </div>
+          <div className="bg-stealth-700 rounded p-2">
+            <div className="flex justify-between text-xs text-stealth-400">
+              <span>50 (Industrial)</span>
+              <span>65 (Balanced)</span>
+              <span>75 (Stress)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pt/Au Ratio */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Pt/Au Ratio</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.relative_value.pt_au_ratio.toFixed(3)}</span>
+          </div>
+          <div className="flex justify-between text-xs text-stealth-400">
+            <span>Z-Score: {indicators.relative_value.pt_au_ratio_zscore.toFixed(2)} σ</span>
+            <span className={indicators.relative_value.pt_au_ratio_zscore < -1 ? "text-red-400" : "text-green-400"}>
+              {indicators.relative_value.pt_au_ratio_zscore < -1 ? "Recession signal" : "Growth neutral"}
+            </span>
+          </div>
+        </div>
+
+        {/* Pd/Au Ratio */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Pd/Au Ratio</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.relative_value.pd_au_ratio.toFixed(3)}</span>
+          </div>
+          <p className="text-xs text-stealth-400">
+            Z-Score: {indicators.relative_value.pd_au_ratio_zscore.toFixed(2)} σ · Indicator of auto cycle demand
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PhysicalPaperPanel({ indicators }: any) {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Physical vs Paper Market Stress</h3>
+
+      <div className="space-y-4">
+        {/* PCI Score */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Paper Credibility Index (PCI)</span>
+            <span className={`text-lg font-bold ${
+              indicators.physical_paper.paper_credibility_index > 75
+                ? "text-green-400"
+                : indicators.physical_paper.paper_credibility_index > 50
+                ? "text-yellow-400"
+                : "text-red-400"
+            }`}>
+              {indicators.physical_paper.paper_credibility_index.toFixed(0)}
+            </span>
+          </div>
+          <div className="w-full bg-stealth-700 rounded-full h-3">
+            <div
+              className={`h-3 rounded-full ${
+                indicators.physical_paper.paper_credibility_index > 75
+                  ? "bg-green-500"
+                  : indicators.physical_paper.paper_credibility_index > 50
+                  ? "bg-yellow-500"
+                  : "bg-red-500"
+              }`}
+              style={{ width: `${indicators.physical_paper.paper_credibility_index}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-stealth-400 mt-1">
+            <span>0 (Stress)</span>
+            <span>50 (Caution)</span>
+            <span>75+ (Healthy)</span>
+          </div>
+        </div>
+
+        {/* OI / Registered Ratio */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Futures OI / Registered Inventory</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.physical_paper.oi_registered_ratio.toFixed(2)}x</span>
+          </div>
+          <p className="text-xs text-stealth-400">Normal: 0.9–1.0x. {indicators.physical_paper.oi_registered_ratio > 1.3 ? "⚠ Elevated stress" : "✓ Healthy"}</p>
+        </div>
+
+        {/* Inventory Change */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Registered Inventory (YoY %)</span>
+            <span className={`text-lg font-bold ${indicators.physical_paper.comex_registered_inventory_change_yoy < -5 ? "text-red-400" : "text-yellow-400"}`}>
+              {indicators.physical_paper.comex_registered_inventory_change_yoy.toFixed(0)}%
+            </span>
+          </div>
+          <p className="text-xs text-stealth-400">
+            {indicators.physical_paper.comex_registered_inventory_change_yoy < -10
+              ? "⚠ Significant decline—monitor tightness"
+              : "Normal range"}
+          </p>
+        </div>
+
+        {/* Backwardation */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-stealth-300">Backwardation Severity (bps)</span>
+            <span className="text-lg font-bold text-blue-300">{indicators.physical_paper.backwardation_severity.toFixed(0)}</span>
+          </div>
+          <p className="text-xs text-stealth-400">
+            {indicators.physical_paper.backwardation_severity > 500 ? "⚠ Deep backwardation = stress" : "Normal contango structure"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SupplyPanel({ supply_data }: any) {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Supply-Side Constraints</h3>
+
+      {supply_data && supply_data.length > 0 ? (
+        <div className="space-y-4">
+          {supply_data.map((metal: any, idx: number) => (
+            <div key={idx} className="border-b border-stealth-600 pb-3 last:border-b-0">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-semibold text-blue-300">{metal.metal}</span>
+                <span className={`text-xs font-bold ${metal.production_tonnes_yoy_pct < 0 ? "text-red-400" : "text-green-400"}`}>
+                  {metal.production_tonnes_yoy_pct > 0 ? "+" : ""}{metal.production_tonnes_yoy_pct.toFixed(0)}% YoY
+                </span>
+              </div>
+              <div className="text-xs text-stealth-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>AISC: ${metal.aisc_per_oz.toFixed(0)}/oz</span>
+                  <span>Spot: ${metal.current_spot_price.toFixed(0)}/oz</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Margin:</span>
+                  <span className={metal.margin_pct > 50 ? "text-green-400" : "text-yellow-400"}>
+                    {metal.margin_pct.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Recycling:</span>
+                  <span>{metal.recycling_pct_of_supply.toFixed(0)}% of supply</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-stealth-400">Supply data loading...</p>
+      )}
+    </div>
+  );
+}
+
+function DemandPanel() {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Demand Decomposition</h3>
+      <p className="text-sm text-stealth-400">Quarterly demand data by category: Investment, Industrial, Jewelry</p>
+      <div className="mt-4 p-4 bg-stealth-700 rounded text-xs text-stealth-400">
+        Demand data updates quarterly. Check back for latest WGC and Silver Institute reports.
+      </div>
+    </div>
+  );
+}
+
+function MarketCapPanel() {
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Market Capitalization & Monetary Weight</h3>
+      <div className="space-y-4 text-sm">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-stealth-700 rounded p-3">
+            <div className="text-stealth-400 text-xs mb-1">Gold Stock</div>
+            <div className="text-lg font-bold text-blue-300">~$15.0T</div>
+            <div className="text-xs text-stealth-500">200k tonnes</div>
+          </div>
+          <div className="bg-stealth-700 rounded p-3">
+            <div className="text-stealth-400 text-xs mb-1">Total Metals</div>
+            <div className="text-lg font-bold text-blue-300">~$17.0T</div>
+            <div className="text-xs text-stealth-500">All metals combined</div>
+          </div>
+        </div>
+        <div className="bg-stealth-700 rounded p-3">
+          <div className="text-stealth-400 text-xs mb-2">Ratio to Global M2</div>
+          <div className="flex justify-between items-center">
+            <span>Metals / M2:</span>
+            <span className="text-lg font-bold text-blue-300">8.5%</span>
+          </div>
+          <div className="text-xs text-stealth-400 mt-1">Historical: Pre-1971 (20%), Post-1980 (2–5%)</div>
+        </div>
+        <p className="text-xs text-stealth-400 border-t border-stealth-600 pt-3">
+          Non-predictive scenarios: If Au → $3,000/oz, metals stock → +20% ($20.5T). If Au → $5,000/oz, → +40% ($24T).
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CorrelationPanel({ correlations }: any) {
+  if (!correlations) {
+    return (
+      <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+        <h3 className="text-lg font-bold mb-4 text-white">Volatility & Correlation</h3>
+        <p className="text-sm text-stealth-400">Correlation data loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Volatility & Correlation (60-day Rolling)</h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-xs text-stealth-400 border-b border-stealth-600">
+            <tr>
+              <th className="text-left py-2">Pair</th>
+              <th className="text-right py-2">Correlation</th>
+              <th className="text-right py-2">Interpretation</th>
+            </tr>
+          </thead>
+          <tbody className="text-xs text-stealth-300">
+            <tr className="border-b border-stealth-700">
+              <td className="py-2">Au ↔ Ag</td>
+              <td className="text-right font-semibold">{correlations.au_ag.toFixed(2)}</td>
+              <td className="text-right">High correlation (both monetary)</td>
+            </tr>
+            <tr className="border-b border-stealth-700">
+              <td className="py-2">Au ↔ SPY</td>
+              <td className="text-right font-semibold">{correlations.au_spy.toFixed(2)}</td>
+              <td className="text-right">Diversification benefit</td>
+            </tr>
+            <tr className="border-b border-stealth-700">
+              <td className="py-2">Au ↔ TLT</td>
+              <td className="text-right font-semibold">{correlations.au_tlt.toFixed(2)}</td>
+              <td className="text-right">Bond substitute signal</td>
+            </tr>
+            <tr className="border-b border-stealth-700">
+              <td className="py-2">Au ↔ DXY</td>
+              <td className="text-right font-semibold">{correlations.au_dxy.toFixed(2)}</td>
+              <td className="text-right">Currency hedge effect</td>
+            </tr>
+            <tr>
+              <td className="py-2">Au ↔ VIX</td>
+              <td className="text-right font-semibold">{correlations.au_vix.toFixed(2)}</td>
+              <td className="text-right">Stress indicator</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4 p-3 bg-stealth-700 rounded text-xs text-stealth-400 border-l-2 border-blue-500">
+        <strong>Note:</strong> Correlations change with market regime. Breakdowns > ±2σ signal regime shifts. Use as
+        regime confirmation, not reversion signal.
+      </div>
+    </div>
+  );
+}

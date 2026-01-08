@@ -1,5 +1,3 @@
-import { useEffect, useRef } from "react";
-
 /**
  * Technical Indicators Component
  * 
@@ -78,12 +76,6 @@ export function TechnicalIndicators({
   const optionsAvailable = !!optionsFlow && (
     (optionsFlow.call_walls?.length ?? 0) > 0 || (optionsFlow.put_walls?.length ?? 0) > 0
   );
-  const scrollRefs = useRef<HTMLDivElement[]>([]);
-  useEffect(() => {
-    scrollRefs.current.forEach((el) => {
-      if (el) el.scrollLeft = el.scrollWidth;
-    });
-  }, [technicalData?.candles?.length, technicalData?.rsi?.series?.length, technicalData?.macd?.macd_series?.length]);
   const callWall = optionsFlow?.call_walls?.[0];
   const putWall = optionsFlow?.put_walls?.[0];
   const currentPrice = technicalData?.current_price;
@@ -269,14 +261,8 @@ export function TechnicalIndicators({
           <h3 className="text-base sm:text-lg font-semibold">Price History ({technicalData.lookback_days}-Day)</h3>
         </div>
 
-        <div
-          className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto"
-          ref={(el) => {
-            if (el) scrollRefs.current[0] = el;
-          }}
-        >
-          <div className="w-full" style={{ aspectRatio: '5 / 3', minHeight: '220px', maxHeight: '320px' }}>
-            <svg className="w-full h-full min-w-[720px]" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
+        <div className="bg-gray-900 rounded-lg p-4 mb-4 overflow-x-auto">
+          <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet" style={{ minWidth: '800px' }}>
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
               const y = padding.top + percent * plotHeight;
@@ -293,9 +279,6 @@ export function TechnicalIndicators({
                     strokeDasharray="4 4"
                   />
                   <text x={padding.left - 10} y={y + 4} fill="#9ca3af" fontSize="10" textAnchor="end">
-                    ${price.toFixed(0)}
-                  </text>
-                  <text x={chartWidth - padding.right + 10} y={y + 4} fill="#9ca3af" fontSize="10" textAnchor="start">
                     ${price.toFixed(0)}
                   </text>
                 </g>
@@ -367,10 +350,8 @@ export function TechnicalIndicators({
 
             {/* Axes */}
             <line x1={padding.left} y1={padding.top} x2={padding.left} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
-            <line x1={chartWidth - padding.right} y1={padding.top} x2={chartWidth - padding.right} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
             <line x1={padding.left} y1={chartHeight - padding.bottom} x2={chartWidth - padding.right} y2={chartHeight - padding.bottom} stroke="#4b5563" strokeWidth="2" />
-            </svg>
-          </div>
+          </svg>
         </div>
 
         {/* Price Info Row */}
@@ -446,18 +427,14 @@ export function TechnicalIndicators({
 
         {/* RSI Line Chart */}
         {rsi.series && rsi.series.length > 0 && (
-          <div
-            className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3"
-            ref={(el) => {
-              if (el) scrollRefs.current[1] = el;
-            }}
-          >
-            <div className="w-full" style={{ aspectRatio: '4 / 1.5', minHeight: '160px', maxHeight: '220px' }}>
-              <svg
-                className="w-full h-full min-w-[720px]"
-                viewBox={`0 0 ${chartWidth} 150`}
-                preserveAspectRatio="xMidYMid meet"
-              >
+          <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto mt-3">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${chartWidth} 150`}
+              preserveAspectRatio="xMidYMid meet"
+              style={{ minWidth: "800px" }}
+            >
               {(() => {
                 const rsiPadding = { top: 15, right: 50, bottom: 25, left: 50 };
                 const rsiPlotHeight = 150 - rsiPadding.top - rsiPadding.bottom;
@@ -511,15 +488,6 @@ export function TechnicalIndicators({
                           >
                             {level}
                           </text>
-                          <text
-                            x={chartWidth - rsiPadding.right + 10}
-                            y={y + 4}
-                            fill="#9ca3af"
-                            fontSize="10"
-                            textAnchor="start"
-                          >
-                            {level}
-                          </text>
                         </g>
                       );
                     })}
@@ -548,14 +516,6 @@ export function TechnicalIndicators({
                       strokeWidth="2"
                     />
                     <line
-                      x1={chartWidth - rsiPadding.right}
-                      y1={rsiPadding.top}
-                      x2={chartWidth - rsiPadding.right}
-                      y2={150 - rsiPadding.bottom}
-                      stroke="#4b5563"
-                      strokeWidth="2"
-                    />
-                    <line
                       x1={rsiPadding.left}
                       y1={150 - rsiPadding.bottom}
                       x2={chartWidth - rsiPadding.right}
@@ -566,8 +526,7 @@ export function TechnicalIndicators({
                   </>
                 );
               })()}
-                </svg>
-              </div>
+            </svg>
           </div>
         )}
       </div>
@@ -580,12 +539,7 @@ export function TechnicalIndicators({
             Latest {volumes.length ? formatCompact(latestVolume) : "n/a"} · Median {volumes.length ? formatCompact(medianVolume) : "n/a"}
           </div>
         </div>
-        <div
-          className="bg-gray-900 rounded-lg p-3 overflow-x-auto"
-          ref={(el) => {
-            if (el) scrollRefs.current[2] = el;
-          }}
-        >
+        <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
           <svg
             width="100%"
             height="100%"
@@ -617,15 +571,6 @@ export function TechnicalIndicators({
                   >
                     {formatCompact(v)}
                   </text>
-                  <text
-                    x={chartWidth - volumePadding.right + 10}
-                    y={y + 4}
-                    fill="#9ca3af"
-                    fontSize="10"
-                    textAnchor="start"
-                  >
-                    {formatCompact(v)}
-                  </text>
                 </g>
               );
             })}
@@ -653,14 +598,6 @@ export function TechnicalIndicators({
               x1={volumePadding.left}
               y1={volumePadding.top}
               x2={volumePadding.left}
-              y2={volumeChartHeight - volumePadding.bottom}
-              stroke="#4b5563"
-              strokeWidth="2"
-            />
-            <line
-              x1={chartWidth - volumePadding.right}
-              y1={volumePadding.top}
-              x2={chartWidth - volumePadding.right}
               y2={volumeChartHeight - volumePadding.bottom}
               stroke="#4b5563"
               strokeWidth="2"
@@ -703,19 +640,15 @@ export function TechnicalIndicators({
         </div>
 
         {/* MACD Chart with Histogram */}
-        <div
-          className="bg-gray-900 rounded-lg p-3 overflow-x-auto"
-          ref={(el) => {
-            if (el) scrollRefs.current[3] = el;
-          }}
-        >
-          <div className="w-full" style={{ aspectRatio: '5 / 2', minHeight: '200px', maxHeight: '280px' }}>
-            <svg
-              className="w-full h-full min-w-[720px]"
-              viewBox={`0 0 ${chartWidth} 200`}
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {(() => {
+        <div className="bg-gray-900 rounded-lg p-3 overflow-x-auto">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${chartWidth} 200`}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ minWidth: "800px" }}
+          >
+            {(() => {
               const macdPadding = { top: 20, right: 50, bottom: 30, left: 50 };
               const macdPlotHeight = 200 - macdPadding.top - macdPadding.bottom;
               const macdPlotWidth = chartWidth - macdPadding.left - macdPadding.right;
@@ -782,15 +715,6 @@ export function TechnicalIndicators({
                         >
                           {value.toFixed(2)}
                         </text>
-                        <text
-                          x={chartWidth - macdPadding.right + 10}
-                          y={y + 4}
-                          fill="#9ca3af"
-                          fontSize="10"
-                          textAnchor="start"
-                        >
-                          {value.toFixed(2)}
-                        </text>
                       </g>
                     );
                   })}
@@ -845,44 +769,35 @@ export function TechnicalIndicators({
                   />
 
                   {/* Legend */}
-                    <text x={chartWidth - macdPadding.right - 120} y={macdPadding.top} fill="#3b82f6" fontSize="11">
-                      MACD
-                    </text>
-                    <text x={chartWidth - macdPadding.right - 60} y={macdPadding.top} fill="#f97316" fontSize="11">
-                      Signal
-                    </text>
+                  <text x={chartWidth - macdPadding.right - 120} y={macdPadding.top} fill="#3b82f6" fontSize="11">
+                    MACD
+                  </text>
+                  <text x={chartWidth - macdPadding.right - 60} y={macdPadding.top} fill="#f97316" fontSize="11">
+                    Signal
+                  </text>
 
-                    {/* Axes */}
-                    <line
-                      x1={macdPadding.left}
-                      y1={macdPadding.top}
-                      x2={macdPadding.left}
-                      y2={200 - macdPadding.bottom}
-                      stroke="#4b5563"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1={chartWidth - macdPadding.right}
-                      y1={macdPadding.top}
-                      x2={chartWidth - macdPadding.right}
-                      y2={200 - macdPadding.bottom}
-                      stroke="#4b5563"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1={macdPadding.left}
-                      y1={200 - macdPadding.bottom}
-                      x2={chartWidth - macdPadding.right}
-                      y2={200 - macdPadding.bottom}
-                      stroke="#4b5563"
-                      strokeWidth="2"
-                    />
-                  </>
-                );
-              })()}
-              </svg>
-            </div>
-          </div>
+                  {/* Axes */}
+                  <line
+                    x1={macdPadding.left}
+                    y1={macdPadding.top}
+                    x2={macdPadding.left}
+                    y2={200 - macdPadding.bottom}
+                    stroke="#4b5563"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1={macdPadding.left}
+                    y1={200 - macdPadding.bottom}
+                    x2={chartWidth - macdPadding.right}
+                    y2={200 - macdPadding.bottom}
+                    stroke="#4b5563"
+                    strokeWidth="2"
+                  />
+                </>
+              );
+            })()}
+          </svg>
+        </div>
       </div>
 
       {optionsFlowCard}

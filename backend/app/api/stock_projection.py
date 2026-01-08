@@ -139,145 +139,6 @@ def calculate_rsi(df: pd.DataFrame, period: int = 14) -> tuple:
     return rsi.iloc[-1], rsi
 
 
-def get_analyst_consensus(ticker: str) -> dict | None:
-    """
-    Fetch analyst consensus data: target price and rating recommendations
-    Returns: { "target_price": float, "number_of_analysts": int, "rating": str, "upside_downside": float }
-    """
-    try:
-        stock = yf.Ticker(ticker)
-        info = stock.info
-        
-        # Extract analyst data from yfinance
-        target_price = info.get('targetMeanPrice') or info.get('targetPrice')
-        num_analysts = info.get('numberOfAnalystOpinions')
-        
-        # Get consensus rating
-        # Common rating field names in yfinance
-        recommendation = info.get('recommendationKey')  # 'strong-buy', 'buy', 'hold', 'sell', 'strong-sell'
-        
-        if not target_price or not num_analysts or num_analysts < 1:
-            return None
-        
-        current_price = info.get('currentPrice') or info.get('regularMarketPrice')
-        if not current_price:
-            return None
-        
-        # Calculate upside/downside
-        upside_downside = ((target_price - current_price) / current_price) * 100
-        
-        # Map recommendation key to human-readable rating
-        rating_map = {
-            'strong-buy': 'Strong Buy',
-            'buy': 'Buy',
-            'hold': 'Hold',
-            'sell': 'Sell',
-            'strong-sell': 'Strong Sell'
-        }
-        rating = rating_map.get(recommendation, 'No Consensus')
-        
-        return {
-            "target_price": float(target_price),
-            "current_price": float(current_price),
-            "number_of_analysts": int(num_analysts),
-            "rating": rating,
-            "upside_downside": float(upside_downside),
-            "as_of_date": datetime.now().isoformat()
-        }
-    except Exception as e:
-        print(f"Warning: Could not fetch analyst consensus for {ticker}: {str(e)}")
-        return None
-
-
-def get_options_flow(ticker: str) -> dict:
-    """Fetch options data and calculate key metrics"""
-    try:
-        stock = yf.Ticker(ticker)
-        
-        # Get available expiration dates
-        expirations = stock.options
-        if not expirations or len(expirations) == 0:
-            return None
-        
-        # Use the nearest expiration (first in the list)
-        expiry = expirations[0]
-        
-        # Fetch options chain
-        opt_chain = stock.option_chain(expiry)
-        calls = opt_chain.calls
-        puts = opt_chain.puts
-        
-        if calls.empty and puts.empty:
-            return None
-        
-        # Get current stock price for reference
-        current_price = stock.info.get('currentPrice') or stock.info.get('regularMarketPrice')
-        if not current_price:
-            return None
-        
-        # Find top call and put walls by open interest
-        # Filter for strikes within reasonable range (±20% of current price)
-        price_range = current_price * 0.2
-        
-        calls_filtered = calls[
-            (calls['strike'] >= current_price - price_range) & 
-            (calls['strike'] <= current_price + price_range)
-        ].copy()
-        
-        puts_filtered = puts[
-            (puts['strike'] >= current_price - price_range) & 
-            (puts['strike'] <= current_price + price_range)
-        ].copy()
-        
-        # Sort by open interest and get top 5 for each
-        top_calls = calls_filtered.nlargest(5, 'openInterest')[['strike', 'openInterest', 'volume']].to_dict('records')
-        top_puts = puts_filtered.nlargest(5, 'openInterest')[['strike', 'openInterest', 'volume']].to_dict('records')
-        
-        # Calculate totals
-        call_oi_total = int(calls['openInterest'].sum())
-        put_oi_total = int(puts['openInterest'].sum())
-        call_volume_total = int(calls['volume'].fillna(0).sum())
-        put_volume_total = int(puts['volume'].fillna(0).sum())
-        
-        # Calculate put/call ratio
-        pc_ratio = put_oi_total / call_oi_total if call_oi_total > 0 else None
-        
-        # Format walls
-        call_walls = [
-            {
-                "strike": float(wall['strike']),
-                "open_interest": int(wall['openInterest']),
-                "volume": int(wall['volume']) if pd.notna(wall['volume']) else 0
-            }
-            for wall in top_calls
-        ]
-        
-        put_walls = [
-            {
-                "strike": float(wall['strike']),
-                "open_interest": int(wall['openInterest']),
-                "volume": int(wall['volume']) if pd.notna(wall['volume']) else 0
-            }
-            for wall in top_puts
-        ]
-        
-        return {
-            "expiry": expiry,
-            "as_of": datetime.now().isoformat(),
-            "call_walls": call_walls,
-            "put_walls": put_walls,
-            "call_open_interest_total": call_oi_total,
-            "put_open_interest_total": put_oi_total,
-            "call_volume_total": call_volume_total,
-            "put_volume_total": put_volume_total,
-            "put_call_oi_ratio": round(pc_ratio, 2) if pc_ratio else None
-        }
-        
-    except Exception as e:
-        print(f"Warning: Could not fetch options data for {ticker}: {str(e)}")
-        return None
-
-
 def calculate_macd(df: pd.DataFrame, lookback_days: int = 252) -> dict:
     """Calculate MACD, signal line, and histogram for full lookback period"""
     ema_12 = df['Close'].ewm(span=12, adjust=False).mean()
@@ -287,16 +148,13 @@ def calculate_macd(df: pd.DataFrame, lookback_days: int = 252) -> dict:
     signal = macd.ewm(span=9, adjust=False).mean()
     histogram = macd - signal
     
-    # Get the actual length to return (minimum of requested and available)
-    actual_length = min(lookback_days, len(df))
-    
     return {
-        "macd": float(macd.iloc[-1]) if not pd.isna(macd.iloc[-1]) else 0.0,
-        "signal": float(signal.iloc[-1]) if not pd.isna(signal.iloc[-1]) else 0.0,
-        "histogram": float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0,
-        "macd_series": macd.tail(actual_length).fillna(0).tolist(),
-        "signal_series": signal.tail(actual_length).fillna(0).tolist(),
-        "histogram_series": histogram.tail(actual_length).fillna(0).tolist(),
+        "macd": macd.iloc[-1],
+        "signal": signal.iloc[-1],
+        "histogram": histogram.iloc[-1],
+        "macd_series": macd.tail(lookback_days).tolist(),
+        "signal_series": signal.tail(lookback_days).tolist(),
+        "histogram_series": histogram.tail(lookback_days).tolist(),
     }
 
 
@@ -326,7 +184,7 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
     rsi_current, rsi_series = calculate_rsi(lookback_df)
     
     # MACD
-    macd_data = calculate_macd(lookback_df, len(lookback_df))
+    macd_data = calculate_macd(lookback_df, lookback_days)
     
     # SMA 50 and 200
     sma_50 = lookback_df['Close'].rolling(50).mean().iloc[-1]
@@ -349,9 +207,9 @@ def calculate_technical_indicators(df: pd.DataFrame, lookback_days: int = 252) -
         "sma_200": float(sma_200) if sma_200 else None,
         "trend": trend,
         "rsi": {
-            "current": float(rsi_current) if not pd.isna(rsi_current) else 50.0,
+            "current": float(rsi_current),
             "status": "overbought" if rsi_current > 70 else "oversold" if rsi_current < 30 else "neutral",
-            "series": rsi_series.tail(len(lookback_df)).fillna(50).tolist(),
+            "series": rsi_series.tail(lookback_days).tolist(),
         },
         "macd": {
             "current": float(macd_data["macd"]),
@@ -555,12 +413,6 @@ def get_stock_projections(
     # Calculate technical indicators for 252-day lookback
     technical_data = calculate_technical_indicators(df, lookback_days=252)
     
-    # Fetch options flow data
-    options_flow = get_options_flow(ticker)
-    
-    # Fetch analyst consensus data
-    analyst_consensus = get_analyst_consensus(ticker)
-    
     return {
         "ticker": ticker,
         "name": stock_name,
@@ -572,6 +424,4 @@ def get_stock_projections(
             "score_3m_ago": historical_score  # What the score was 90 days ago
         },
         "technical": technical_data,
-        "analyst_consensus": analyst_consensus,
-        "options_flow": options_flow,
     }

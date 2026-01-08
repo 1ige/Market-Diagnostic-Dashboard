@@ -11,6 +11,7 @@ export default function Sidebar() {
         <Link to="/market-map" className="hover:text-accent-yellow">Market Map</Link>
         <Link to="/news" className="hover:text-accent-yellow">News</Link>
         <Link to="/sector-projections" className="hover:text-accent-yellow font-semibold">Sector Projections</Link>
+        <Link to="/precious-metals" className="hover:text-accent-yellow">💎 Precious Metals</Link>
       </nav>
     </div>
   );

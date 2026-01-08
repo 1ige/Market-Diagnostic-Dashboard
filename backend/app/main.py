@@ -11,6 +11,7 @@ from app.api.alerts import router as alerts_router
 from app.api.news import router as news_router
 from app.api.dow_theory import router as dow_theory_router
 from app.api.market_map import router as market_map_router
+from app.api.precious_metals import router as precious_metals_router
 
 # Set up logging
 logging.basicConfig(
@@ -95,3 +96,6 @@ app.include_router(stock_projection_router, tags=["StockProjections"])
 
 from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+
+# Precious Metals Diagnostic
+app.include_router(precious_metals_router, tags=["PreciousMetals"])

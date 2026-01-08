@@ -10,6 +10,7 @@ import SystemBreakdown from "./pages/SystemBreakdown";
 import MarketMap from "./pages/MarketMap";
 import SectorProjections from "./pages/SectorProjections";
 import StockProjections from "./pages/StockProjections";
+import PreciousMetalsDiagnostic from "./pages/PreciousMetalsDiagnostic";
 import { trackPageView } from "./utils/analytics";
 
 function AppWithAnalytics() {
@@ -25,6 +26,7 @@ function AppWithAnalytics() {
                      location.pathname.includes('/market-map') ? 'Market Map' :
                      location.pathname.includes('/sector-projections') ? 'Sector Projections' :
                      location.pathname.includes('/stock-projections') ? 'Stock Projections' :
+                     location.pathname.includes('/precious-metals') ? 'Precious Metals' :
                      'Unknown';
     
     trackPageView(location.pathname, pageName);
@@ -45,6 +47,7 @@ function AppWithAnalytics() {
           <Route path="/market-map" element={<MarketMap />} />
           <Route path="/sector-projections" element={<SectorProjections />} />
           <Route path="/stock-projections" element={<StockProjections />} />
+          <Route path="/precious-metals" element={<PreciousMetalsDiagnostic />} />
         </Routes>
       </main>
 
