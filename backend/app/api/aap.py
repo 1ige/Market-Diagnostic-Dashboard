@@ -93,7 +93,7 @@ def get_aap_history(
         ).order_by(AAPIndicator.date).all()
         
         if not indicators:
-            raise HTTPException(status_code=404, detail="No historical data available")le")
+            raise HTTPException(status_code=404, detail="No historical data available")
         
         return {
             "period": {
