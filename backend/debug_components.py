@@ -48,29 +48,29 @@ def main():
         try:
             components['cb_gold_momentum'] = calc._calc_cb_gold_momentum(date)
         except Exception as e:
-            print(f"  ✗ cb_gold_momentum failed: {e}")
+            print(f"  ✗ cb_gold_momentum failed: {type(e).__name__}: {e}")
         
         # Crypto subsystem
         print("\nFetching crypto components...")
         try:
             components['btc_usd_zscore'] = calc._calc_btc_usd_zscore(date)
         except Exception as e:
-            print(f"  ✗ btc_usd_zscore failed: {e}")
+            print(f"  ✗ btc_usd_zscore failed: {type(e).__name__}: {e}")
             
         try:
             components['btc_gold_zscore'] = calc._calc_btc_gold_zscore(date)
         except Exception as e:
-            print(f"  ✗ btc_gold_zscore failed: {e}")
+            print(f"  ✗ btc_gold_zscore failed: {type(e).__name__}: {e}")
             
         try:
             components['crypto_m2_ratio'] = calc._calc_crypto_m2_ratio(date)
         except Exception as e:
-            print(f"  ✗ crypto_m2_ratio failed: {e}")
+            print(f"  ✗ crypto_m2_ratio failed: {type(e).__name__}: {e}")
             
         try:
             components['crypto_vs_fed_bs'] = calc._calc_crypto_vs_fed(date)
         except Exception as e:
-            print(f"  ✗ crypto_vs_fed_bs failed: {e}")
+            print(f"  ✗ crypto_vs_fed_bs failed: {type(e).__name__}: {e}")
         
         # Filter out None
         components = {k: v for k, v in components.items() if v is not None}
