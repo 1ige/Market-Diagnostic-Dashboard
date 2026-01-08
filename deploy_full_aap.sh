@@ -31,19 +31,8 @@ echo "========================================================================"
 echo ""
 
 # Run all data fetchers
-echo "1. Fetching precious metals data..."
-docker exec market_backend python -c "
-from app.services.ingestion.precious_metals_ingestion import PreciousMetalsIngestion
-from app.core.db import SessionLocal
-
-db = SessionLocal()
-try:
-    ingestion = PreciousMetalsIngestion(db)
-    result = ingestion.fetch_current_prices()
-    print(f'  ✓ Fetched metals: AU=\${result.au:.2f}, AG=\${result.ag:.2f}' if result else '  ✗ Failed')
-finally:
-    db.close()
-"
+echo "1. Fetching precious metals data (7 days)..."
+docker exec market_backend python backfill_metals.py 7
 echo ""
 
 echo "2. Fetching crypto prices..."
