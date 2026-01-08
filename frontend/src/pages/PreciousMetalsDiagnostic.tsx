@@ -107,6 +107,22 @@ interface PriceHistory {
   price: number;
 }
 
+// Metal color scheme for consistent identification throughout the page
+const METAL_COLORS = {
+  AU: { primary: "#FFD700", name: "Gold" },      // Gold
+  AG: { primary: "#C0C0C0", name: "Silver" },    // Silver
+  PT: { primary: "#E5E4E2", name: "Platinum" },  // Platinum (lighter)
+  PD: { primary: "#CED0DD", name: "Palladium" }  // Palladium (grayish)
+};
+
+const getMetalColor = (metal: string): string => {
+  return METAL_COLORS[metal as keyof typeof METAL_COLORS]?.primary || "#888888";
+};
+
+const getMetalName = (metal: string): string => {
+  return METAL_COLORS[metal as keyof typeof METAL_COLORS]?.name || metal;
+};
+
 const getRegimeBadgeClass = (regime: string): string => {
   switch (regime) {
     case "MONETARY_STRESS":
@@ -255,17 +271,17 @@ export default function PreciousMetalsDiagnostic() {
 
       {selectedTab === "overview" && (
         <>
+          {/* PRICE HISTORY CHART */}
+          <div className="mb-6">
+            <PriceHistoryChart />
+          </div>
+
           {/* PROJECTIONS & TECHNICAL ANALYSIS */}
           {projections.length > 0 && (
             <div className="mb-6">
               <ProjectionsPanel projections={projections} />
             </div>
           )}
-
-          {/* PRICE HISTORY CHART */}
-          <div className="mb-6">
-            <PriceHistoryChart />
-          </div>
 
           {/* SECTION 2 & 3: CB CONTEXT & PRICE ANCHORS (2-COLUMN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -277,28 +293,28 @@ export default function PreciousMetalsDiagnostic() {
           </div>
 
           {/* SECTION 4 & 5: RELATIVE VALUE & PHYSICAL/PAPER (2-COLUMN) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Section 4: Relative Value */}
             <RelativeValuePanel indicators={indicators} />
 
             {/* Section 5: Physical vs Paper */}
             <PhysicalPaperPanel indicators={indicators} />
           </div>
+        </>
+      )}
 
+      {selectedTab === "deep-dive" && (
+        <>
           {/* SECTION 6 & 7: SUPPLY-DEMAND (2-COLUMN) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 6: Supply */}
             <SupplyPanel supply_data={supply_data} />
 
             {/* Section 7: Demand (Placeholder for future data) */}
             <DemandPanel />
           </div>
-        </>
-      )}
 
-      {selectedTab === "deep-dive" && (
-        <>
-          {/* SECTION 8: MARKET CAP & CORRELATIONS */}
+          {/* SECTION 8 & 9: MARKET CAP & CORRELATIONS */}
           <div className="grid grid-cols-1 gap-6">
             <MarketCapPanel />
             <CorrelationPanel correlations={correlations} />
@@ -468,7 +484,10 @@ function RelativeValuePanel({ indicators }: any) {
         {/* Au/Ag Ratio */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-stealth-300">Au/Ag Ratio</span>
+            <span className="text-sm font-semibold text-stealth-300">
+              <span style={{ color: getMetalColor('AU') }}>Au</span>/
+              <span style={{ color: getMetalColor('AG') }}>Ag</span> Ratio
+            </span>
             <span className="text-lg font-bold text-blue-300">{indicators.relative_value.au_ag_ratio.toFixed(1)}</span>
           </div>
           <div className="flex justify-between text-xs text-stealth-400 mb-2">
@@ -489,7 +508,10 @@ function RelativeValuePanel({ indicators }: any) {
         {/* Pt/Au Ratio */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-stealth-300">Pt/Au Ratio</span>
+            <span className="text-sm font-semibold text-stealth-300">
+              <span style={{ color: getMetalColor('PT') }}>Pt</span>/
+              <span style={{ color: getMetalColor('AU') }}>Au</span> Ratio
+            </span>
             <span className="text-lg font-bold text-blue-300">{indicators.relative_value.pt_au_ratio.toFixed(3)}</span>
           </div>
           <div className="flex justify-between text-xs text-stealth-400">
@@ -503,7 +525,10 @@ function RelativeValuePanel({ indicators }: any) {
         {/* Pd/Au Ratio */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-stealth-300">Pd/Au Ratio</span>
+            <span className="text-sm font-semibold text-stealth-300">
+              <span style={{ color: getMetalColor('PD') }}>Pd</span>/
+              <span style={{ color: getMetalColor('AU') }}>Au</span> Ratio
+            </span>
             <span className="text-lg font-bold text-blue-300">{indicators.relative_value.pd_au_ratio.toFixed(3)}</span>
           </div>
           <p className="text-xs text-stealth-400">
@@ -603,7 +628,12 @@ function SupplyPanel({ supply_data }: any) {
           {supply_data.map((metal: any, idx: number) => (
             <div key={idx} className="border-b border-stealth-600 pb-3 last:border-b-0">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-semibold text-blue-300">{metal.metal}</span>
+                <span 
+                  className="text-sm font-semibold" 
+                  style={{ color: getMetalColor(metal.metal) }}
+                >
+                  {getMetalName(metal.metal)} ({metal.metal})
+                </span>
                 <span className={`text-xs font-bold ${metal.production_tonnes_yoy_pct < 0 ? "text-red-400" : "text-green-400"}`}>
                   {metal.production_tonnes_yoy_pct > 0 ? "+" : ""}{metal.production_tonnes_yoy_pct.toFixed(0)}% YoY
                 </span>
@@ -704,27 +734,37 @@ function CorrelationPanel({ correlations }: any) {
           </thead>
           <tbody className="text-xs text-stealth-300">
             <tr className="border-b border-stealth-700">
-              <td className="py-2">Au ↔ Ag</td>
+              <td className="py-2">
+                <span style={{ color: getMetalColor('AU') }}>Au</span> ↔ <span style={{ color: getMetalColor('AG') }}>Ag</span>
+              </td>
               <td className="text-right font-semibold">{correlations.au_ag.toFixed(2)}</td>
               <td className="text-right">High correlation (both monetary)</td>
             </tr>
             <tr className="border-b border-stealth-700">
-              <td className="py-2">Au ↔ SPY</td>
+              <td className="py-2">
+                <span style={{ color: getMetalColor('AU') }}>Au</span> ↔ SPY
+              </td>
               <td className="text-right font-semibold">{correlations.au_spy.toFixed(2)}</td>
               <td className="text-right">Diversification benefit</td>
             </tr>
             <tr className="border-b border-stealth-700">
-              <td className="py-2">Au ↔ TLT</td>
+              <td className="py-2">
+                <span style={{ color: getMetalColor('AU') }}>Au</span> ↔ TLT
+              </td>
               <td className="text-right font-semibold">{correlations.au_tlt.toFixed(2)}</td>
               <td className="text-right">Bond substitute signal</td>
             </tr>
             <tr className="border-b border-stealth-700">
-              <td className="py-2">Au ↔ DXY</td>
+              <td className="py-2">
+                <span style={{ color: getMetalColor('AU') }}>Au</span> ↔ DXY
+              </td>
               <td className="text-right font-semibold">{correlations.au_dxy.toFixed(2)}</td>
               <td className="text-right">Currency hedge effect</td>
             </tr>
             <tr>
-              <td className="py-2">Au ↔ VIX</td>
+              <td className="py-2">
+                <span style={{ color: getMetalColor('AU') }}>Au</span> ↔ VIX
+              </td>
               <td className="text-right font-semibold">{correlations.au_vix.toFixed(2)}</td>
               <td className="text-right">Stress indicator</td>
             </tr>
@@ -775,7 +815,9 @@ function ProjectionsPanel({ projections }: { projections: MetalProjection[] }) {
             key={proj.metal}
             className={`p-3 rounded border ${getRelativeClassColor(proj.relative_classification)}`}
           >
-            <div className="text-xs font-semibold mb-1">#{proj.rank} {proj.metal_name}</div>
+            <div className="text-xs font-semibold mb-1">
+              #{proj.rank} <span style={{ color: getMetalColor(proj.metal) }}>{proj.metal_name}</span>
+            </div>
             <div className="text-lg font-bold">${proj.current_price.toFixed(2)}</div>
             <div className="text-xs mt-1">Score: {proj.score_total}/100</div>
             <div className={`text-xs mt-1 font-semibold ${getClassificationColor(proj.classification)}`}>
@@ -791,8 +833,12 @@ function ProjectionsPanel({ projections }: { projections: MetalProjection[] }) {
           <div key={proj.metal} className="bg-stealth-700 p-4 rounded border border-stealth-600">
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="font-bold text-lg">{proj.metal_name} ({proj.etf_symbol})</h3>
-                <div className="text-sm text-stealth-400">{proj.metal}</div>
+                <h3 className="font-bold text-lg">
+                  <span style={{ color: getMetalColor(proj.metal) }}>{proj.metal_name}</span> ({proj.etf_symbol})
+                </h3>
+                <div className="text-sm text-stealth-400" style={{ color: getMetalColor(proj.metal) }}>
+                  {proj.metal}
+                </div>
               </div>
               <div className={`px-2 py-1 rounded text-xs font-semibold ${getRelativeClassColor(proj.relative_classification)}`}>
                 {proj.relative_classification}
