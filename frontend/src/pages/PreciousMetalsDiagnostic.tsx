@@ -111,8 +111,8 @@ interface PriceHistory {
 const METAL_COLORS = {
   AU: { primary: "#FFD700", name: "Gold" },      // Gold
   AG: { primary: "#C0C0C0", name: "Silver" },    // Silver
-  PT: { primary: "#E5E4E2", name: "Platinum" },  // Platinum (lighter)
-  PD: { primary: "#CED0DD", name: "Palladium" }  // Palladium (grayish)
+  PT: { primary: "#9D4EDD", name: "Platinum" },  // Platinum (purple)
+  PD: { primary: "#FF6B6B", name: "Palladium" }  // Palladium (red)
 };
 
 const getMetalColor = (metal: string): string => {
@@ -1098,7 +1098,7 @@ function PriceHistoryChart() {
             yAxisId="left"
             type="monotone" 
             dataKey="PT" 
-            stroke="#E5E4E2" 
+            stroke="#9D4EDD" 
             strokeWidth={2}
             dot={false}
             name="Platinum"
@@ -1107,7 +1107,7 @@ function PriceHistoryChart() {
             yAxisId="left"
             type="monotone" 
             dataKey="PD" 
-            stroke="#CED0D0" 
+            stroke="#FF6B6B" 
             strokeWidth={2}
             dot={false}
             name="Palladium"

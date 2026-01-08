@@ -80,24 +80,67 @@ def compute_metal_projection(metal: str, metal_name: str, etf_symbol: str) -> Di
     
     latest = df.iloc[-1]
     
-    # Technical scoring
+    # Calculate distance from moving averages (gap analysis)
+    sma_20_distance = ((current_price - latest['sma_20']) / latest['sma_20'] * 100) if pd.notna(latest['sma_20']) else 0
+    sma_50_distance = ((current_price - latest['sma_50']) / latest['sma_50'] * 100) if pd.notna(latest['sma_50']) else 0
+    sma_200_distance = ((current_price - latest['sma_200']) / latest['sma_200'] * 100) if pd.notna(latest['sma_200']) else 0
+    
+    # Technical scoring with exhaustion penalties
     score_trend = 0
     if pd.notna(latest['sma_20']) and pd.notna(latest['sma_50']):
+        # Base trend score
         if current_price > latest['sma_20']:
-            score_trend += 25
+            # Penalty for being too extended above SMA20
+            if sma_20_distance > 10:
+                score_trend += 10  # Extended, potential exhaustion
+            elif sma_20_distance > 5:
+                score_trend += 20  # Moderately extended
+            else:
+                score_trend += 25  # Healthy uptrend
+        else:
+            score_trend += 5  # Below SMA20
+            
         if current_price > latest['sma_50']:
-            score_trend += 25
+            if sma_50_distance > 15:
+                score_trend += 10  # Very extended
+            elif sma_50_distance > 8:
+                score_trend += 20
+            else:
+                score_trend += 25
+        else:
+            score_trend += 5
+            
         if pd.notna(latest['sma_200']) and current_price > latest['sma_200']:
-            score_trend += 25
+            if sma_200_distance > 25:
+                score_trend += 10  # Extremely extended from long-term mean
+            elif sma_200_distance > 15:
+                score_trend += 20
+            else:
+                score_trend += 25
+        else:
+            score_trend += 5
+            
         if latest['sma_20'] > latest['sma_50']:
             score_trend += 25
+        else:
+            score_trend += 10  # Bearish alignment
     
-    # RSI scoring
+    # RSI scoring with overbought/oversold considerations
     score_momentum = 0
     if pd.notna(latest['rsi']):
         rsi = latest['rsi']
-        if 40 <= rsi <= 60:
-            score_momentum = 100
+        if 45 <= rsi <= 55:
+            score_momentum = 100  # Neutral - most room to run
+        elif 40 <= rsi < 45 or 55 < rsi <= 60:
+            score_momentum = 90  # Slight bias but still good
+        elif 35 <= rsi < 40 or 60 < rsi <= 65:
+            score_momentum = 75  # Getting extended
+        elif 30 <= rsi < 35 or 65 < rsi <= 70:
+            score_momentum = 50  # Oversold/overbought territory
+        elif rsi < 30:
+            score_momentum = 30  # Deeply oversold - risky
+        elif rsi > 70:
+            score_momentum = 25  # Overbought - exhaustion risk
         elif 30 <= rsi < 40 or 60 < rsi <= 70:
             score_momentum = 75
         elif 20 <= rsi < 30 or 70 < rsi <= 80:
