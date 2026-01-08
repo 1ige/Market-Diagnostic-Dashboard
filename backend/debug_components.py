@@ -26,27 +26,17 @@ def main():
             print(f"  ✗ silver_usd_zscore failed: {e}")
             
         try:
-            components['platinum_usd_zscore'] = calc._calc_platinum_usd_zscore(date)
-        except Exception as e:
-            print(f"  ✗ platinum_usd_zscore failed: {e}")
-            
-        try:
-            components['palladium_usd_zscore'] = calc._calc_palladium_usd_zscore(date)
-        except Exception as e:
-            print(f"  ✗ palladium_usd_zscore failed: {e}")
-            
-        try:
-            components['gold_silver_ratio_signal'] = calc._calc_gold_silver_ratio(date)
+            components['gold_silver_ratio_signal'] = calc._calc_gsr_signal(date)
         except Exception as e:
             print(f"  ✗ gold_silver_ratio_signal failed: {e}")
             
         try:
-            components['platinum_gold_ratio_signal'] = calc._calc_platinum_gold_ratio(date)
+            components['platinum_gold_ratio_signal'] = calc._calc_pt_au_signal(date)
         except Exception as e:
             print(f"  ✗ platinum_gold_ratio_signal failed: {e}")
             
         try:
-            components['palladium_gold_ratio_signal'] = calc._calc_palladium_gold_ratio(date)
+            components['palladium_gold_ratio_signal'] = calc._calc_pd_au_signal(date)
         except Exception as e:
             print(f"  ✗ palladium_gold_ratio_signal failed: {e}")
             
@@ -56,12 +46,22 @@ def main():
             print(f"  ✗ comex_stress_ratio failed: {e}")
             
         try:
-            components['cb_gold_momentum'] = calc._calc_cb_momentum(date)
+            components['cb_gold_momentum'] = calc._calc_cb_gold_momentum(date)
         except Exception as e:
             print(f"  ✗ cb_gold_momentum failed: {e}")
         
         # Crypto subsystem
         print("\nFetching crypto components...")
+        try:
+            components['btc_usd_zscore'] = calc._calc_btc_usd_zscore(date)
+        except Exception as e:
+            print(f"  ✗ btc_usd_zscore failed: {e}")
+            
+        try:
+            components['btc_gold_zscore'] = calc._calc_btc_gold_zscore(date)
+        except Exception as e:
+            print(f"  ✗ btc_gold_zscore failed: {e}")
+            
         try:
             components['crypto_m2_ratio'] = calc._calc_crypto_m2_ratio(date)
         except Exception as e:
