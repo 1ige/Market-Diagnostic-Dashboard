@@ -133,28 +133,34 @@ class AAPCalculator:
             # Step 11: Assess data quality
             data_completeness = self._assess_data_completeness(components)
             
+            # Helper to convert numpy types to Python types
+            def to_python_type(val):
+                if val is None:
+                    return None
+                return float(val) if hasattr(val, 'item') else val
+            
             # Create indicator record
             indicator = AAPIndicator(
                 date=target_date,
-                stability_score=stability_score,
-                pressure_index=pressure_index,
-                metals_contribution=metals_pressure * 0.50 * multiplier,
-                crypto_contribution=crypto_pressure * 0.50 * multiplier,
+                stability_score=to_python_type(stability_score),
+                pressure_index=to_python_type(pressure_index),
+                metals_contribution=to_python_type(metals_pressure * 0.50 * multiplier),
+                crypto_contribution=to_python_type(crypto_pressure * 0.50 * multiplier),
                 regime=regime,
-                regime_confidence=regime_confidence,
+                regime_confidence=to_python_type(regime_confidence),
                 primary_driver=primary_driver,
                 stress_type=stress_type,
-                vix_level=vix_level,
+                vix_level=to_python_type(vix_level),
                 liquidity_regime=liquidity_regime,
-                fed_pivot_signal=fed_pivot,
-                score_1d_change=rolling_stats.get('change_1d'),
-                score_5d_change=rolling_stats.get('change_5d'),
-                score_20d_avg=rolling_stats.get('avg_20d'),
-                score_90d_avg=rolling_stats.get('avg_90d'),
+                fed_pivot_signal=to_python_type(fed_pivot),
+                score_1d_change=to_python_type(rolling_stats.get('change_1d')),
+                score_5d_change=to_python_type(rolling_stats.get('change_5d')),
+                score_20d_avg=to_python_type(rolling_stats.get('avg_20d')),
+                score_90d_avg=to_python_type(rolling_stats.get('avg_90d')),
                 is_critical=is_critical,
                 is_transitioning=is_transitioning,
                 circuit_breaker_active=circuit_breaker,
-                data_completeness=data_completeness,
+                data_completeness=to_python_type(data_completeness),
             )
             
             # Persist component details
