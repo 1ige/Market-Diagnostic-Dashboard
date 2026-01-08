@@ -113,11 +113,13 @@ export default function AlternativeAssetPressure() {
     );
   }
 
-  const metalsComponents = aapData.components.filter(c => c.category === 'metals');
-  const cryptoComponents = aapData.components.filter(c => c.category === 'crypto');
-  const activeCount = aapData.components.filter(c => c.status === 'active').length;
-  const totalCount = aapData.components.length;
-  const completenessPercent = (activeCount / totalCount) * 100;
+  // Safe data extraction with fallbacks
+  const components = aapData.components || [];
+  const metalsComponents = components.filter((c: any) => c.category === 'metals');
+  const cryptoComponents = components.filter((c: any) => c.category === 'crypto');
+  const activeCount = components.filter((c: any) => c.status === 'active').length;
+  const totalCount = components.length;
+  const completenessPercent = totalCount > 0 ? (activeCount / totalCount) * 100 : 0;
 
   const subsystemData = [
     { name: 'Metals', value: aapData.metals_contribution, fill: '#f59e0b' },
