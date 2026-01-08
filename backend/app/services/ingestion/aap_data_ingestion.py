@@ -226,49 +226,46 @@ class MacroDataIngestion:
             # CPI (for real rate calculation)
             cpi_yoy = self._fetch_fred_series("CPIAUCSL", units="pc1")  # Year-over-year % change
             
-            # Global M2 aggregate (sum of major economies converted to USD billions)
-            # Note: FRED series have different units - need to normalize
+            # Global M2 aggregate (sum of major economies converted to USD trillions)
+            # Note: FRED series have different units - need to normalize carefully
             
-            m2_billions_usd = []
+            m2_trillions_usd = []
             
-            # US M2: Already in billions USD
-            us_m2 = self._fetch_fred_series("WM2NS")  # Billions USD
-            if us_m2:
-                m2_billions_usd.append(us_m2)
-                logger.debug(f"US M2: ${us_m2:.1f}B")
+            # US M2: Billions USD -> Trillions USD
+            us_m2_billions = self._fetch_fred_series("WM2NS")  # Billions USD
+            if us_m2_billions:
+                us_m2_trillions = us_m2_billions / 1000.0
+                m2_trillions_usd.append(us_m2_trillions)
+                logger.debug(f"US M2: ${us_m2_trillions:.2f}T")
             
-            # Eurozone M2: Millions EUR -> Billions USD (rough conversion: 1 EUR ≈ 1.1 USD)
+            # Eurozone M2: Millions EUR -> Trillions USD (1 EUR ≈ 1.1 USD)
             eurozone_m2_millions_eur = self._fetch_fred_series("MABMM301EZM189S")
             if eurozone_m2_millions_eur:
-                eurozone_m2_billions_usd = (eurozone_m2_millions_eur / 1000) * 1.1
-                m2_billions_usd.append(eurozone_m2_billions_usd)
-                logger.debug(f"Eurozone M2: ${eurozone_m2_billions_usd:.1f}B")
+                eurozone_m2_trillions_usd = (eurozone_m2_millions_eur / 1_000_000) * 1.1
+                m2_trillions_usd.append(eurozone_m2_trillions_usd)
+                logger.debug(f"Eurozone M2: ${eurozone_m2_trillions_usd:.2f}T")
             
-            # Japan M2: Millions JPY -> Billions USD (rough conversion: 1 USD ≈ 140 JPY)
+            # Japan M2: Millions JPY -> Trillions USD (1 USD ≈ 140 JPY)
             japan_m2_millions_jpy = self._fetch_fred_series("MABMM301JPM189S")
             if japan_m2_millions_jpy:
-                japan_m2_billions_usd = (japan_m2_millions_jpy / 1000) / 140
-                m2_billions_usd.append(japan_m2_billions_usd)
-                logger.debug(f"Japan M2: ${japan_m2_billions_usd:.1f}B")
+                japan_m2_trillions_usd = (japan_m2_millions_jpy / 1_000_000) / 140
+                m2_trillions_usd.append(japan_m2_trillions_usd)
+                logger.debug(f"Japan M2: ${japan_m2_trillions_usd:.2f}T")
             
-            # UK M2: Millions GBP -> Billions USD (rough conversion: 1 GBP ≈ 1.27 USD)
+            # UK M2: Millions GBP -> Trillions USD (1 GBP ≈ 1.27 USD)
             uk_m2_millions_gbp = self._fetch_fred_series("MABMM301GBM189S")
             if uk_m2_millions_gbp:
-                uk_m2_billions_usd = (uk_m2_millions_gbp / 1000) * 1.27
-                m2_billions_usd.append(uk_m2_billions_usd)
-                logger.debug(f"UK M2: ${uk_m2_billions_usd:.1f}B")
+                uk_m2_trillions_usd = (uk_m2_millions_gbp / 1_000_000) * 1.27
+                m2_trillions_usd.append(uk_m2_trillions_usd)
+                logger.debug(f"UK M2: ${uk_m2_trillions_usd:.2f}T")
             
-            # China M2: Note - FRED series may be unavailable, skip for now
-            # china_m2 = self._fetch_fred_series("MYAGM2CNM189S")
-            
-            # Calculate global M2 (convert billions to trillions)
+            # Calculate global M2 (already in trillions)
             global_m2 = None
-            if len(m2_billions_usd) >= 3:  # Need at least 3 major economies
-                total_billions = sum(m2_billions_usd)
-                global_m2 = total_billions / 1000.0  # Convert to trillions
-                logger.info(f"Global M2 calculated: ${global_m2:.2f}T from {len(m2_billions_usd)} economies (${total_billions:.0f}B)")
+            if len(m2_trillions_usd) >= 3:  # Need at least 3 major economies
+                global_m2 = sum(m2_trillions_usd)
+                logger.info(f"Global M2 calculated: ${global_m2:.2f}T from {len(m2_trillions_usd)} economies")
             else:
-                logger.warning(f"Insufficient M2 data: only {len(m2_billions_usd)} economies available")
+                logger.warning(f"Insufficient M2 data: only {len(m2_trillions_usd)} economies available")
             
             if not fed_bs:
                 logger.warning("Could not fetch Fed balance sheet data")
