@@ -1,7 +1,7 @@
 """
 Seed Indicators Script
 ----------------------
-Creates all 10 indicator metadata entries in the database.
+Creates all 11 indicator metadata entries in the database.
 This script is automatically run on container startup via startup.sh.
 
 Indicators:
@@ -15,6 +15,7 @@ Indicators:
 - LIQUIDITY_PROXY: EFFR volatility (high = stress)
 - ANALYST_ANXIETY: Composite sentiment indicator from VIX, MOVE, HY OAS, ERP (high = stress)
 - SENTIMENT_COMPOSITE: Consumer & corporate confidence from Michigan, NFIB, ISM, CapEx
+- AAP: Alternative Asset Pressure from crypto and precious metals (low = pressure/distrust)
 
 Real data will be fetched automatically by the ETL scheduler every 4 hours.
 """
@@ -151,6 +152,18 @@ INDICATORS = [
         "threshold_yellow_max": 70,
         "weight": 1.6,
     },
+    {
+        "code": "AAP",
+        "name": "Alternative Asset Pressure",
+        "source": "DERIVED",
+        "source_symbol": "AAP_COMPOSITE",
+        "category": "alternative_assets",
+        "direction": -1,  # Backend outputs stability score (high = stable, low = pressure)
+        "lookback_days_for_z": 252,
+        "threshold_green_max": 40,  # Stability score thresholds: RED <40, YELLOW 40-69, GREEN >=70
+        "threshold_yellow_max": 70,
+        "weight": 2.0,  # Higher weight - structural signal
+    },
 ]
 
 # Check which indicators already exist
@@ -161,7 +174,7 @@ for ind_data in INDICATORS:
         new_indicators.append(ind_data)
 
 if not new_indicators:
-    print("✅ All 10 indicators already exist")
+    print("✅ All 11 indicators already exist")
     db.close()
     exit(0)
 
