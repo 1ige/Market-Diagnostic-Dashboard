@@ -12,6 +12,7 @@ export default function Topbar() {
     { path: "/sector-projections", label: "Sector Projections" },
     { path: "/stock-projections", label: "Stock Projections" },
     { path: "/precious-metals", label: "Precious Metals" },
+    { path: "/alternative-assets", label: "Alternative Assets" },
     { path: "/news", label: "News" },
     { path: "/system-breakdown", label: "System Breakdown" },
   ];

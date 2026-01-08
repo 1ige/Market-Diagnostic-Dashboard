@@ -27,6 +27,9 @@ const getHistoryDays = (indicatorCode: string): number => {
 export default function Indicators() {
   const { data, loading, error } = useApi<IndicatorStatus[]>("/indicators");
 
+  // Filter out AAP (Alternative Asset Pressure) since it has its own dedicated page
+  const filteredData = data?.filter(i => i.code !== "AAP") || [];
+
   if (loading) {
     return (
       <div className="p-3 md:p-6 text-gray-200">
@@ -77,7 +80,7 @@ export default function Indicators() {
             </tr>
           </thead>
           <tbody className="text-gray-300">
-            {data.map((i) => (
+            {filteredData.map((i) => (
               <IndicatorRow key={i.code} indicator={i} />
             ))}
           </tbody>
@@ -86,7 +89,7 @@ export default function Indicators() {
 
       {/* Mobile/Tablet Card View */}
       <div className="lg:hidden space-y-3">
-        {data.map((i) => (
+        {filteredData.map((i) => (
           <IndicatorCard key={i.code} indicator={i} />
         ))}
       </div>
