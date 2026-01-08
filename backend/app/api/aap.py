@@ -4,13 +4,12 @@ Alternative Asset Pressure (AAP) Indicator API Endpoints
 Provides access to AAP indicator data, components, and regime analysis.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import desc, func
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from app.core.db import get_db
+from app.utils.db_helpers import get_db_session
 from app.models.alternative_assets import (
     AAPIndicator,
     AAPComponent,
@@ -24,7 +23,7 @@ router = APIRouter(prefix="/aap", tags=["Alternative Asset Pressure"])
 
 
 @router.get("/current")
-def get_current_aap(db: Session = Depends(get_db)):
+def get_current_aap():
     """
     Get the most recent AAP indicator reading.
     
@@ -34,16 +33,17 @@ def get_current_aap(db: Session = Depends(get_db)):
         - primary_driver: What's driving the signal (metals/crypto/coordinated)
         - stress_type: Type of stress being indicated
     """
-    indicator = db.query(AAPIndicator).order_by(
-        desc(AAPIndicator.date)
-    ).first()
-    
-    if not indicator:
-        raise HTTPException(status_code=404, detail="No AAP data available")
-    
-    return {
-        "date": indicator.date.isoformat(),
-        "stability_score": round(indicator.stability_score, 1),
+    with get_db_session() as db:
+        indicator = db.query(AAPIndicator).order_by(
+            desc(AAPIndicator.date)
+        ).first()
+        
+        if not indicator:
+            raise HTTPException(status_code=404, detail="No AAP data available")
+        
+        return {
+            "date": indicator.date.isoformat(),
+            "stability_score": round(indicator.stability_score, 1),
         "pressure_index": round(indicator.pressure_index, 3),
         "regime": indicator.regime,
         "regime_confidence": round(indicator.regime_confidence, 2),
@@ -71,14 +71,13 @@ def get_current_aap(db: Session = Depends(get_db)):
             "completeness": round(indicator.data_completeness, 2),
             "notes": indicator.calculation_notes,
         },
-        "interpretation": _get_regime_interpretation(indicator.regime, indicator.stress_type),
-    }
+            "interpretation": _get_regime_interpretation(indicator.regime, indicator.stress_type),
+        }
 
 
 @router.get("/history")
 def get_aap_history(
-    days: int = Query(90, ge=1, le=730, description="Number of days of history"),
-    db: Session = Depends(get_db)
+    days: int = Query(90, ge=1, le=730, description="Number of days of history")
 ):
     """
     Get historical AAP indicator values.
@@ -86,17 +85,18 @@ def get_aap_history(
     Query params:
         - days: Number of days to retrieve (default 90, max 730)
     """
-    start_date = datetime.utcnow() - timedelta(days=days)
-    
-    indicators = db.query(AAPIndicator).filter(
-        AAPIndicator.date >= start_date
-    ).order_by(AAPIndicator.date).all()
-    
-    if not indicators:
-        raise HTTPException(status_code=404, detail="No historical data available")
-    
-    return {
-        "period": {
+    with get_db_session() as db:
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        indicators = db.query(AAPIndicator).filter(
+            AAPIndicator.date >= start_date
+        ).order_by(AAPIndicator.date).all()
+        
+        if not indicators:
+            raise HTTPException(status_code=404, detail="No historical data available")le")
+        
+        return {
+            "period": {
             "start": indicators[0].date.isoformat(),
             "end": indicators[-1].date.isoformat(),
             "days": len(indicators),
@@ -118,34 +118,35 @@ def get_aap_history(
             "avg_score": round(sum(ind.stability_score for ind in indicators) / len(indicators), 1),
             "min_score": round(min(ind.stability_score for ind in indicators), 1),
             "max_score": round(max(ind.stability_score for ind in indicators), 1),
-            "volatility": round(
-                np.std([ind.stability_score for ind in indicators]), 1
-            ) if len(indicators) > 1 else 0,
+                "volatility": round(
+                    np.std([ind.stability_score for ind in indicators]), 1
+                ) if len(indicators) > 1 else 0,
+            }
         }
-    }
 
 
 @router.get("/components/current")
-def get_current_components(db: Session = Depends(get_db)):
+def get_current_components():
     """
     Get detailed component breakdown for the most recent AAP calculation.
     Useful for understanding what's driving the signal.
     """
-    component = db.query(AAPComponent).order_by(
-        desc(AAPComponent.date)
-    ).first()
-    
-    if not component:
-        raise HTTPException(status_code=404, detail="No component data available")
-    
-    return {
-        "date": component.date.isoformat(),
-        "subsystems": {
-            "metals": {
-                "pressure_score": round(component.metals_pressure_score, 3),
-                "components": {
-                    "monetary_strength": {
-                        "gold_usd_zscore": round(component.gold_usd_zscore, 3) if component.gold_usd_zscore else None,
+    with get_db_session() as db:
+        component = db.query(AAPComponent).order_by(
+            desc(AAPComponent.date)
+        ).first()
+        
+        if not component:
+            raise HTTPException(status_code=404, detail="No component data available")
+        
+        return {
+            "date": component.date.isoformat(),
+            "subsystems": {
+                "metals": {
+                    "pressure_score": round(component.metals_pressure_score, 3),
+                    "components": {": {
+                        "monetary_strength": {
+                            "gold_usd_zscore": round(component.gold_usd_zscore, 3) if component.gold_usd_zscore else None,
                         "gold_real_rate_divergence": round(component.gold_real_rate_divergence, 3) if component.gold_real_rate_divergence else None,
                         "cb_gold_momentum": round(component.cb_gold_momentum, 3) if component.cb_gold_momentum else None,
                         "silver_usd_zscore": round(component.silver_usd_zscore, 3) if component.silver_usd_zscore else None,
@@ -159,14 +160,14 @@ def get_current_components(db: Session = Depends(get_db)):
                         "comex_stress_ratio": round(component.comex_stress_ratio, 3) if component.comex_stress_ratio else None,
                         "backwardation_signal": round(component.backwardation_signal, 3) if component.backwardation_signal else None,
                         "etf_flow_divergence": round(component.etf_flow_divergence, 3) if component.etf_flow_divergence else None,
+                        }
                     }
-                }
-            },
-            "crypto": {
-                "pressure_score": round(component.crypto_pressure_score, 3),
-                "components": {
-                    "monetary_barometer": {
-                        "btc_usd_zscore": round(component.btc_usd_zscore, 3) if component.btc_usd_zscore else None,
+                },
+                "crypto": {
+                    "pressure_score": round(component.crypto_pressure_score, 3),
+                    "components": {": {
+                        "monetary_barometer": {
+                            "btc_usd_zscore": round(component.btc_usd_zscore, 3) if component.btc_usd_zscore else None,
                         "btc_gold_zscore": round(component.btc_gold_zscore, 3) if component.btc_gold_zscore else None,
                         "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,
                     },
@@ -178,36 +179,37 @@ def get_current_components(db: Session = Depends(get_db)):
                     "liquidity_correlation": {
                         "crypto_vs_fed_bs": round(component.crypto_vs_fed_bs, 3) if component.crypto_vs_fed_bs else None,
                         "crypto_qt_resilience": round(component.crypto_qt_resilience, 3) if component.crypto_qt_resilience else None,
+                        }
                     }
                 }
+            },
+            "cross_asset": {
+                "multiplier": round(component.cross_asset_multiplier, 2),
+                "correlation_regime": component.correlation_regime,
             }
-        },
-        "cross_asset": {
-            "multiplier": round(component.cross_asset_multiplier, 2),
-            "correlation_regime": component.correlation_regime,
         }
-    }
 
 
 @router.get("/regime/current")
-def get_current_regime(db: Session = Depends(get_db)):
+def get_current_regime():
     """
     Get detailed information about the current market regime.
     """
-    indicator = db.query(AAPIndicator).order_by(
-        desc(AAPIndicator.date)
-    ).first()
-    
-    if not indicator:
-        raise HTTPException(status_code=404, detail="No regime data available")
-    
-    regime_history = db.query(AAPRegimeHistory).filter(
-        AAPRegimeHistory.regime_end.is_(None)
-    ).first()
-    
-    return {
-        "current_regime": {
-            "name": indicator.regime,
+    with get_db_session() as db:
+        indicator = db.query(AAPIndicator).order_by(
+            desc(AAPIndicator.date)
+        ).first()
+        
+        if not indicator:
+            raise HTTPException(status_code=404, detail="No regime data available")
+        
+        regime_history = db.query(AAPRegimeHistory).filter(
+            AAPRegimeHistory.regime_end.is_(None)
+        ).first()
+        
+        return {
+            "current_regime": {
+                "name": indicator.regime,
             "confidence": round(indicator.regime_confidence, 2),
             "days_persistent": indicator.regime_days_persistent,
             "started": regime_history.regime_start.isoformat() if regime_history else None,
@@ -217,81 +219,82 @@ def get_current_regime(db: Session = Depends(get_db)):
             "stress_type": indicator.stress_type,
             "stability_score": round(indicator.stability_score, 1),
         },
-        "interpretation": _get_regime_interpretation(indicator.regime, indicator.stress_type),
-        "context": {
-            "liquidity_regime": indicator.liquidity_regime,
-            "is_critical": bool(indicator.is_critical),
-            "is_transitioning": bool(indicator.is_transitioning),
-            "circuit_breaker_active": bool(indicator.circuit_breaker_active),
+            "interpretation": _get_regime_interpretation(indicator.regime, indicator.stress_type),
+            "context": {
+                "liquidity_regime": indicator.liquidity_regime,
+                "is_critical": bool(indicator.is_critical),
+                "is_transitioning": bool(indicator.is_transitioning),
+                "circuit_breaker_active": bool(indicator.circuit_breaker_active),
+            }
         }
-    }
 
 
 @router.get("/regime/history")
 def get_regime_history(
-    limit: int = Query(10, ge=1, le=50, description="Number of regime periods"),
-    db: Session = Depends(get_db)
+    limit: int = Query(10, ge=1, le=50, description="Number of regime periods")
 ):
     """
     Get historical regime transitions and their characteristics.
     """
-    regimes = db.query(AAPRegimeHistory).order_by(
-        desc(AAPRegimeHistory.regime_start)
-    ).limit(limit).all()
-    
-    if not regimes:
-        raise HTTPException(status_code=404, detail="No regime history available")
-    
-    return {
-        "regimes": [
-            {
-                "name": regime.regime_name,
-                "started": regime.regime_start.isoformat(),
-                "ended": regime.regime_end.isoformat() if regime.regime_end else "ongoing",
-                "duration_days": regime.duration_days,
-                "stability_scores": {
+    with get_db_session() as db:
+        regimes = db.query(AAPRegimeHistory).order_by(
+            desc(AAPRegimeHistory.regime_start)
+        ).limit(limit).all()
+        
+        if not regimes:
+            raise HTTPException(status_code=404, detail="No regime history available")
+        
+        return {
+            "regimes": [
+                {   {
+                    "name": regime.regime_name,
+                    "started": regime.regime_start.isoformat(),
+                    "ended": regime.regime_end.isoformat() if regime.regime_end else "ongoing",
+                    "duration_days": regime.duration_days,
+                    "stability_scores": {
                     "average": round(regime.avg_stability_score, 1) if regime.avg_stability_score else None,
                     "min": round(regime.min_stability_score, 1) if regime.min_stability_score else None,
                     "max": round(regime.max_stability_score, 1) if regime.max_stability_score else None,
                 },
-                "outcome": regime.market_outcome,
-            }
-            for regime in regimes
-        ]
-    }
+                    "outcome": regime.market_outcome,
+                }
+                for regime in regimes
+            ]
+        }
 
 
 @router.get("/dashboard")
-def get_dashboard_summary(db: Session = Depends(get_db)):
+def get_dashboard_summary():
     """
     Get comprehensive AAP dashboard summary with all key metrics.
     Designed for main dashboard display.
     """
-    # Current indicator
-    current = db.query(AAPIndicator).order_by(
-        desc(AAPIndicator.date)
-    ).first()
-    
-    if not current:
-        raise HTTPException(status_code=404, detail="No AAP data available")
-    
-    # Recent history for trend
-    recent = db.query(AAPIndicator).filter(
-        AAPIndicator.date >= current.date - timedelta(days=30)
-    ).order_by(AAPIndicator.date).all()
-    
-    # Current regime details
-    regime_history = db.query(AAPRegimeHistory).filter(
-        AAPRegimeHistory.regime_end.is_(None)
-    ).first()
-    
-    # Components
-    components = db.query(AAPComponent).filter(
-        AAPComponent.date == current.date
-    ).first()
-    
-    return {
-        "headline": {
+    with get_db_session() as db:
+        # Current indicator
+        current = db.query(AAPIndicator).order_by(
+            desc(AAPIndicator.date)
+        ).first()
+        
+        if not current:
+            raise HTTPException(status_code=404, detail="No AAP data available")
+        
+        # Recent history for trend
+        recent = db.query(AAPIndicator).filter(
+            AAPIndicator.date >= current.date - timedelta(days=30)
+        ).order_by(AAPIndicator.date).all()
+        
+        # Current regime details
+        regime_history = db.query(AAPRegimeHistory).filter(
+            AAPRegimeHistory.regime_end.is_(None)
+        ).first()
+        
+        # Components
+        components = db.query(AAPComponent).filter(
+            AAPComponent.date == current.date
+        ).first()
+        
+        return {
+            "headline": {
             "stability_score": round(current.stability_score, 1),
             "regime": current.regime,
             "status": _get_status_level(current.stability_score),
@@ -332,22 +335,21 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
             "5d": round(current.score_5d_change, 1) if current.score_5d_change else None,
             "20d_avg": round(current.score_20d_avg, 1) if current.score_20d_avg else None,
         },
-        "interpretation": _get_regime_interpretation(current.regime, current.stress_type),
-        "chart_data": [
-            {
-                "date": ind.date.isoformat(),
-                "score": round(ind.stability_score, 1),
-                "regime": ind.regime,
-            }
-            for ind in recent
-        ]
-    }
+            "interpretation": _get_regime_interpretation(current.regime, current.stress_type),
+            "chart_data": [
+                {
+                    "date": ind.date.isoformat(),
+                    "score": round(ind.stability_score, 1),
+                    "regime": ind.regime,
+                }
+                for ind in recent
+            ]
+        }
 
 
 @router.post("/calculate")
 def trigger_calculation(
-    date: Optional[str] = Query(None, description="Date to calculate (YYYY-MM-DD), defaults to today"),
-    db: Session = Depends(get_db)
+    date: Optional[str] = Query(None, description="Date to calculate (YYYY-MM-DD), defaults to today")
 ):
     """
     Manually trigger AAP calculation for a specific date.
@@ -361,23 +363,43 @@ def trigger_calculation(
     else:
         target_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
-    calculator = AAPCalculator(db)
-    indicator = calculator.calculate_for_date(target_date)
+    with get_db_session() as db:
+        calculator = AAPCalculator(db)
+        indicator = calculator.calculate_for_date(target_date)
+        
+        if not indicator:
+            raise HTTPException(
+                status_code=500,
+                detail="Calculation failed - insufficient data or error occurred"
+            )
+        
+        return {
+            "success": True,
+            "date": indicator.date.isoformat(),
+            "stability_score": round(indicator.stability_score, 1),
+            "regime": indicator.regime,
+        }
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    else:
+        target_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
-    if not indicator:
-        raise HTTPException(
-            status_code=500,
-            detail="Calculation failed - insufficient data or error occurred"
-        )
-    
-    return {
-        "success": True,
-        "date": indicator.date.isoformat(),
-        "stability_score": round(indicator.stability_score, 1),
-        "regime": indicator.regime,
-    }
-
-
+    with get_db_session() as db:
+        calculator = AAPCalculator(db)
+        indicator = calculator.calculate_for_date(target_date)ate)
+        
+        if not indicator:
+            raise HTTPException(
+                status_code=500,
+                detail="Calculation failed - insufficient data or error occurred"
+            )
+        
+        return {
+            "success": True,
+            "date": indicator.date.isoformat(),
+            "stability_score": round(indicator.stability_score, 1),
+            "regime": indicator.regime,
+        }
 # ===== HELPER FUNCTIONS =====
 
 def _get_regime_interpretation(regime: str, stress_type: str) -> dict:
