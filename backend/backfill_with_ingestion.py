@@ -40,7 +40,7 @@ def backfill_with_ingestion(days=7):
         time.sleep(2)  # Rate limit
         
         print("\n  Fetching current macro data...")
-        macro_result = macro_ingestion.fetch_current_data()
+        macro_result = macro_ingestion.fetch_current_macro_data()
         if macro_result:
             print(f"    ✓ Macro data for {macro_result.date.date()}")
             if macro_result.fed_balance_sheet:
