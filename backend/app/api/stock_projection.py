@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import math
 from app.models.system_status import SystemStatus
 from app.utils.db_helpers import get_db_session
 
@@ -28,6 +29,21 @@ HORIZONS = {
     "6m": 126,
     "12m": 252,
 }
+
+
+def sanitize_for_json(obj):
+    """
+    Recursively replace NaN and Inf values with None for JSON serialization.
+    """
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    return obj
 T_WINDOW_DAYS = 21
 
 def fetch_stock_data(ticker: str, days: int = 2000) -> pd.DataFrame:
@@ -413,7 +429,7 @@ def get_stock_projections(
     # Calculate technical indicators for 252-day lookback
     technical_data = calculate_technical_indicators(df, lookback_days=252)
     
-    return {
+    result = {
         "ticker": ticker,
         "name": stock_name,
         "as_of_date": datetime.now().isoformat(),
@@ -425,3 +441,6 @@ def get_stock_projections(
         },
         "technical": technical_data,
     }
+    
+    # Sanitize NaN/Inf values before returning
+    return sanitize_for_json(result)
