@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import * as React from "react";
 import { useApi } from "../hooks/useApi";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from "recharts";
 
@@ -31,36 +32,26 @@ interface HistoricalData {
 }
 
 export default function AlternativeAssetPressure() {
-  const [aapData, setAapData] = useState<AAPData | null>(null);
-  const [history, setHistory] = useState<HistoricalData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: aapData, loading, error } = useApi<any>('/aap/components/breakdown');
+  const { data: historyData } = useApi<any>('/aap/history?days=365');
   const [timeframe, setTimeframe] = useState<'30d' | '90d' | '180d' | '365d'>('90d');
 
-  useEffect(() => {
-    fetchData();
-  }, [timeframe]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch current AAP data
-      const currentResponse = await fetch('/api/aap/current');
-      const current = await currentResponse.json();
-      setAapData(current);
-
-      // Fetch historical data
-      const days = parseInt(timeframe);
-      const histResponse = await fetch(`/api/aap/history?days=${days}`);
-      const hist = await histResponse.json();
-      setHistory(hist);
-      
-    } catch (error) {
-      console.error('Error fetching AAP data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Filter history based on timeframe
+  const history = React.useMemo(() => {
+    if (!historyData || !historyData.data || !Array.isArray(historyData.data)) return [];
+    
+    const days = parseInt(timeframe);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    return historyData.data
+      .filter((d: any) => new Date(d.date) >= cutoffDate)
+      .map((d: any) => ({
+        date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: d.stability_score || 0,
+        regime: d.regime || ''
+      }));
+  }, [historyData, timeframe]);
 
   const getRegimeColor = (regime: string): string => {
     const colors: Record<string, string> = {
