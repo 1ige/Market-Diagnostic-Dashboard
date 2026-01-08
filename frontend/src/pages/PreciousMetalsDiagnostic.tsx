@@ -10,6 +10,36 @@ interface RegimeStatus {
   overall_regime: "MONETARY_STRESS" | "INFLATION_HEDGE" | "GROWTH_REFLATION" | "LIQUIDITY_CRISIS" | "INDUSTRIAL_COMMODITY";
 }
 
+interface MetalProjection {
+  metal: string;
+  metal_name: string;
+  etf_symbol: string;
+  current_price: number;
+  score_total: number;
+  score_trend: number;
+  score_momentum: number;
+  classification: string;
+  relative_classification: "Winner" | "Neutral" | "Loser";
+  rank: number;
+  technicals: {
+    sma_20: number | null;
+    sma_50: number | null;
+    sma_200: number | null;
+    rsi: number | null;
+    momentum_5d: number | null;
+    momentum_20d: number | null;
+    momentum_60d: number | null;
+    volatility_30d: number | null;
+  };
+  levels: {
+    support: number[];
+    resistance: number[];
+    take_profit: number;
+    stop_loss: number;
+  };
+  as_of: string;
+}
+
 interface MetalIndicators {
   regime: RegimeStatus;
   cb_context: {
@@ -114,6 +144,7 @@ export default function PreciousMetalsDiagnostic() {
   const { data: correlations } = useApi<CorrelationMatrix>("/precious-metals/correlations");
   const { data: cb_holdings } = useApi<CBHolding[]>("/precious-metals/cb-holdings");
   const { data: supply_data } = useApi<SupplyData[]>("/precious-metals/supply");
+  const { data: projectionsData } = useApi<{ projections: MetalProjection[] }>("/precious-metals/projections/latest");
 
   const [selectedTab, setSelectedTab] = useState<"overview" | "deep-dive">("overview");
 
@@ -145,6 +176,8 @@ export default function PreciousMetalsDiagnostic() {
       </div>
     );
   }
+
+  const projections = projectionsData?.projections || [];
 
   return (
     <div className="p-3 md:p-6 text-gray-200">
@@ -222,6 +255,13 @@ export default function PreciousMetalsDiagnostic() {
 
       {selectedTab === "overview" && (
         <>
+          {/* PROJECTIONS & TECHNICAL ANALYSIS */}
+          {projections.length > 0 && (
+            <div className="mb-6">
+              <ProjectionsPanel projections={projections} />
+            </div>
+          )}
+
           {/* PRICE HISTORY CHART */}
           <div className="mb-6">
             <PriceHistoryChart />
@@ -695,6 +735,173 @@ function CorrelationPanel({ correlations }: any) {
       <div className="mt-4 p-3 bg-stealth-700 rounded text-xs text-stealth-400 border-l-2 border-blue-500">
         <strong>Note:</strong> Correlations change with market regime. Breakdowns {'>'} ±2σ signal regime shifts. Use as
         regime confirmation, not reversion signal.
+      </div>
+    </div>
+  );
+}
+
+// ==================== PROJECTIONS PANEL ====================
+function ProjectionsPanel({ projections }: { projections: MetalProjection[] }) {
+  const getClassificationColor = (classification: string) => {
+    switch (classification) {
+      case "Strong": return "text-emerald-400";
+      case "Bullish": return "text-green-400";
+      case "Neutral": return "text-yellow-400";
+      case "Bearish": return "text-orange-400";
+      case "Weak": return "text-red-400";
+      default: return "text-gray-400";
+    }
+  };
+
+  const getRelativeClassColor = (relClass: "Winner" | "Neutral" | "Loser") => {
+    switch (relClass) {
+      case "Winner": return "bg-emerald-500/20 text-emerald-400 border-emerald-500";
+      case "Loser": return "bg-red-500/20 text-red-400 border-red-500";
+      default: return "bg-blue-500/20 text-blue-400 border-blue-500";
+    }
+  };
+
+  return (
+    <div className="bg-stealth-800 p-4 md:p-6 rounded-lg border border-stealth-600">
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <span className="text-2xl">📊</span>
+        Metal Projections & Technical Analysis
+      </h2>
+
+      {/* Winners and Losers Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {projections.map((proj) => (
+          <div
+            key={proj.metal}
+            className={`p-3 rounded border ${getRelativeClassColor(proj.relative_classification)}`}
+          >
+            <div className="text-xs font-semibold mb-1">#{proj.rank} {proj.metal_name}</div>
+            <div className="text-lg font-bold">${proj.current_price.toFixed(2)}</div>
+            <div className="text-xs mt-1">Score: {proj.score_total}/100</div>
+            <div className={`text-xs mt-1 font-semibold ${getClassificationColor(proj.classification)}`}>
+              {proj.classification}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detailed Projections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {projections.map((proj) => (
+          <div key={proj.metal} className="bg-stealth-700 p-4 rounded border border-stealth-600">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="font-bold text-lg">{proj.metal_name} ({proj.etf_symbol})</h3>
+                <div className="text-sm text-stealth-400">{proj.metal}</div>
+              </div>
+              <div className={`px-2 py-1 rounded text-xs font-semibold ${getRelativeClassColor(proj.relative_classification)}`}>
+                {proj.relative_classification}
+              </div>
+            </div>
+
+            {/* Technical Indicators */}
+            <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+              <div>
+                <span className="text-stealth-400">Current:</span>
+                <span className="ml-2 font-semibold">${proj.current_price.toFixed(2)}</span>
+              </div>
+              <div>
+                <span className="text-stealth-400">RSI:</span>
+                <span className="ml-2 font-semibold">{proj.technicals.rsi?.toFixed(1) || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-stealth-400">SMA 20:</span>
+                <span className="ml-2 font-semibold">${proj.technicals.sma_20?.toFixed(2) || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-stealth-400">SMA 50:</span>
+                <span className="ml-2 font-semibold">${proj.technicals.sma_50?.toFixed(2) || 'N/A'}</span>
+              </div>
+            </div>
+
+            {/* Momentum */}
+            <div className="mb-3">
+              <div className="text-xs text-stealth-400 mb-1">Momentum</div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <span className="text-stealth-400">5d:</span>
+                  <span className={`ml-1 font-semibold ${(proj.technicals.momentum_5d || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {proj.technicals.momentum_5d?.toFixed(1) || 'N/A'}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-stealth-400">20d:</span>
+                  <span className={`ml-1 font-semibold ${(proj.technicals.momentum_20d || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {proj.technicals.momentum_20d?.toFixed(1) || 'N/A'}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-stealth-400">60d:</span>
+                  <span className={`ml-1 font-semibold ${(proj.technicals.momentum_60d || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {proj.technicals.momentum_60d?.toFixed(1) || 'N/A'}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Support and Resistance */}
+            <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+              <div>
+                <div className="text-stealth-400 mb-1">Support Levels</div>
+                {proj.levels.support.length > 0 ? (
+                  proj.levels.support.map((level, idx) => (
+                    <div key={idx} className="text-green-400 font-semibold">
+                      ${level.toFixed(2)}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-stealth-500">None detected</div>
+                )}
+              </div>
+              <div>
+                <div className="text-stealth-400 mb-1">Resistance Levels</div>
+                {proj.levels.resistance.length > 0 ? (
+                  proj.levels.resistance.map((level, idx) => (
+                    <div key={idx} className="text-red-400 font-semibold">
+                      ${level.toFixed(2)}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-stealth-500">None detected</div>
+                )}
+              </div>
+            </div>
+
+            {/* Price Targets */}
+            <div className="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-stealth-600">
+              <div>
+                <span className="text-stealth-400">Target:</span>
+                <span className="ml-2 text-green-400 font-semibold">${proj.levels.take_profit.toFixed(2)}</span>
+              </div>
+              <div>
+                <span className="text-stealth-400">Stop:</span>
+                <span className="ml-2 text-red-400 font-semibold">${proj.levels.stop_loss.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Score Breakdown */}
+            <div className="mt-3 pt-3 border-t border-stealth-600">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-stealth-400">Trend Score:</span>
+                <span className="font-semibold">{proj.score_trend}/100</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-stealth-400">Momentum Score:</span>
+                <span className="font-semibold">{proj.score_momentum}/100</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 p-3 bg-stealth-700 rounded text-xs text-stealth-400 border-l-2 border-blue-500">
+        <strong>Technical Analysis:</strong> Projections based on SMA crossovers (20/50/200), RSI, momentum, and recent support/resistance.
+        Winner/Loser classification is relative across all four metals. Strong = {'>'} 75 total score.
       </div>
     </div>
   );
