@@ -1241,9 +1241,9 @@ class AAPCalculator:
             
             if regime_indicators:
                 scores = [ind.stability_score for ind in regime_indicators]
-                current.avg_stability_score = np.mean(scores)
-                current.min_stability_score = min(scores)
-                current.max_stability_score = max(scores)
+                current.avg_stability_score = float(np.mean(scores))
+                current.min_stability_score = float(min(scores))
+                current.max_stability_score = float(max(scores))
                 current.duration_days = (date - current.regime_start).days
             
             # Start new regime
