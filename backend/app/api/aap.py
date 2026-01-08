@@ -246,16 +246,16 @@ def get_regime_history(
         
         return {
             "regimes": [
-                {   {
+                {
                     "name": regime.regime_name,
                     "started": regime.regime_start.isoformat(),
                     "ended": regime.regime_end.isoformat() if regime.regime_end else "ongoing",
                     "duration_days": regime.duration_days,
                     "stability_scores": {
-                    "average": round(regime.avg_stability_score, 1) if regime.avg_stability_score else None,
-                    "min": round(regime.min_stability_score, 1) if regime.min_stability_score else None,
-                    "max": round(regime.max_stability_score, 1) if regime.max_stability_score else None,
-                },
+                        "average": round(regime.avg_stability_score, 1) if regime.avg_stability_score else None,
+                        "min": round(regime.min_stability_score, 1) if regime.min_stability_score else None,
+                        "max": round(regime.max_stability_score, 1) if regime.max_stability_score else None,
+                    },
                     "outcome": regime.market_outcome,
                 }
                 for regime in regimes
