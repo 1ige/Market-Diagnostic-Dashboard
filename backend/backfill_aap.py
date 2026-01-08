@@ -1,15 +1,11 @@
 """
 Backfill AAP (Alternative Asset Pressure) indicator data.
 
-This script populates historical AAP calculations by:
-1. Ensuring crypto and macro data exists
-2. Running AAP calculations for the past 90 days
+This script populates historical AAP calculations by running AAP calculations for the past 90 days.
 """
 
-import asyncio
 from datetime import datetime, timedelta
 from app.core.db import SessionLocal
-from app.services.ingestion.aap_data_ingestion import CryptoDataIngestion, MacroDataIngestion
 from app.services.aap_calculator import AAPCalculator
 import logging
 
@@ -17,27 +13,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def backfill_aap_data():
+def backfill_aap_data():
     """Backfill AAP indicator data."""
     db = SessionLocal()
     
     try:
         logger.info("🚀 Starting AAP data backfill...")
         
-        # Step 1: Ingest current crypto and macro data
-        logger.info("📊 Ingesting current crypto and macro data...")
-        
-        crypto_ingestion = CryptoDataIngestion(db)
-        crypto_ingestion.fetch_current_prices()
-        
-        macro_ingestion = MacroDataIngestion(db)
-        macro_data = await macro_ingestion.fetch_current_macro_data()
-        if macro_data:
-            macro_ingestion.store_macro_data(macro_data)
-        
-        logger.info("✅ Data ingestion completed")
-        
-        # Step 2: Calculate AAP for the past 90 days
+        # Calculate AAP for the past 90 days
         logger.info("🧮 Calculating AAP indicator for past 90 days...")
         
         calculator = AAPCalculator(db)
@@ -87,4 +70,4 @@ async def backfill_aap_data():
 
 
 if __name__ == "__main__":
-    asyncio.run(backfill_aap_data())
+    backfill_aap_data()
