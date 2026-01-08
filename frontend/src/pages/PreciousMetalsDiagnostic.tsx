@@ -682,7 +682,7 @@ function CorrelationPanel({ correlations }: any) {
       </div>
 
       <div className="mt-4 p-3 bg-stealth-700 rounded text-xs text-stealth-400 border-l-2 border-blue-500">
-        <strong>Note:</strong> Correlations change with market regime. Breakdowns > ±2σ signal regime shifts. Use as
+        <strong>Note:</strong> Correlations change with market regime. Breakdowns {'>'} ±2σ signal regime shifts. Use as
         regime confirmation, not reversion signal.
       </div>
     </div>
