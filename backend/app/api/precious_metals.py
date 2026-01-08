@@ -235,7 +235,26 @@ def get_regime_classification():
                     COMEXInventory.date < comex.date
                 ).order_by(desc(COMEXInventory.date)).first()
                 if prior_comex:
-                    comex_change = (comex.total_oz - prior_comex.total_oz) / prior_comex.total_oz * 100
+                    comex_change = (comex.registered_oz - prior_comex.registered_oz) / prior_comex.registered_oz * 100
+            
+            # Get backwardation data
+            backwardation = db.query(BackwardationData).filter(
+                BackwardationData.metal == "AU"
+            ).order_by(desc(BackwardationData.date)).first()
+            back_severity = backwardation.backwardation_bps if backwardation else 0.0
+            
+            # Get ETF flow data
+            latest_etf = db.query(ETFHolding).filter(
+                ETFHolding.ticker == "GLD"
+            ).order_by(desc(ETFHolding.date)).first()
+            etf_divergence = 0.0
+            if latest_etf:
+                prior_etf = db.query(ETFHolding).filter(
+                    ETFHolding.ticker == "GLD",
+                    ETFHolding.date < latest_etf.date
+                ).order_by(desc(ETFHolding.date)).first()
+                if prior_etf and latest_etf.holdings and prior_etf.holdings:
+                    etf_divergence = ((latest_etf.holdings - prior_etf.holdings) / prior_etf.holdings) * 100
             
             return {
                 "regime": {
@@ -269,8 +288,8 @@ def get_regime_classification():
                     "paper_credibility_index": pci,
                     "oi_registered_ratio": comex.oi_to_registered_ratio if comex else 1.0,
                     "comex_registered_inventory_change_yoy": comex_change,
-                    "backwardation_severity": 0.0,  # Placeholder
-                    "etf_flow_divergence": 0.0  # Placeholder
+                    "backwardation_severity": back_severity,
+                    "etf_flow_divergence": etf_divergence
                 },
                 "timestamp": datetime.utcnow().isoformat()
             }
@@ -333,18 +352,117 @@ def get_supply_data():
                 SupplyData.period == latest_period
             ).all()
             
+            # Fetch latest spot prices for each metal
+            spot_prices = {}
+            for metal in ['AU', 'AG', 'PT', 'PD']:
+                latest_price = db.query(MetalPrice).filter(
+                    MetalPrice.metal == metal
+                ).order_by(desc(MetalPrice.date)).first()
+                if latest_price:
+                    spot_prices[metal] = latest_price.price_usd_per_oz
+            
             result = []
             for s in supply:
+                current_spot = spot_prices.get(s.metal, 0.0)
+                aisc = s.aisc_per_oz or 0.0
+                margin_pct = ((current_spot - aisc) / aisc * 100) if aisc > 0 else 0.0
+                
                 result.append({
                     "metal": s.metal,
                     "production_tonnes_yoy_pct": s.production_yoy_pct or 0.0,
-                    "aisc_per_oz": s.aisc_per_oz or 0.0,
-                    "current_spot_price": 2100.0,  # Placeholder; fetch from MetalPrice
-                    "margin_pct": ((2100 - (s.aisc_per_oz or 0)) / (s.aisc_per_oz or 1)) * 100 if s.aisc_per_oz else 0,
+                    "aisc_per_oz": aisc,
+                    "current_spot_price": current_spot,
+                    "margin_pct": margin_pct,
                     "recycling_pct_of_supply": s.recycling_pct or 0.0
                 })
             
             return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/demand")
+def get_demand_data():
+    """
+    Get latest demand decomposition by category
+    """
+    with get_db_session() as db:
+        try:
+            latest_period = db.query(func.max(DemandData.period)).scalar()
+            if not latest_period:
+                return []
+            
+            demand = db.query(DemandData).filter(
+                DemandData.period == latest_period
+            ).all()
+            
+            result = []
+            for d in demand:
+                result.append({
+                    "metal": d.metal,
+                    "period": d.period,
+                    "investment_tonnes": d.investment_tonnes or 0.0,
+                    "industrial_tonnes": d.industrial_tonnes or 0.0,
+                    "jewelry_tonnes": d.jewelry_tonnes or 0.0,
+                    "jewelry_asia_tonnes": d.jewelry_asia_tonnes or 0.0,
+                    "other_tonnes": d.other_tonnes or 0.0,
+                    "total_tonnes": d.total_tonnes or 0.0
+                })
+            
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market-caps")
+def get_market_caps():
+    """
+    Calculate current market capitalizations based on live prices and known above-ground stocks
+    """
+    with get_db_session() as db:
+        try:
+            # Get latest prices
+            prices = {}
+            for metal in ['AU', 'AG', 'PT', 'PD']:
+                latest = db.query(MetalPrice).filter(
+                    MetalPrice.metal == metal
+                ).order_by(desc(MetalPrice.date)).first()
+                if latest:
+                    prices[metal] = latest.price_usd_per_oz
+            
+            # Known above-ground stocks (conservative estimates)
+            stocks_oz = {
+                'AU': 6_430_000_000,  # ~200,000 tonnes
+                'AG': 2_500_000_000,  # ~2.5B oz (much consumed)
+                'PT': 8_000_000,      # ~8M oz
+                'PD': 6_000_000       # ~6M oz
+            }
+            
+            # Calculate market caps
+            market_caps = {}
+            total_value = 0
+            for metal, stock_oz in stocks_oz.items():
+                if metal in prices:
+                    value = stock_oz * prices[metal]
+                    market_caps[metal] = {
+                        "metal": metal,
+                        "price_usd_per_oz": prices[metal],
+                        "stock_oz": stock_oz,
+                        "market_cap_usd": value
+                    }
+                    total_value += value
+            
+            # Global M2 estimate (2026)
+            global_m2 = 200_000_000_000_000  # $200T
+            metals_to_m2_ratio = (total_value / global_m2) * 100
+            
+            return {
+                "metals": market_caps,
+                "total_market_cap_usd": total_value,
+                "global_m2_usd": global_m2,
+                "metals_to_m2_pct": metals_to_m2_ratio,
+                "timestamp": datetime.utcnow().isoformat()
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -413,3 +531,111 @@ def get_metal_price_history(metal: str, days: int = 365):
             ]
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/market-caps/history")
+async def get_market_caps_history():
+    """
+    Calculate 100-year historical Metals/M2 ratio.
+    Uses gold as proxy (99.3% of metals market cap).
+    """
+    with get_db_session() as db:
+        # Historical data points - gold price and US M2 (billions USD)
+        # Sources: World Gold Council, Federal Reserve FRED
+        historical_data = [
+            # Pre-Bretton Woods (Gold Standard Era)
+            {'year': 1925, 'gold_price': 20.67, 'm2_billions': 46},
+            {'year': 1930, 'gold_price': 20.67, 'm2_billions': 46},
+            {'year': 1935, 'gold_price': 35.00, 'm2_billions': 46},
+            {'year': 1940, 'gold_price': 35.00, 'm2_billions': 55},
+            {'year': 1945, 'gold_price': 35.00, 'm2_billions': 102},
+            {'year': 1950, 'gold_price': 34.72, 'm2_billions': 151},
+            {'year': 1955, 'gold_price': 35.03, 'm2_billions': 212},
+            {'year': 1960, 'gold_price': 35.27, 'm2_billions': 312},
+            {'year': 1965, 'gold_price': 35.12, 'm2_billions': 442},
+            {'year': 1970, 'gold_price': 36.02, 'm2_billions': 601},
+            
+            # Post-Bretton Woods (Fiat Era)
+            {'year': 1971, 'gold_price': 40.62, 'm2_billions': 674},
+            {'year': 1975, 'gold_price': 161.02, 'm2_billions': 963},
+            {'year': 1980, 'gold_price': 594.90, 'm2_billions': 1540},  # Peak inflation
+            {'year': 1985, 'gold_price': 317.26, 'm2_billions': 2274},
+            {'year': 1990, 'gold_price': 383.51, 'm2_billions': 3223},
+            {'year': 1995, 'gold_price': 387.00, 'm2_billions': 3642},
+            {'year': 2000, 'gold_price': 279.11, 'm2_billions': 4631},  # Dot-com bust
+            {'year': 2005, 'gold_price': 444.74, 'm2_billions': 6407},
+            {'year': 2008, 'gold_price': 871.96, 'm2_billions': 7649},  # Financial crisis
+            {'year': 2010, 'gold_price': 1224.53, 'm2_billions': 8853},
+            {'year': 2015, 'gold_price': 1060.29, 'm2_billions': 12217},
+            {'year': 2020, 'gold_price': 1770.75, 'm2_billions': 19254},  # COVID stimulus
+            {'year': 2021, 'gold_price': 1800.23, 'm2_billions': 21428},
+            {'year': 2022, 'gold_price': 1800.09, 'm2_billions': 21298},
+            {'year': 2023, 'gold_price': 2078.38, 'm2_billions': 20824},
+            {'year': 2024, 'gold_price': 2351.52, 'm2_billions': 21200},
+        ]
+        
+        # Gold above-ground stock estimate (grows ~2% annually from mining)
+        base_stock_oz_1925 = 2_500_000_000  # ~2.5B oz in 1925
+        
+        result = []
+        for i, point in enumerate(historical_data):
+            year = point['year']
+            gold_price = point['gold_price']
+            us_m2_billions = point['m2_billions']
+            
+            # Estimate global M2 (US M2 * 2.5 for developed markets, * 4 for global post-2000)
+            if year < 2000:
+                global_m2_trillions = (us_m2_billions / 1000) * 2.5
+            else:
+                global_m2_trillions = (us_m2_billions / 1000) * 4.0
+            
+            # Estimate gold stock (grows 2% annually)
+            years_from_1925 = year - 1925
+            gold_stock_oz = base_stock_oz_1925 * (1.02 ** years_from_1925)
+            
+            # Calculate gold market cap
+            gold_market_cap_trillions = (gold_price * gold_stock_oz) / 1e12
+            
+            # Metals/M2 ratio (gold as 99% proxy)
+            metals_to_m2_pct = (gold_market_cap_trillions / global_m2_trillions) * 100
+            
+            result.append({
+                'year': year,
+                'gold_price': gold_price,
+                'gold_stock_oz': gold_stock_oz,
+                'global_m2_trillions': round(global_m2_trillions, 2),
+                'metals_market_cap_trillions': round(gold_market_cap_trillions, 2),
+                'metals_to_m2_pct': round(metals_to_m2_pct, 2)
+            })
+        
+        # Add current live data point
+        latest_gold = db.query(MetalPrice).filter(
+            MetalPrice.metal == 'AU'
+        ).order_by(MetalPrice.date.desc()).first()
+        
+        if latest_gold:
+            current_year = datetime.utcnow().year
+            current_stock_oz = base_stock_oz_1925 * (1.02 ** (current_year - 1925))
+            current_gold_cap = (latest_gold.price_usd_per_oz * current_stock_oz) / 1e12
+            current_m2 = 200  # $200T global M2 estimate
+            
+            result.append({
+                'year': current_year,
+                'gold_price': round(latest_gold.price_usd_per_oz, 2),
+                'gold_stock_oz': current_stock_oz,
+                'global_m2_trillions': current_m2,
+                'metals_market_cap_trillions': round(current_gold_cap, 2),
+                'metals_to_m2_pct': round((current_gold_cap / current_m2) * 100, 2),
+                'is_current': True
+            })
+        
+        return {
+            'history': result,
+            'notes': {
+                'gold_standard_era': 'Pre-1971: Gold fixed at $35/oz, ratio typically 15-25%',
+                'fiat_era': 'Post-1971: Free-floating gold, ratio typically 2-8%',
+                'peaks': '1980 (19.3% - inflation crisis), 2011 (8.5% - financial crisis)',
+                'methodology': 'Gold used as 99% proxy for total metals market cap'
+            }
+        }
+

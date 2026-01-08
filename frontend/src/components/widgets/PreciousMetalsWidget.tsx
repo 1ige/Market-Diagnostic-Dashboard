@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { Link } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 
 interface MetalProjection {
   metal: string;
@@ -74,6 +75,12 @@ export default function PreciousMetalsWidget() {
     return "text-blue-400";
   };
 
+  const chartData = projections.map(p => ({
+    metal: p.metal,
+    score: p.score_total,
+    color: METAL_COLORS[p.metal]
+  }));
+
   if (loading) {
     return (
       <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
@@ -96,6 +103,33 @@ export default function PreciousMetalsWidget() {
           </span>
         )}
       </div>
+
+      {/* Score Chart */}
+      {chartData.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs text-stealth-400 mb-2">Technical Scores (0-100)</div>
+          <ResponsiveContainer width="100%" height={80}>
+            <BarChart data={chartData}>
+              <XAxis 
+                dataKey="metal" 
+                tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                axisLine={false}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                axisLine={false}
+                width={30}
+              />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Metal Rankings */}
       <div className="space-y-2 mb-4">

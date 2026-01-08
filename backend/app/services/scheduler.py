@@ -44,6 +44,34 @@ async def scheduled_etl_job():
             f"✅ ETL job completed: {success_count} success, "
             f"{error_count} errors. System state: {status['system_state']}"
         )
+        
+        # --- AAP Data Ingestion ---
+        logger.info("📊 Ingesting AAP data (crypto & macro)...")
+        try:
+            from app.services.ingestion.aap_data_ingestion import run_daily_ingestion
+            run_daily_ingestion()
+            logger.info("✅ AAP data ingestion completed")
+        except Exception as e:
+            logger.error(f"❌ AAP data ingestion failed: {e}", exc_info=True)
+        
+        # --- AAP Calculation ---
+        logger.info("🎯 Calculating AAP indicator...")
+        try:
+            from app.services.aap_calculator import AAPCalculator
+            from app.core.db import SessionLocal
+            db = SessionLocal()
+            try:
+                calculator = AAPCalculator(db)
+                aap_result = calculator.calculate_for_date(datetime.utcnow())
+                if aap_result:
+                    logger.info(f"✅ AAP calculated: Score={aap_result.stability_score:.1f}, Regime={aap_result.regime}")
+                else:
+                    logger.warning("⚠️ AAP calculation skipped - insufficient data")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"❌ AAP calculation failed: {e}", exc_info=True)
+        
         # --- Sector Projections ---
         logger.info("🔮 Computing sector projections...")
         # Get system state
