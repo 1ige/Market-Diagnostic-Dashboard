@@ -169,7 +169,7 @@ def get_current_components():
                         "monetary_barometer": {
                             "btc_usd_zscore": round(component.btc_usd_zscore, 3) if component.btc_usd_zscore else None,
                             "btc_gold_zscore": round(component.btc_gold_zscore, 3) if component.btc_gold_zscore else None,
-                            "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,one,
+                            "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,
                         },
                         "market_structure": {
                             "crypto_m2_ratio": round(component.crypto_m2_ratio, 3) if component.crypto_m2_ratio else None,
