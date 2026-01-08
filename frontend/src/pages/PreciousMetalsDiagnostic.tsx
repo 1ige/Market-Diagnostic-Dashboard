@@ -282,7 +282,11 @@ export default function PreciousMetalsDiagnostic() {
               <ProjectionsPanel projections={projections} />
             </div>
           )}
+        </>
+      )}
 
+      {selectedTab === "deep-dive" && (
+        <>
           {/* SECTION 2 & 3: CB CONTEXT & PRICE ANCHORS (2-COLUMN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 2: Monetary & CB Context */}
@@ -293,18 +297,14 @@ export default function PreciousMetalsDiagnostic() {
           </div>
 
           {/* SECTION 4 & 5: RELATIVE VALUE & PHYSICAL/PAPER (2-COLUMN) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 4: Relative Value */}
             <RelativeValuePanel indicators={indicators} />
 
             {/* Section 5: Physical vs Paper */}
             <PhysicalPaperPanel indicators={indicators} />
           </div>
-        </>
-      )}
 
-      {selectedTab === "deep-dive" && (
-        <>
           {/* SECTION 6 & 7: SUPPLY-DEMAND (2-COLUMN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 6: Supply */}
