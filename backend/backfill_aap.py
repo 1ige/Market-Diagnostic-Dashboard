@@ -31,7 +31,9 @@ async def backfill_aap_data():
         crypto_ingestion.fetch_current_prices()
         
         macro_ingestion = MacroDataIngestion(db)
-        await macro_ingestion.fetch_current_macro_data()
+        macro_data = await macro_ingestion.fetch_current_macro_data()
+        if macro_data:
+            macro_ingestion.store_macro_data(macro_data)
         
         logger.info("✅ Data ingestion completed")
         
