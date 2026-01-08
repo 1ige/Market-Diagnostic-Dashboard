@@ -1,6 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, AlertCircle, Info } from 'lucide-react';
+
+// Simple icon components using SVG
+const ArrowLeft = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+const TrendingUp = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
+const TrendingDown = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+  </svg>
+);
+
+const AlertCircle = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const Info = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 interface AAPComponent {
   name: string;
@@ -104,7 +134,9 @@ const AAPComponentBreakdown: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <div className="flex justify-center mb-4">
+            <AlertCircle className="h-12 w-12 text-red-600" />
+          </div>
           <h2 className="text-xl font-semibold text-center mb-2">Error Loading Data</h2>
           <p className="text-gray-600 text-center mb-4">{error || 'No data available'}</p>
           <button
@@ -132,7 +164,7 @@ const AAPComponentBreakdown: React.FC = () => {
             onClick={() => navigate('/indicators')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
-            <ArrowLeft className="h-5 w-5 mr-2" />
+            <span className="mr-2"><ArrowLeft /></span>
             Back to Indicators
           </button>
           
@@ -359,7 +391,9 @@ const AAPComponentBreakdown: React.FC = () => {
         {/* Info Panel */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <div className="flex items-start">
-            <Info className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-1" />
+            <div className="mr-3 flex-shrink-0 mt-1">
+              <Info className="h-6 w-6 text-blue-600" />
+            </div>
             <div>
               <h3 className="font-semibold text-blue-900 mb-2">About AAP Indicator</h3>
               <p className="text-blue-800 text-sm mb-3">
