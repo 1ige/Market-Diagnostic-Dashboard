@@ -379,27 +379,6 @@ def trigger_calculation(
             "stability_score": round(indicator.stability_score, 1),
             "regime": indicator.regime,
         }
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-    else:
-        target_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    
-    with get_db_session() as db:
-        calculator = AAPCalculator(db)
-        indicator = calculator.calculate_for_date(target_date)
-        
-        if not indicator:
-            raise HTTPException(
-                status_code=500,
-                detail="Calculation failed - insufficient data or error occurred"
-            )
-        
-        return {
-            "success": True,
-            "date": indicator.date.isoformat(),
-            "stability_score": round(indicator.stability_score, 1),
-            "regime": indicator.regime,
-        }
 # ===== HELPER FUNCTIONS =====
 
 def _get_regime_interpretation(regime: str, stress_type: str) -> dict:
