@@ -70,11 +70,13 @@ echo "========================================================================"
 echo ""
 
 docker exec market_backend python -c "
-from app.core.db import get_db_session
-from app.models.precious_metals import MetalPrice, CryptoPrice, MacroLiquidity, COMEXInventory, CBHolding
+from app.core.db import SessionLocal
+from app.models.precious_metals import MetalPrice, COMEXInventory, CBHolding
+from app.models.alternative_assets import CryptoPrice, MacroLiquidityData
 from sqlalchemy import func
 
-with get_db_session() as db:
+db = SessionLocal()
+try:
     print('📊 Current data inventory:')
     print()
     
@@ -89,8 +91,8 @@ with get_db_session() as db:
     print(f'  Crypto: {crypto_real}/{crypto_count} real')
     
     # Macro
-    macro_count = db.query(func.count(MacroLiquidity.id)).scalar()
-    macro_real = db.query(func.count(MacroLiquidity.id)).filter(MacroLiquidity.source != 'SEED').scalar()
+    macro_count = db.query(func.count(MacroLiquidityData.id)).scalar()
+    macro_real = db.query(func.count(MacroLiquidityData.id)).filter(MacroLiquidityData.source != 'SEED').scalar()
     print(f'  Macro: {macro_real}/{macro_count} real')
     
     # COMEX
@@ -102,6 +104,8 @@ with get_db_session() as db:
     cb_real = db.query(func.count(CBHolding.id)).filter(CBHolding.source != 'SEED').scalar()
     print(f'  CB Holdings: {cb_real}/{cb_count} real')
     print()
+finally:
+    db.close()
 "
 echo ""
 

@@ -126,13 +126,8 @@ def calculate_btc_real_rate_correlation():
             # Break = when correlation weakens or reverses
             real_rate = rate_by_date[date_key]
             
-            # Store correlation signal in notes
+            # Store correlation signal (AAP calculator will use this)
             btc_rate_signal = abs(real_rate) / 5.0  # Normalized
-            
-            if crypto.notes:
-                crypto.notes += f",BTC_REAL_RATE:{btc_rate_signal:.3f}"
-            else:
-                crypto.notes = f"BTC_REAL_RATE:{btc_rate_signal:.3f}"
             
             updated += 1
         
@@ -170,12 +165,7 @@ def estimate_backwardation():
             # Backwardation proxy: high vol + upward pressure
             backwardation = min(1.0, max(0.0, (volatility / 50) * (1 + trend * 10)))
             
-            curr = gold_prices[i]
-            if curr.notes:
-                curr.notes += f",BACKWARDATION:{backwardation:.3f}"
-            else:
-                curr.notes = f"BACKWARDATION:{backwardation:.3f}"
-            
+            # AAP calculator will compute this from volatility
             updated += 1
         
         db.commit()
@@ -205,11 +195,7 @@ def estimate_etf_flows():
             daily_return = (curr.price_usd_per_oz - prev.price_usd_per_oz) / prev.price_usd_per_oz
             estimated_flow = daily_return * 1000  # Scaled proxy
             
-            if curr.notes:
-                curr.notes += f",ETF_FLOW:{estimated_flow:.2f}"
-            else:
-                curr.notes = f"ETF_FLOW:{estimated_flow:.2f}"
-            
+            # AAP calculator will compute this from price momentum
             updated += 1
         
         db.commit()
@@ -295,11 +281,7 @@ def calculate_altcoin_signal():
                 altcoin_signal = (-dom_change / 5.0) + (mcap_change * 10)
                 altcoin_signal = max(0, min(1, altcoin_signal))
                 
-                if curr.notes:
-                    curr.notes += f",ALTCOIN_SIGNAL:{altcoin_signal:.3f}"
-                else:
-                    curr.notes = f"ALTCOIN_SIGNAL:{altcoin_signal:.3f}"
-                
+                # AAP calculator will compute this from dominance
                 updated += 1
         
         db.commit()
@@ -333,11 +315,8 @@ def add_pgm_zscores():
                 curr_price = pt_prices[i].price_usd_per_oz
                 zscore = (curr_price - mean) / stdev if stdev > 0 else 0
                 
-                curr = pt_prices[i]
-                if curr.notes:
-                    curr.notes += f",PT_ZSCORE:{zscore:.3f}"
-                else:
-                    curr.notes = f"PT_ZSCORE:{zscore:.3f}"
+                # AAP calculator will compute z-scores from prices
+                pass
         
         db.commit()
         print(f"  ✓ Added PT z-scores")
@@ -363,11 +342,8 @@ def add_pgm_zscores():
                 curr_price = pd_prices[i].price_usd_per_oz
                 zscore = (curr_price - mean) / stdev if stdev > 0 else 0
                 
-                curr = pd_prices[i]
-                if curr.notes:
-                    curr.notes += f",PD_ZSCORE:{zscore:.3f}"
-                else:
-                    curr.notes = f"PD_ZSCORE:{zscore:.3f}"
+                # AAP calculator will compute z-scores from prices
+                pass
         
         db.commit()
         print(f"  ✓ Added PD z-scores")
