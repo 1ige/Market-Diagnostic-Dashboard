@@ -10,11 +10,73 @@ def main():
         calc = AAPCalculator(db)
         date = datetime.utcnow() - timedelta(days=1)
         
-        # Call the internal method to gather components
-        components = calc._calculate_components(date)
+        # Manually gather components to bypass the threshold check
+        components = {}
+        
+        # Metals subsystem - from _calculate_components method
+        print("Fetching metals components...")
+        try:
+            components['gold_usd_zscore'] = calc._calc_gold_usd_zscore(date)
+        except Exception as e:
+            print(f"  ✗ gold_usd_zscore failed: {e}")
+            
+        try:
+            components['silver_usd_zscore'] = calc._calc_silver_usd_zscore(date)
+        except Exception as e:
+            print(f"  ✗ silver_usd_zscore failed: {e}")
+            
+        try:
+            components['platinum_usd_zscore'] = calc._calc_platinum_usd_zscore(date)
+        except Exception as e:
+            print(f"  ✗ platinum_usd_zscore failed: {e}")
+            
+        try:
+            components['palladium_usd_zscore'] = calc._calc_palladium_usd_zscore(date)
+        except Exception as e:
+            print(f"  ✗ palladium_usd_zscore failed: {e}")
+            
+        try:
+            components['gold_silver_ratio_signal'] = calc._calc_gold_silver_ratio(date)
+        except Exception as e:
+            print(f"  ✗ gold_silver_ratio_signal failed: {e}")
+            
+        try:
+            components['platinum_gold_ratio_signal'] = calc._calc_platinum_gold_ratio(date)
+        except Exception as e:
+            print(f"  ✗ platinum_gold_ratio_signal failed: {e}")
+            
+        try:
+            components['palladium_gold_ratio_signal'] = calc._calc_palladium_gold_ratio(date)
+        except Exception as e:
+            print(f"  ✗ palladium_gold_ratio_signal failed: {e}")
+            
+        try:
+            components['comex_stress_ratio'] = calc._calc_comex_stress(date)
+        except Exception as e:
+            print(f"  ✗ comex_stress_ratio failed: {e}")
+            
+        try:
+            components['cb_gold_momentum'] = calc._calc_cb_momentum(date)
+        except Exception as e:
+            print(f"  ✗ cb_gold_momentum failed: {e}")
+        
+        # Crypto subsystem
+        print("\nFetching crypto components...")
+        try:
+            components['crypto_m2_ratio'] = calc._calc_crypto_m2_ratio(date)
+        except Exception as e:
+            print(f"  ✗ crypto_m2_ratio failed: {e}")
+            
+        try:
+            components['crypto_vs_fed_bs'] = calc._calc_crypto_vs_fed(date)
+        except Exception as e:
+            print(f"  ✗ crypto_vs_fed_bs failed: {e}")
+        
+        # Filter out None
+        components = {k: v for k, v in components.items() if v is not None}
         
         if not components:
-            print("\n❌ No components available!\n")
+            print("\n❌ No components could be gathered!\n")
             return
         
         print('\n=== AAP Component Availability ===\n')
