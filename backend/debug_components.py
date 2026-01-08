@@ -1,0 +1,57 @@
+"""Debug script to check AAP component availability"""
+from datetime import datetime, timedelta
+from app.services.aap_calculator import AAPCalculator
+from app.core.db import SessionLocal
+
+def main():
+    calc = None
+    db = SessionLocal()
+    try:
+        calc = AAPCalculator(db)
+        date = datetime.utcnow() - timedelta(days=1)
+        
+        # Call the internal method to gather components
+        components = calc._calculate_components(date)
+        
+        if not components:
+            print("\n❌ No components available!\n")
+            return
+        
+        print('\n=== AAP Component Availability ===\n')
+        print('METALS SUBSYSTEM (9 components):')
+        metals_keys = [
+            'gold_usd_zscore', 'silver_usd_zscore', 'platinum_usd_zscore', 
+            'palladium_usd_zscore', 'gold_silver_ratio_signal', 
+            'platinum_gold_ratio_signal', 'palladium_gold_ratio_signal',
+            'comex_stress_ratio', 'cb_gold_momentum'
+        ]
+        
+        for i, key in enumerate(metals_keys, 1):
+            val = components.get(key)
+            status = '✓ OK' if val is not None else '✗ MISSING'
+            val_str = f'{val:.4f}' if val is not None else 'N/A'
+            print(f'  {i}. {key:35s} {status:10s} value={val_str}')
+
+        print('\nCRYPTO SUBSYSTEM (9 components):')
+        crypto_keys = [
+            'btc_usd_zscore', 'eth_usd_zscore', 'btc_gold_zscore', 
+            'crypto_m2_ratio', 'crypto_vs_fed_bs', 'stablecoin_supply_velocity', 
+            'btc_dominance', 'defi_tvl_change', 'exchange_reserves_trend'
+        ]
+        
+        for i, key in enumerate(crypto_keys, 10):
+            val = components.get(key)
+            status = '✓ OK' if val is not None else '✗ MISSING'
+            val_str = f'{val:.4f}' if val is not None else 'N/A'
+            print(f'  {i}. {key:35s} {status:10s} value={val_str}')
+
+        available = sum(1 for v in components.values() if v is not None)
+        print(f'\n📊 Total available: {available}/18 components')
+        print(f'   Threshold: 9/18 (50%) required')
+        print(f'   Status: {"✓ PASS" if available >= 9 else "✗ FAIL"}')
+        
+    finally:
+        db.close()
+
+if __name__ == '__main__':
+    main()
