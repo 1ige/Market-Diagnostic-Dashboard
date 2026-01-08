@@ -28,10 +28,10 @@ async def backfill_aap_data():
         logger.info("📊 Ingesting current crypto and macro data...")
         
         crypto_ingestion = CryptoDataIngestion(db)
-        await crypto_ingestion.fetch_and_store_daily()
+        crypto_ingestion.fetch_current_prices()
         
         macro_ingestion = MacroDataIngestion(db)
-        await macro_ingestion.fetch_and_store_daily()
+        await macro_ingestion.fetch_current_macro_data()
         
         logger.info("✅ Data ingestion completed")
         
