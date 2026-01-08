@@ -144,10 +144,10 @@ def get_current_components():
             "subsystems": {
                 "metals": {
                     "pressure_score": round(component.metals_pressure_score, 3),
-                    "components": {": {
+                    "components": {
                         "monetary_strength": {
                             "gold_usd_zscore": round(component.gold_usd_zscore, 3) if component.gold_usd_zscore else None,
-                        "gold_real_rate_divergence": round(component.gold_real_rate_divergence, 3) if component.gold_real_rate_divergence else None,
+                            "gold_real_rate_divergence": round(component.gold_real_rate_divergence, 3) if component.gold_real_rate_divergence else None,
                         "cb_gold_momentum": round(component.cb_gold_momentum, 3) if component.cb_gold_momentum else None,
                         "silver_usd_zscore": round(component.silver_usd_zscore, 3) if component.silver_usd_zscore else None,
                     },
@@ -165,20 +165,20 @@ def get_current_components():
                 },
                 "crypto": {
                     "pressure_score": round(component.crypto_pressure_score, 3),
-                    "components": {": {
+                    "components": {
                         "monetary_barometer": {
                             "btc_usd_zscore": round(component.btc_usd_zscore, 3) if component.btc_usd_zscore else None,
-                        "btc_gold_zscore": round(component.btc_gold_zscore, 3) if component.btc_gold_zscore else None,
-                        "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,
-                    },
-                    "market_structure": {
-                        "crypto_m2_ratio": round(component.crypto_m2_ratio, 3) if component.crypto_m2_ratio else None,
-                        "btc_dominance_momentum": round(component.btc_dominance_momentum, 3) if component.btc_dominance_momentum else None,
-                        "altcoin_btc_signal": round(component.altcoin_btc_signal, 3) if component.altcoin_btc_signal else None,
-                    },
-                    "liquidity_correlation": {
-                        "crypto_vs_fed_bs": round(component.crypto_vs_fed_bs, 3) if component.crypto_vs_fed_bs else None,
-                        "crypto_qt_resilience": round(component.crypto_qt_resilience, 3) if component.crypto_qt_resilience else None,
+                            "btc_gold_zscore": round(component.btc_gold_zscore, 3) if component.btc_gold_zscore else None,
+                            "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,one,
+                        },
+                        "market_structure": {
+                            "crypto_m2_ratio": round(component.crypto_m2_ratio, 3) if component.crypto_m2_ratio else None,
+                            "btc_dominance_momentum": round(component.btc_dominance_momentum, 3) if component.btc_dominance_momentum else None,
+                            "altcoin_btc_signal": round(component.altcoin_btc_signal, 3) if component.altcoin_btc_signal else None,
+                        },
+                        "liquidity_correlation": {
+                            "crypto_vs_fed_bs": round(component.crypto_vs_fed_bs, 3) if component.crypto_vs_fed_bs else None,
+                            "crypto_qt_resilience": round(component.crypto_qt_resilience, 3) if component.crypto_qt_resilience else None,
                         }
                     }
                 }
