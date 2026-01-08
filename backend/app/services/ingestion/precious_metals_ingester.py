@@ -118,6 +118,66 @@ class PreciousMetalsIngester:
 
     # ==================== DAILY INGESTION ====================
 
+    def backfill_historical_prices(self, days: int = 365) -> int:
+        """
+        Backfill historical spot prices for all metals
+        
+        Args:
+            days: Number of days to backfill (default 365)
+        
+        Returns:
+            Total number of price records inserted
+        """
+        count = 0
+        with get_db_session() as db:
+            for metal, symbols in METAL_SYMBOLS.items():
+                try:
+                    logger.info(f"Backfilling {days} days of {metal} prices...")
+                    
+                    # Fetch historical data
+                    ticker = yf.Ticker(symbols["yahoo"])
+                    data = ticker.history(period=f"{days}d")
+                    
+                    if data.empty:
+                        logger.warning(f"No historical data for {metal}")
+                        continue
+                    
+                    # Insert each day
+                    for date, row in data.iterrows():
+                        try:
+                            # Check if already exists
+                            existing = db.query(MetalPrice).filter(
+                                MetalPrice.metal == metal,
+                                MetalPrice.source == "YAHOO",
+                                MetalPrice.date >= date.date(),
+                                MetalPrice.date < date.date() + timedelta(days=1)
+                            ).first()
+                            
+                            if existing:
+                                continue
+                            
+                            price = float(row["Close"])
+                            metal_price = MetalPrice(
+                                metal=metal,
+                                date=date.to_pydatetime(),
+                                price_usd_per_oz=price,
+                                source="YAHOO"
+                            )
+                            db.add(metal_price)
+                            count += 1
+                            
+                        except Exception as e:
+                            logger.error(f"Error adding {metal} price for {date}: {str(e)}")
+                    
+                    db.commit()
+                    logger.info(f"Backfilled {count} records for {metal}")
+                    
+                except Exception as e:
+                    logger.error(f"Error backfilling {metal} prices: {str(e)}")
+                    db.rollback()
+        
+        return count
+
     def _ingest_spot_prices(self) -> int:
         """Ingest daily spot prices from FRED and Yahoo"""
         count = 0

@@ -99,3 +99,8 @@ app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 
 # Precious Metals Diagnostic
 app.include_router(precious_metals_router, tags=["PreciousMetals"])
+
+# Metal Projections
+from app.api.metal_projections import router as metal_projections_router
+app.include_router(metal_projections_router, prefix="/precious-metals", tags=["MetalProjections"])
+
