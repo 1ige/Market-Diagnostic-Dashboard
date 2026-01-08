@@ -172,6 +172,25 @@ class AAPCalculator:
             self.db.add(component_record)
             self.db.add(indicator)
             
+            # Also create IndicatorValue record for dashboard display
+            from app.models.indicator_value import IndicatorValue
+            from app.models.indicator import Indicator
+            
+            # Get AAP indicator definition
+            aap_indicator_def = self.db.query(Indicator).filter_by(code='AAP').first()
+            if aap_indicator_def:
+                # Map stability_score to indicator value
+                # Stability score is 0-100 (higher = less pressure = better)
+                # So we can use it directly as the indicator score
+                indicator_value = IndicatorValue(
+                    indicator_id=aap_indicator_def.id,
+                    timestamp=target_date,
+                    raw_value=to_python_type(pressure_index),  # 0-1 pressure index
+                    score=to_python_type(stability_score),  # 0-100 stability score
+                    state=self._map_regime_to_state(regime)
+                )
+                self.db.add(indicator_value)
+            
             # Update regime history if needed
             self._update_regime_history(target_date, regime)
             
@@ -1183,6 +1202,17 @@ class AAPCalculator:
             cross_asset_multiplier=to_python_float(multiplier),
             correlation_regime=correlation_regime,
         )
+    
+    def _map_regime_to_state(self, regime: str) -> str:
+        """Map AAP regime to indicator state (RED/YELLOW/GREEN)"""
+        regime_to_state = {
+            'normal_confidence': 'GREEN',
+            'mild_caution': 'YELLOW',
+            'monetary_stress': 'YELLOW',
+            'liquidity_crisis': 'RED',
+            'systemic_breakdown': 'RED',
+        }
+        return regime_to_state.get(regime, 'YELLOW')
     
     def _update_regime_history(self, date: datetime, regime: str):
         """Update regime history tracking"""
