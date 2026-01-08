@@ -825,6 +825,162 @@ export default function SystemBreakdown() {
         )}
       </div>
 
+      {/* AAP Indicator: Alternative Asset Pressure */}
+      <div className="collapsible-section" data-section="aap-detail">
+        <button
+          onClick={() => toggleSection('aap-detail')}
+          className="collapsible-header"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg md:text-xl font-semibold text-stealth-100">AAP Indicator: Alternative Asset Pressure</h3>
+            <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">18/18 COMPONENTS</span>
+          </div>
+          <span className="text-stealth-400 text-xl">{expandedSections.has('aap-detail') ? '−' : '+'}</span>
+        </button>
+        {expandedSections.has('aap-detail') && (
+          <div className="collapsible-content">
+            <div className="space-y-4">
+              {/* Overview */}
+              <div className="bg-stealth-900/50 border border-stealth-700 rounded p-4">
+                <h4 className="text-stealth-200 font-semibold mb-3">What is AAP?</h4>
+                <p className="text-sm text-stealth-400 leading-relaxed mb-3">
+                  The Alternative Asset Pressure (AAP) indicator measures systemic monetary stress by tracking "flight to alternatives" — 
+                  when investors lose confidence in fiat currencies and traditional financial assets, shifting capital into precious metals and cryptocurrencies 
+                  as alternative stores of value.
+                </p>
+                <p className="text-sm text-stealth-400 leading-relaxed">
+                  AAP synthesizes <strong className="text-stealth-300">18 weighted components</strong> across two subsystems: 
+                  <strong className="text-amber-400"> Metals (50%)</strong> and <strong className="text-blue-400"> Crypto (50%)</strong>. 
+                  Each subsystem captures different aspects of monetary regime stress — metals signal institutional concerns (central bank accumulation, COMEX stress), 
+                  while crypto reflects retail/digital capital flight (BTC dominance, DeFi TVL).
+                </p>
+              </div>
+
+              {/* Component Breakdown */}
+              <div className="bg-stealth-900/50 border border-stealth-700 rounded p-4">
+                <h4 className="text-stealth-200 font-semibold mb-3">18-Component Architecture</h4>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Metals Subsystem */}
+                  <div className="bg-stealth-800/50 border border-amber-500/30 rounded p-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      </svg>
+                      <h5 className="text-amber-400 font-semibold">Metals Subsystem (10 components, 50%)</h5>
+                    </div>
+                    <ul className="text-xs text-stealth-400 space-y-1.5">
+                      <li>• <span className="text-stealth-300">Gold Z-Score</span> - 2-year deviation signal</li>
+                      <li>• <span className="text-stealth-300">Silver Z-Score</span> - Volatility-adjusted positioning</li>
+                      <li>• <span className="text-stealth-300">Au/Ag Ratio Signal</span> - Historical relationship stress</li>
+                      <li>• <span className="text-stealth-300">Platinum Z-Score</span> - Industrial metal hedge indicator</li>
+                      <li>• <span className="text-stealth-300">Palladium Z-Score</span> - Supply constraint proxy</li>
+                      <li>• <span className="text-stealth-300">Real Rate Divergence</span> - Gold vs. TIPS spread (FRED DFII10)</li>
+                      <li>• <span className="text-stealth-300">COMEX Inventory Stress</span> - Open interest / registered ratio</li>
+                      <li>• <span className="text-stealth-300">Central Bank Accumulation</span> - WGC/IMF quarterly momentum</li>
+                      <li>• <span className="text-stealth-300">ETF Flow Divergence</span> - Price vs. holdings momentum</li>
+                      <li>• <span className="text-stealth-300">Backwardation Signal</span> - Futures curve stress proxy</li>
+                    </ul>
+                  </div>
+
+                  {/* Crypto Subsystem */}
+                  <div className="bg-stealth-800/50 border border-blue-500/30 rounded p-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                      </svg>
+                      <h5 className="text-blue-400 font-semibold">Crypto Subsystem (8 components, 50%)</h5>
+                    </div>
+                    <ul className="text-xs text-stealth-400 space-y-1.5">
+                      <li>• <span className="text-stealth-300">BTC Momentum (USD)</span> - 90-day price acceleration</li>
+                      <li>• <span className="text-stealth-300">BTC vs. Gold Signal</span> - Relative strength indicator</li>
+                      <li>• <span className="text-stealth-300">BTC Real Rate Break</span> - Correlation divergence with TIPS</li>
+                      <li>• <span className="text-stealth-300">BTC Dominance Momentum</span> - Market share vs. altcoins</li>
+                      <li>• <span className="text-stealth-300">Altcoin Performance Signal</span> - Inverse dominance strength</li>
+                      <li>• <span className="text-stealth-300">Crypto/M2 Ratio</span> - Market cap vs. money supply</li>
+                      <li>• <span className="text-stealth-300">Crypto/Fed BS Ratio</span> - Correlation with liquidity injections</li>
+                      <li>• <span className="text-stealth-300">DeFi TVL Growth</span> - Total value locked momentum (DeFiLlama)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calculation Methodology */}
+              <div className="bg-stealth-900/50 border border-stealth-700 rounded p-4">
+                <h4 className="text-stealth-200 font-semibold mb-3">Calculation & Thresholds</h4>
+                <div className="space-y-3 text-sm text-stealth-400">
+                  <div>
+                    <strong className="text-stealth-300">Component Threshold:</strong> AAP requires <strong className="text-emerald-400">70% of components operational</strong> (13 of 18) 
+                    to calculate scores. Currently running at <strong className="text-emerald-400">100%</strong> (all 18 components active).
+                  </div>
+                  <div>
+                    <strong className="text-stealth-300">Scoring Formula:</strong>
+                    <div className="bg-stealth-800/50 rounded p-3 mt-2 font-mono text-xs">
+                      AAP_Score = (Metals_Subsystem × 0.50) + (Crypto_Subsystem × 0.50)
+                      <br />
+                      <br />
+                      Each component outputs 0-100, aggregated by subsystem, then weighted.
+                    </div>
+                  </div>
+                  <div>
+                    <strong className="text-stealth-300">Regime States:</strong>
+                    <ul className="mt-2 space-y-1 ml-4">
+                      <li>• <span className="text-emerald-400">LOW (0-33)</span> - Normal monetary conditions, traditional assets preferred</li>
+                      <li>• <span className="text-yellow-400">MODERATE (34-66)</span> - Rising concerns, selective alternative asset flows</li>
+                      <li>• <span className="text-red-400">HIGH (67-100)</span> - Systemic stress, significant capital flight to alternatives</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Sources */}
+              <div className="bg-stealth-900/50 border border-stealth-700 rounded p-4">
+                <h4 className="text-stealth-200 font-semibold mb-3">Data Sources & Quality</h4>
+                <div className="grid md:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div className="text-stealth-300 font-semibold mb-1">Primary Sources:</div>
+                    <ul className="text-stealth-400 space-y-1">
+                      <li>• <strong>FRED API</strong> - BTC/ETH prices (CBBTCUSD), real rates (DFII10), macro liquidity</li>
+                      <li>• <strong>Yahoo Finance</strong> - Precious metals prices (AU, AG, PT, PD)</li>
+                      <li>• <strong>WGC/IMF</strong> - Central bank gold holdings (quarterly)</li>
+                      <li>• <strong>DeFiLlama</strong> - DeFi TVL, stablecoin supply (free API)</li>
+                      <li>• <strong>CoinGecko</strong> - BTC dominance, market caps</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-stealth-300 font-semibold mb-1">Quality Notes:</div>
+                    <ul className="text-stealth-400 space-y-1">
+                      <li>• ⭐⭐⭐⭐⭐ <strong>Real rates:</strong> Direct FRED integration</li>
+                      <li>• ⭐⭐⭐⭐⭐ <strong>Crypto prices:</strong> FRED + CoinGecko</li>
+                      <li>• ⭐⭐⭐⭐ <strong>BTC dominance:</strong> CoinGecko + historical estimates</li>
+                      <li>• ⭐⭐⭐ <strong>COMEX stress:</strong> Volatility-based proxy until CME feed</li>
+                      <li>• ⭐⭐⭐ <strong>ETF flows:</strong> Price momentum proxy until scraper</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* View Detailed Breakdown Link */}
+              <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-stealth-200 font-semibold mb-1">View Live Component Status</h4>
+                    <p className="text-xs text-stealth-400">See real-time breakdown of all 18 components with contribution weights and current values</p>
+                  </div>
+                  <a
+                    href="/aap-breakdown"
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded font-semibold text-sm transition-colors"
+                  >
+                    View Breakdown →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Known Limitations */}
       <div className="bg-gradient-to-br from-red-950/20 to-stealth-850 border border-red-900/30 rounded-lg p-4 md:p-6 mt-4 md:mt-6">
         <h3 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-stealth-100 flex items-center gap-2">
