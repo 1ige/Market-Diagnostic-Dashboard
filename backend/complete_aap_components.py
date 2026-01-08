@@ -18,8 +18,10 @@ Wait, checking the actual missing components from calculator...
 import requests
 import time
 from datetime import datetime, timedelta
-from app.core.db import get_db_session
-from app.models.precious_metals import MetalPrice, CryptoPrice, MacroLiquidity
+from contextlib import contextmanager
+from app.core.db import SessionLocal
+from app.models.precious_metals import MetalPrice
+from app.models.alternative_assets import CryptoPrice, MacroLiquidityData
 from sqlalchemy import func
 import statistics
 
@@ -27,6 +29,15 @@ FRED_API_KEY = "6f12b75f50396346d15aa95aac7beaef"
 FRED_BASE_URL = "https://api.stlouisfed.org/fred"
 COINGECKO_BASE = "https://api.coingecko.com/api/v3"
 DEFILLAMA_BASE = "https://api.llama.fi"
+
+@contextmanager
+def get_db_session():
+    """Context manager for database sessions"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def fetch_fred_series(series_id: str, days_back: int = 365) -> dict:
     """Fetch data from FRED API"""
@@ -68,12 +79,12 @@ def add_real_rates():
         
         # Update macro records
         updated = 0
-        macro_records = db.query(MacroLiquidity).all()
+        macro_records = db.query(MacroLiquidityData).all()
         
         for record in macro_records:
             date_str = record.date.strftime('%Y-%m-%d')
             if date_str in tips_data:
-                record.real_rate = tips_data[date_str]
+                record.real_rate_10y = tips_data[date_str]
                 updated += 1
         
         db.commit()
@@ -93,15 +104,15 @@ def calculate_btc_real_rate_correlation():
             CryptoPrice.btc_usd.isnot(None)
         ).order_by(CryptoPrice.date).all()
         
-        macro_records = db.query(MacroLiquidity).filter(
-            MacroLiquidity.real_rate.isnot(None)
-        ).order_by(MacroLiquidity.date).all()
+        macro_records = db.query(MacroLiquidityData).filter(
+            MacroLiquidityData.real_rate_10y.isnot(None)
+        ).order_by(MacroLiquidityData.date).all()
         
         print(f"Found {len(crypto_records)} BTC records, {len(macro_records)} real rate records")
         
         # Create date-indexed lookups
         btc_by_date = {r.date.date(): r.btc_usd for r in crypto_records}
-        rate_by_date = {r.date.date(): r.real_rate for r in macro_records}
+        rate_by_date = {r.date.date(): r.real_rate_10y for r in macro_records}
         
         # Calculate rolling correlation
         updated = 0
