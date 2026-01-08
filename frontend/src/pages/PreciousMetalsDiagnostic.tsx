@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useApi } from "../../hooks/useApi";
+import { useApi } from "../hooks/useApi";
 
 interface RegimeStatus {
   gold_bias: "MONETARY_HEDGE" | "NEUTRAL" | "FINANCIAL_ASSET";
