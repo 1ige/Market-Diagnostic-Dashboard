@@ -1,5 +1,5 @@
 """
-Backfill real crypto prices from CoinGecko API
+Backfill real crypto prices from FRED API
 """
 from datetime import datetime, timedelta
 import requests
@@ -7,92 +7,95 @@ import time
 from app.core.db import SessionLocal
 from app.models.alternative_assets import CryptoPrice
 
-COINGECKO_API = "https://api.coingecko.com/api/v3"
+FRED_API_KEY = "6f12b75f50396346d15aa95aac7beaef"
+FRED_API = "https://api.stlouisfed.org/fred/series/observations"
+
+def fetch_fred_series(series_id, start_date):
+    """Fetch a FRED series"""
+    params = {
+        "series_id": series_id,
+        "api_key": FRED_API_KEY,
+        "file_type": "json",
+        "observation_start": start_date.strftime("%Y-%m-%d"),
+        "sort_order": "asc"
+    }
+    response = requests.get(FRED_API, params=params)
+    data = response.json()
+    return {obs['date']: float(obs['value']) if obs['value'] != '.' else None 
+            for obs in data.get('observations', [])}
 
 def fetch_crypto_history(days=90):
-    """Fetch historical crypto data from CoinGecko"""
+    """Fetch historical crypto data from FRED"""
     db = SessionLocal()
     
     try:
-        print(f"\n🔄 Fetching {days} days of crypto data from CoinGecko...")
+        print(f"\n🔄 Fetching {days} days of crypto data from FRED...")
         
         # Delete seed data first
         deleted = db.query(CryptoPrice).filter(CryptoPrice.source == 'SEED').delete()
         db.commit()
         print(f"  Deleted {deleted} seed records")
         
-        # Fetch BTC data
-        print("\n  Fetching BTC data...")
-        btc_response = requests.get(
-            f"{COINGECKO_API}/coins/bitcoin/market_chart",
-            params={"vs_currency": "usd", "days": days, "interval": "daily"}
-        )
-        btc_data = btc_response.json()
+        start_date = datetime.utcnow() - timedelta(days=days+10)
         
-        # Fetch ETH data  
-        print("  Fetching ETH data...")
-        time.sleep(1)  # Rate limit
-        eth_response = requests.get(
-            f"{COINGECKO_API}/coins/ethereum/market_chart",
-            params={"vs_currency": "usd", "days": days, "interval": "daily"}
-        )
-        eth_data = eth_response.json()
-        
-        # Fetch global market data
-        print("  Fetching global crypto market data...")
+        # Fetch BTC price from FRED (CBBTCUSD - Coinbase Bitcoin USD)
+        print("\n  Fetching BTC price (CBBTCUSD)...")
+        btc_data = fetch_fred_series("CBBTCUSD", start_date)
         time.sleep(1)
-        global_response = requests.get(f"{COINGECKO_API}/global")
-        global_data = global_response.json()
         
-        # Get BTC dominance (fallback to estimate if API fails)
-        try:
-            btc_dominance_current = global_data.get('data', {}).get('market_cap_percentage', {}).get('btc', 40.0)
-        except:
-            btc_dominance_current = 40.0  # Fallback estimate
-        
-        # Process daily data
-        btc_prices = btc_data.get('prices', [])
-        btc_mcaps = btc_data.get('market_caps', [])
-        btc_volumes = btc_data.get('total_volumes', [])
-        eth_prices = eth_data.get('prices', [])
+        # Fetch ETH price from FRED (CBETHUSD - Coinbase Ethereum USD)  
+        print("  Fetching ETH price (CBETHUSD)...")
+        eth_data = fetch_fred_series("CBETHUSD", start_date)
+        time.sleep(1)
         
         print(f"\n  Data fetched:")
-        print(f"    BTC prices: {len(btc_prices)} data points")
-        print(f"    ETH prices: {len(eth_prices)} data points")
+        print(f"    BTC prices: {len(btc_data)} data points")
+        print(f"    ETH prices: {len(eth_data)} data points")
         
-        if len(btc_prices) == 0 or len(eth_prices) == 0:
-            print(f"  ⚠️  No data returned from CoinGecko API")
-            print(f"  BTC response: {btc_response.status_code}")
-            print(f"  ETH response: {eth_response.status_code}")
+        if len(btc_data) == 0:
+            print(f"  ⚠️  No BTC data returned from FRED")
             return
         
+        # Get all unique dates
+        all_dates = sorted(set(list(btc_data.keys()) + list(eth_data.keys())))
+        
         added = 0
-        for i in range(min(len(btc_prices), len(eth_prices))):
-            timestamp = btc_prices[i][0] / 1000  # Convert to seconds
-            date = datetime.fromtimestamp(timestamp).replace(hour=0, minute=0, second=0, microsecond=0)
+        for date_str in all_dates:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
             
-            # Use current dominance as approximation for historical
-            btc_dominance = btc_dominance_current
-            total_mcap = btc_mcaps[i][1] / (btc_dominance / 100) if btc_dominance > 0 else btc_mcaps[i][1] * 2.5
+            # Skip if too old
+            if date < datetime.utcnow() - timedelta(days=days):
+                continue
+            
+            btc_price = btc_data.get(date_str)
+            eth_price = eth_data.get(date_str)
+            
+            # Skip if no BTC price
+            if not btc_price:
+                continue
+            
+            # Estimate market cap (BTC supply ~19.5M, dominance ~40%)
+            btc_mcap = btc_price * 19_500_000
+            total_mcap = btc_mcap / 0.40 if btc_price else None
             
             crypto_price = CryptoPrice(
                 date=date,
-                btc_usd=btc_prices[i][1],
-                eth_usd=eth_prices[i][1],
-                total_crypto_mcap=total_mcap / 1_000_000_000,  # Convert to billions
-                btc_dominance=btc_dominance,
+                btc_usd=btc_price,
+                eth_usd=eth_price,
+                total_crypto_mcap=total_mcap / 1_000_000_000 if total_mcap else None,  # Convert to billions
+                btc_dominance=40.0,  # Approximate
                 btc_gold_ratio=None,  # Will be calculated
-                btc_volume_24h=btc_volumes[i][1] if i < len(btc_volumes) else None,
-                source='COINGECKO'
+                btc_volume_24h=None,  # Not available from FRED
+                source='FRED'
             )
             db.add(crypto_price)
             added += 1
             
             if added % 10 == 0:
-                print(f"    {added}/{days} days processed...")
+                print(f"    {added} days processed...")
         
         db.commit()
-        print(f"\n✅ Added {added} real crypto price records from CoinGecko")
+        print(f"\n✅ Added {added} real crypto price records from FRED")
         
     except Exception as e:
         print(f"❌ Error fetching crypto data: {e}")
