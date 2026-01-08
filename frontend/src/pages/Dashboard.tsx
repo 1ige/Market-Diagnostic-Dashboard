@@ -4,8 +4,8 @@ import IndicatorCard from "../components/widgets/IndicatorCard";
 import DowTheoryWidget from "../components/widgets/DowTheoryWidget";
 import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
 import SectorDivergenceWidget from "../components/widgets/SectorDivergenceWidget";
+import PreciousMetalsWidget from "../components/widgets/PreciousMetalsWidget";
 import { getLegacyApiUrl } from "../utils/apiUtils";
-import { BUTTON_STYLES } from "../utils/styleUtils";
 
 interface NewsArticle {
   id: number;
@@ -153,10 +153,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6 mb-3 md:mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6 mb-3 md:mb-6">
         <SystemOverviewWidget trendPeriod={trendPeriod} />
         <DowTheoryWidget trendPeriod={trendPeriod} />
         <SectorDivergenceWidget />
+        <PreciousMetalsWidget />
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
