@@ -56,6 +56,16 @@ def fetch_crypto_history(days=90):
         btc_volumes = btc_data.get('total_volumes', [])
         eth_prices = eth_data.get('prices', [])
         
+        print(f"\n  Data fetched:")
+        print(f"    BTC prices: {len(btc_prices)} data points")
+        print(f"    ETH prices: {len(eth_prices)} data points")
+        
+        if len(btc_prices) == 0 or len(eth_prices) == 0:
+            print(f"  ⚠️  No data returned from CoinGecko API")
+            print(f"  BTC response: {btc_response.status_code}")
+            print(f"  ETH response: {eth_response.status_code}")
+            return
+        
         added = 0
         for i in range(min(len(btc_prices), len(eth_prices))):
             timestamp = btc_prices[i][0] / 1000  # Convert to seconds
