@@ -44,6 +44,12 @@ def fetch_crypto_history(days=90):
         global_response = requests.get(f"{COINGECKO_API}/global")
         global_data = global_response.json()
         
+        # Get BTC dominance (fallback to estimate if API fails)
+        try:
+            btc_dominance_current = global_data.get('data', {}).get('market_cap_percentage', {}).get('btc', 40.0)
+        except:
+            btc_dominance_current = 40.0  # Fallback estimate
+        
         # Process daily data
         btc_prices = btc_data.get('prices', [])
         btc_mcaps = btc_data.get('market_caps', [])
@@ -55,8 +61,8 @@ def fetch_crypto_history(days=90):
             timestamp = btc_prices[i][0] / 1000  # Convert to seconds
             date = datetime.fromtimestamp(timestamp).replace(hour=0, minute=0, second=0, microsecond=0)
             
-            # Get current global data for approximation
-            btc_dominance = global_data['data']['market_cap_percentage'].get('btc', 40.0)
+            # Use current dominance as approximation for historical
+            btc_dominance = btc_dominance_current
             total_mcap = btc_mcaps[i][1] / (btc_dominance / 100) if btc_dominance > 0 else btc_mcaps[i][1] * 2.5
             
             crypto_price = CryptoPrice(
