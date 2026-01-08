@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import requests
 import time
 from app.core.db import SessionLocal
-from app.models.precious_metals import CryptoPrice
+from app.models.alternative_assets import CryptoPrice
 from sqlalchemy import func
 
 DEFILLAMA_BASE_URL = "https://api.llama.fi"
@@ -163,45 +163,36 @@ def add_extended_crypto_fields():
             
             # Add dominance if available
             if date_str in dominance and dominance[date_str]:
-                # Store in notes field for now (until model is updated)
                 btc_dom = dominance[date_str]
+                record.btc_dominance = btc_dom
                 
-                # Calculate altcoin market cap
-                # Total crypto mcap ≈ BTC mcap / (dominance / 100)
-                if record.btc_market_cap:
-                    total_mcap = record.btc_market_cap / (btc_dom / 100)
-                    altcoin_mcap = total_mcap - record.btc_market_cap
-                    
-                    # Add to notes
-                    notes = f"BTC_DOM:{btc_dom:.2f}%,ALT_MCAP:{altcoin_mcap:.0f}"
-                    
-                    if date_str in defi_tvl:
-                        notes += f",DEFI_TVL:{defi_tvl[date_str]:.0f}"
-                    
-                    if stablecoin_supply and abs((record.date - datetime.now()).days) < 7:
-                        notes += f",STABLE_SUPPLY:{stablecoin_supply:.0f}"
-                    
-                    record.notes = notes
+                # Calculate total market cap and update
+                if record.btc_usd:
+                    # Estimate BTC mcap from price (rough estimate, assumes ~19.5M BTC)
+                    btc_mcap_billions = (record.btc_usd * 19_500_000) / 1_000_000_000
+                    total_mcap = btc_mcap_billions / (btc_dom / 100)
+                    record.total_crypto_mcap = total_mcap
                     updated += 1
         
         db.commit()
-        print(f"  ✅ Updated {updated} records with extended data")
+        print(f"  ✅ Updated {updated} records with BTC dominance and total market cap")
         
         # Show sample
         print(f"\n  📊 Sample enhanced records:")
         samples = db.query(CryptoPrice).filter(
-            CryptoPrice.notes.isnot(None),
-            CryptoPrice.notes.like('%BTC_DOM%')
+            CryptoPrice.btc_dominance.isnot(None)
         ).order_by(CryptoPrice.date.desc()).limit(3).all()
         
         for sample in samples:
-            print(f"    {sample.date.date()}: {sample.notes}")
+            print(f"    {sample.date.date()}: BTC={sample.btc_usd:.2f} DOM={sample.btc_dominance:.1f}% MCAP={sample.total_crypto_mcap:.0f}B")
         
         print(f"\n  💡 Extended data now available for AAP components:")
         print(f"     - BTC Dominance (for dominance momentum)")
-        print(f"     - Altcoin Market Cap (for altcoin signal)")
-        print(f"     - DeFi TVL (for DeFi component)")
-        print(f"     - Stablecoin Supply (for stablecoin velocity)")
+        print(f"     - Total Crypto Market Cap (for crypto/M2 ratio)")
+        if defi_tvl:
+            print(f"     - DeFi TVL data fetched: {len(defi_tvl)} data points")
+        if stablecoin_supply:
+            print(f"     - Stablecoin supply: ${stablecoin_supply:.1f}B")
     finally:
         db.close()
 

@@ -114,8 +114,7 @@ def estimate_comex_from_prices(with_db_session):
                 total_oz=total_oz,
                 open_interest=open_interest,
                 oi_to_registered_ratio=oi_to_reg,
-                source='ESTIMATED_FROM_PRICES',
-                notes=f'Estimated from gold price volatility. Daily return: {daily_return:.4f}'
+                source='ESTIMATED_FROM_PRICES'
             )
             
             db.add(comex_record)

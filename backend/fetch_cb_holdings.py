@@ -69,8 +69,7 @@ def fetch_cb_holdings():
                 date=report_date,
                 gold_tonnes=tonnes,
                 pct_of_reserves=pct_reserves,
-                source='WGC_IMF_2025Q4',
-                notes='Based on World Gold Council and IMF data, Q4 2025'
+                source='WGC_IMF_2025Q4'
             )
             db.add(holding)
             records_added += 1
@@ -96,9 +95,8 @@ def fetch_cb_holdings():
                     country=country,
                     date=hist_date,
                     gold_tonnes=hist_tonnes,
-                    pct_of_reserves=hist_pct,
-                    source='ESTIMATED_HISTORICAL',
-                    notes=f'Estimated from Q4 2025 baseline (-{months_back}m)'
+                    pct_of_reserves=pct_reserves,
+                    source='ESTIMATED_HISTORICAL'
                 )
                 db.add(hist_holding)
                 records_added += 1
