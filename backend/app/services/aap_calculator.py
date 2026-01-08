@@ -1143,32 +1143,38 @@ class AAPCalculator:
         crypto_pressure: float, multiplier: float, correlation_regime: str
     ) -> AAPComponent:
         """Create detailed component record for audit trail"""
+        # Convert numpy types to Python types for PostgreSQL compatibility
+        def to_python_float(val):
+            if val is None:
+                return None
+            return float(val)
+        
         return AAPComponent(
             date=date,
             # Metals components
-            gold_usd_zscore=components.get('gold_usd_zscore'),
-            gold_real_rate_divergence=components.get('gold_real_rate_divergence'),
-            cb_gold_momentum=components.get('cb_gold_momentum'),
-            silver_usd_zscore=components.get('silver_usd_zscore'),
-            gold_silver_ratio_signal=components.get('gold_silver_ratio_signal'),
-            platinum_gold_ratio=components.get('platinum_gold_ratio'),
-            palladium_gold_ratio=components.get('palladium_gold_ratio'),
-            comex_stress_ratio=components.get('comex_stress_ratio'),
-            backwardation_signal=components.get('backwardation_signal'),
-            etf_flow_divergence=components.get('etf_flow_divergence'),
+            gold_usd_zscore=to_python_float(components.get('gold_usd_zscore')),
+            gold_real_rate_divergence=to_python_float(components.get('gold_real_rate_divergence')),
+            cb_gold_momentum=to_python_float(components.get('cb_gold_momentum')),
+            silver_usd_zscore=to_python_float(components.get('silver_usd_zscore')),
+            gold_silver_ratio_signal=to_python_float(components.get('gold_silver_ratio_signal')),
+            platinum_gold_ratio=to_python_float(components.get('platinum_gold_ratio')),
+            palladium_gold_ratio=to_python_float(components.get('palladium_gold_ratio')),
+            comex_stress_ratio=to_python_float(components.get('comex_stress_ratio')),
+            backwardation_signal=to_python_float(components.get('backwardation_signal')),
+            etf_flow_divergence=to_python_float(components.get('etf_flow_divergence')),
             # Crypto components
-            btc_usd_zscore=components.get('btc_usd_zscore'),
-            btc_gold_zscore=components.get('btc_gold_zscore'),
-            btc_real_rate_break=components.get('btc_real_rate_break'),
-            crypto_m2_ratio=components.get('crypto_m2_ratio'),
-            btc_dominance_momentum=components.get('btc_dominance_momentum'),
-            altcoin_btc_signal=components.get('altcoin_btc_signal'),
-            crypto_vs_fed_bs=components.get('crypto_vs_fed_bs'),
-            crypto_qt_resilience=components.get('crypto_qt_resilience'),
+            btc_usd_zscore=to_python_float(components.get('btc_usd_zscore')),
+            btc_gold_zscore=to_python_float(components.get('btc_gold_zscore')),
+            btc_real_rate_break=to_python_float(components.get('btc_real_rate_break')),
+            crypto_m2_ratio=to_python_float(components.get('crypto_m2_ratio')),
+            btc_dominance_momentum=to_python_float(components.get('btc_dominance_momentum')),
+            altcoin_btc_signal=to_python_float(components.get('altcoin_btc_signal')),
+            crypto_vs_fed_bs=to_python_float(components.get('crypto_vs_fed_bs')),
+            crypto_qt_resilience=to_python_float(components.get('crypto_qt_resilience')),
             # Aggregates
-            metals_pressure_score=metals_pressure,
-            crypto_pressure_score=crypto_pressure,
-            cross_asset_multiplier=multiplier,
+            metals_pressure_score=to_python_float(metals_pressure),
+            crypto_pressure_score=to_python_float(crypto_pressure),
+            cross_asset_multiplier=to_python_float(multiplier),
             correlation_regime=correlation_regime,
         )
     
