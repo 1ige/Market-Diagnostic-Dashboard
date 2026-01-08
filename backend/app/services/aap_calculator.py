@@ -323,9 +323,9 @@ class AAPCalculator:
             # Log availability
             logger.info(f"AAP components: {len(components)}/{len(self.WEIGHTS)} available")
             
-            # Need at least 50% of components (reduced threshold for initial deployment)
-            # TODO: Increase to 70% once all data sources are live
-            required = int(len(self.WEIGHTS) * 0.50)
+            # Need at least 70% of components for reliable signal
+            # With all data sources operational, we should hit 13-18 components
+            required = int(len(self.WEIGHTS) * 0.70)
             if len(components) < required:
                 logger.warning(f"Insufficient components: {len(components)}/{required} required")
                 return None

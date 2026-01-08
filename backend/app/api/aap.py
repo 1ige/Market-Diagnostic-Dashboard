@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import desc, func
 from datetime import datetime, timedelta
 from typing import List, Optional
+import numpy as np
 
 from app.utils.db_helpers import get_db_session
 from app.models.alternative_assets import (
@@ -122,6 +123,84 @@ def get_aap_history(
                     np.std([ind.stability_score for ind in indicators]), 1
                 ) if len(indicators) > 1 else 0,
             }
+        }
+
+
+@router.get("/components/breakdown")
+def get_component_breakdown():
+    """
+    Get structured component breakdown for the AAP breakdown page.
+    Returns all 18 components with status, weights, and current values.
+    """
+    with get_db_session() as db:
+        # Get latest indicator and component data
+        indicator = db.query(AAPIndicator).order_by(desc(AAPIndicator.date)).first()
+        if not indicator:
+            raise HTTPException(status_code=404, detail="No AAP data available")
+        
+        component = db.query(AAPComponent).filter(
+            AAPComponent.date == indicator.date
+        ).first()
+        
+        # Define all 18 components with their weights
+        component_weights = AAPCalculator.WEIGHTS
+        
+        # Build component list with status
+        components_list = []
+        
+        # Metals components (10)
+        metals_comps = [
+            ('gold_usd_zscore', 'metals', getattr(component, 'gold_usd_zscore', None) if component else None),
+            ('gold_real_rate_divergence', 'metals', getattr(component, 'gold_real_rate_divergence', None) if component else None),
+            ('cb_gold_momentum', 'metals', getattr(component, 'cb_gold_momentum', None) if component else None),
+            ('silver_usd_zscore', 'metals', getattr(component, 'silver_usd_zscore', None) if component else None),
+            ('gold_silver_ratio_signal', 'metals', getattr(component, 'gold_silver_ratio_signal', None) if component else None),
+            ('platinum_gold_ratio', 'metals', getattr(component, 'platinum_gold_ratio', None) if component else None),
+            ('palladium_gold_ratio', 'metals', getattr(component, 'palladium_gold_ratio', None) if component else None),
+            ('comex_stress_ratio', 'metals', getattr(component, 'comex_stress_ratio', None) if component else None),
+            ('backwardation_signal', 'metals', getattr(component, 'backwardation_signal', None) if component else None),
+            ('etf_flow_divergence', 'metals', getattr(component, 'etf_flow_divergence', None) if component else None),
+        ]
+        
+        # Crypto components (8)
+        crypto_comps = [
+            ('btc_usd_zscore', 'crypto', getattr(component, 'btc_usd_zscore', None) if component else None),
+            ('btc_gold_zscore', 'crypto', getattr(component, 'btc_gold_zscore', None) if component else None),
+            ('btc_real_rate_break', 'crypto', getattr(component, 'btc_real_rate_break', None) if component else None),
+            ('crypto_m2_ratio', 'crypto', getattr(component, 'crypto_m2_ratio', None) if component else None),
+            ('btc_dominance_momentum', 'crypto', getattr(component, 'btc_dominance_momentum', None) if component else None),
+            ('altcoin_btc_signal', 'crypto', getattr(component, 'altcoin_btc_signal', None) if component else None),
+            ('crypto_vs_fed_bs', 'crypto', getattr(component, 'crypto_vs_fed_bs', None) if component else None),
+            ('crypto_qt_resilience', 'crypto', getattr(component, 'crypto_qt_resilience', None) if component else None),
+        ]
+        
+        all_components = metals_comps + crypto_comps
+        
+        for name, category, value in all_components:
+            weight = component_weights.get(name, 0)
+            is_active = value is not None
+            contribution = (value * weight) if is_active else 0
+            
+            components_list.append({
+                'name': name,
+                'category': category,
+                'value': round(value, 4) if is_active else 0,
+                'weight': weight,
+                'contribution': contribution,
+                'status': 'active' if is_active else 'missing',
+                'description': f'Component: {name}'
+            })
+        
+        return {
+            'date': indicator.date.isoformat(),
+            'stability_score': round(indicator.stability_score, 1),
+            'pressure_index': round(indicator.pressure_index, 3),
+            'regime': indicator.regime,
+            'primary_driver': indicator.primary_driver,
+            'metals_contribution': round(indicator.metals_contribution, 3),
+            'crypto_contribution': round(indicator.crypto_contribution, 3),
+            'data_completeness': round(indicator.data_completeness, 2),
+            'components': components_list
         }
 
 
