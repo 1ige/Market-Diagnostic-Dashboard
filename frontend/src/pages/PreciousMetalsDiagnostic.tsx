@@ -293,18 +293,14 @@ export default function PreciousMetalsDiagnostic() {
           </div>
 
           {/* SECTION 4 & 5: RELATIVE VALUE & PHYSICAL/PAPER (2-COLUMN) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 4: Relative Value */}
             <RelativeValuePanel indicators={indicators} />
 
             {/* Section 5: Physical vs Paper */}
             <PhysicalPaperPanel indicators={indicators} />
           </div>
-        </>
-      )}
 
-      {selectedTab === "deep-dive" && (
-        <>
           {/* SECTION 6 & 7: SUPPLY-DEMAND (2-COLUMN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 6: Supply */}
@@ -318,6 +314,14 @@ export default function PreciousMetalsDiagnostic() {
           <div className="grid grid-cols-1 gap-6">
             <MarketCapPanel />
             <CorrelationPanel correlations={correlations} />
+          </div>
+        </>
+      )}
+
+      {selectedTab === "deep-dive" && (
+        <>
+          <div className="text-center text-stealth-400 py-12">
+            Deep dive analysis coming soon. Additional technical indicators, historical regime analysis, and advanced correlations will be added here.
           </div>
         </>
       )}
@@ -803,8 +807,7 @@ function ProjectionsPanel({ projections }: { projections: MetalProjection[] }) {
 
   return (
     <div className="bg-stealth-800 p-4 md:p-6 rounded-lg border border-stealth-600">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <span className="text-2xl">📊</span>
+      <h2 className="text-xl font-bold mb-4">
         Metal Projections & Technical Analysis
       </h2>
 
