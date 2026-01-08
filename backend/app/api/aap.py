@@ -386,7 +386,7 @@ def trigger_calculation(
     
     with get_db_session() as db:
         calculator = AAPCalculator(db)
-        indicator = calculator.calculate_for_date(target_date)ate)
+        indicator = calculator.calculate_for_date(target_date)
         
         if not indicator:
             raise HTTPException(
