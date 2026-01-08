@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../hooks/useApi";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 interface RegimeStatus {
   gold_bias: "MONETARY_HEDGE" | "NEUTRAL" | "FINANCIAL_ASSET";
@@ -69,6 +70,11 @@ interface SupplyData {
   current_spot_price: number;
   margin_pct: number;
   recycling_pct_of_supply: number;
+}
+
+interface PriceHistory {
+  date: string;
+  price: number;
 }
 
 const getRegimeBadgeClass = (regime: string): string => {
@@ -216,6 +222,11 @@ export default function PreciousMetalsDiagnostic() {
 
       {selectedTab === "overview" && (
         <>
+          {/* PRICE HISTORY CHART */}
+          <div className="mb-6">
+            <PriceHistoryChart />
+          </div>
+
           {/* SECTION 2 & 3: CB CONTEXT & PRICE ANCHORS (2-COLUMN) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Section 2: Monetary & CB Context */}
@@ -684,6 +695,175 @@ function CorrelationPanel({ correlations }: any) {
       <div className="mt-4 p-3 bg-stealth-700 rounded text-xs text-stealth-400 border-l-2 border-blue-500">
         <strong>Note:</strong> Correlations change with market regime. Breakdowns {'>'} ±2σ signal regime shifts. Use as
         regime confirmation, not reversion signal.
+      </div>
+    </div>
+  );
+}
+
+function PriceHistoryChart() {
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const metals = ['AU', 'AG', 'PT', 'PD'];
+        const responses = await Promise.all(
+          metals.map(metal => 
+            fetch(`/api/precious-metals/history/${metal}?days=365`)
+              .then(res => res.json())
+          )
+        );
+
+        // Combine all metal histories into a single dataset
+        const auData = responses[0] || [];
+        const agData = responses[1] || [];
+        const ptData = responses[2] || [];
+        const pdData = responses[3] || [];
+
+        // Create a map of dates to prices
+        const dateMap = new Map();
+
+        auData.forEach((item: PriceHistory) => {
+          const date = item.date.split('T')[0];
+          if (!dateMap.has(date)) {
+            dateMap.set(date, { date });
+          }
+          dateMap.get(date).AU = item.price;
+        });
+
+        agData.forEach((item: PriceHistory) => {
+          const date = item.date.split('T')[0];
+          if (!dateMap.has(date)) {
+            dateMap.set(date, { date });
+          }
+          dateMap.get(date).AG = item.price;
+        });
+
+        ptData.forEach((item: PriceHistory) => {
+          const date = item.date.split('T')[0];
+          if (!dateMap.has(date)) {
+            dateMap.set(date, { date });
+          }
+          dateMap.get(date).PT = item.price;
+        });
+
+        pdData.forEach((item: PriceHistory) => {
+          const date = item.date.split('T')[0];
+          if (!dateMap.has(date)) {
+            dateMap.set(date, { date });
+          }
+          dateMap.get(date).PD = item.price;
+        });
+
+        const combined = Array.from(dateMap.values()).sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        setHistoryData(combined);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching price history:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+        <h3 className="text-lg font-bold mb-4 text-white">Price History (1 Year)</h3>
+        <div className="text-stealth-400">Loading price history...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">
+      <h3 className="text-lg font-bold mb-4 text-white">Price History (1 Year)</h3>
+      
+      <ResponsiveContainer width="100%" height={350}>
+        <LineChart data={historyData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis 
+            dataKey="date" 
+            stroke="#9CA3AF"
+            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+            tickFormatter={(date) => {
+              const d = new Date(date);
+              return `${d.getMonth() + 1}/${d.getDate()}`;
+            }}
+          />
+          <YAxis 
+            yAxisId="left"
+            stroke="#9CA3AF"
+            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+            label={{ value: 'Gold/Platinum/Palladium ($/oz)', angle: -90, position: 'insideLeft', fill: '#9CA3AF' }}
+          />
+          <YAxis 
+            yAxisId="right"
+            orientation="right"
+            stroke="#9CA3AF"
+            tick={{ fill: '#9CA3AF', fontSize: 12 }}
+            label={{ value: 'Silver ($/oz)', angle: 90, position: 'insideRight', fill: '#9CA3AF' }}
+          />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: '#1F2937', 
+              border: '1px solid #374151',
+              borderRadius: '0.5rem',
+              color: '#E5E7EB'
+            }}
+            formatter={(value: any) => [`$${value.toFixed(2)}`, '']}
+            labelFormatter={(label) => new Date(label).toLocaleDateString()}
+          />
+          <Legend 
+            wrapperStyle={{ color: '#9CA3AF' }}
+            iconType="line"
+          />
+          <Line 
+            yAxisId="left"
+            type="monotone" 
+            dataKey="AU" 
+            stroke="#FFD700" 
+            strokeWidth={2}
+            dot={false}
+            name="Gold"
+          />
+          <Line 
+            yAxisId="right"
+            type="monotone" 
+            dataKey="AG" 
+            stroke="#C0C0C0" 
+            strokeWidth={2}
+            dot={false}
+            name="Silver"
+          />
+          <Line 
+            yAxisId="left"
+            type="monotone" 
+            dataKey="PT" 
+            stroke="#E5E4E2" 
+            strokeWidth={2}
+            dot={false}
+            name="Platinum"
+          />
+          <Line 
+            yAxisId="left"
+            type="monotone" 
+            dataKey="PD" 
+            stroke="#CED0D0" 
+            strokeWidth={2}
+            dot={false}
+            name="Palladium"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      <div className="mt-4 text-xs text-stealth-400">
+        <p>All metals priced in USD per troy ounce. Gold, Platinum, and Palladium on left axis; Silver on right axis due to different price scale.</p>
       </div>
     </div>
   );
