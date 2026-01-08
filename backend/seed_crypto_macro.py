@@ -28,13 +28,10 @@ def main():
                 date=date,
                 btc_usd=btc_base,
                 eth_usd=eth_base,
-                btc_market_cap=btc_base * 19_000_000,  # ~19M BTC
-                eth_market_cap=eth_base * 120_000_000,  # ~120M ETH
-                total_crypto_market_cap=btc_base * 19_000_000 * 2.5,  # BTC dominance ~40%
+                total_crypto_mcap=btc_base * 19_000_000 * 2.5,  # Assume BTC dominance ~40%
                 btc_dominance=40.0 + random.uniform(-2, 2),
-                stablecoin_supply=150_000_000_000 + (90 - days_ago) * 100_000_000,
-                defi_tvl=80_000_000_000 + random.uniform(-5_000_000_000, 5_000_000_000),
-                exchange_btc_reserves=2_400_000 + random.uniform(-50000, 50000),
+                btc_gold_ratio=btc_base / 2100.0,  # Assume gold ~$2100
+                btc_volume_24h=30_000_000_000 + random.uniform(-5_000_000_000, 5_000_000_000),
                 source='SEED'
             )
             db.add(crypto_price)
@@ -46,14 +43,14 @@ def main():
             
             macro_data = MacroLiquidityData(
                 date=date,
-                m2_supply=21_000_000_000_000 + (90 - days_ago) * 10_000_000_000,  # Growing M2
-                fed_balance_sheet=7_800_000_000_000 + random.uniform(-50_000_000_000, 50_000_000_000),
-                reverse_repo=500_000_000_000 + random.uniform(-50_000_000_000, 50_000_000_000),
-                treasury_general_account=600_000_000_000 + random.uniform(-50_000_000_000, 50_000_000_000),
-                real_rates_10y=2.5 + random.uniform(-0.3, 0.3),
-                tips_10y=2.0 + random.uniform(-0.2, 0.2),
-                breakeven_inflation=2.5 + random.uniform(-0.1, 0.1),
-                vix_level=15.0 + random.uniform(-5, 10),
+                fed_balance_sheet=7800.0 + random.uniform(-50, 50),  # billions
+                ecb_balance_sheet=8500.0 + random.uniform(-50, 50),
+                pboc_balance_sheet=5200.0 + random.uniform(-50, 50),
+                boj_balance_sheet=6100.0 + random.uniform(-50, 50),
+                global_m2=100.0 + (90 - days_ago) * 0.1,  # trillions, growing
+                global_liquidity_index=100.0 + random.uniform(-5, 5),
+                fed_rate=5.25 + random.uniform(-0.25, 0.25),
+                real_rate_10y=2.5 + random.uniform(-0.3, 0.3),
                 source='SEED'
             )
             db.add(macro_data)
