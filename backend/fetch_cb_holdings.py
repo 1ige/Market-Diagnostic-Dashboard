@@ -10,7 +10,7 @@ For now, we'll use recent public data and create a mechanism to update quarterly
 """
 from datetime import datetime, timedelta
 import requests
-from app.core.db import get_db_session
+from app.core.db import SessionLocal
 from app.models.precious_metals import CBHolding
 
 # Recent CB holdings data (as of Q4 2025 estimates based on public reports)
@@ -48,7 +48,8 @@ def fetch_cb_holdings():
     """
     print("🔄 Fetching Central Bank gold holdings data...")
     
-    with get_db_session() as db:
+    db = SessionLocal()
+    try:
         # Delete seed data
         deleted = db.query(CBHolding).filter(CBHolding.source == 'SEED').delete()
         db.commit()
@@ -141,6 +142,8 @@ def fetch_cb_holdings():
         print(f"     - World Gold Council (quarterly reports)")
         print(f"     - IMF COFER database")
         print(f"     - National central bank publications")
+    finally:
+        db.close()
 
 def main():
     """Main execution"""

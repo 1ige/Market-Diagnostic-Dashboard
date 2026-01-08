@@ -16,7 +16,7 @@ Data sources:
 from datetime import datetime, timedelta
 import requests
 import time
-from app.core.db import get_db_session
+from app.core.db import SessionLocal
 from app.models.precious_metals import CryptoPrice
 from sqlalchemy import func
 
@@ -130,7 +130,8 @@ def add_extended_crypto_fields():
     """
     print("🔄 Fetching extended crypto market data...")
     
-    with get_db_session() as db:
+    db = SessionLocal()
+    try:
         # Get DeFi TVL
         defi_tvl = fetch_defi_tvl(90)
         time.sleep(2)  # Rate limit
@@ -201,6 +202,8 @@ def add_extended_crypto_fields():
         print(f"     - Altcoin Market Cap (for altcoin signal)")
         print(f"     - DeFi TVL (for DeFi component)")
         print(f"     - Stablecoin Supply (for stablecoin velocity)")
+    finally:
+        db.close()
 
 def main():
     """Main execution"""

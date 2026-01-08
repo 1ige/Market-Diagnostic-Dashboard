@@ -9,7 +9,7 @@ Alternative: Can scrape from public CME reports or use FRED proxy data
 """
 from datetime import datetime, timedelta
 import requests
-from app.core.db import get_db_session
+from app.core.db import SessionLocal
 from app.models.precious_metals import COMEXInventory, MetalPrice
 from sqlalchemy import func
 
@@ -141,12 +141,13 @@ def estimate_comex_from_prices(with_db_session):
 
 def main():
     """Main execution"""
+    db = SessionLocal()
     try:
         print("\n" + "="*60)
         print("COMEX Inventory Data Fetcher")
         print("="*60 + "\n")
         
-        estimate_comex_from_prices(get_db_session())
+        estimate_comex_from_prices(db)
         
         print("\n✅ COMEX data fetch complete")
         
@@ -154,6 +155,8 @@ def main():
         print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     main()
