@@ -339,12 +339,14 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 <MetalsSubsystemPanel
                   components={metalsComponents}
                   contribution={aapData.metals_contribution}
+                  sharePercent={metalsPercent}
                   rawHistory={rawComponentHistory}
                   smoothedHistory={smoothedComponentHistory}
                 />
                 <CryptoSubsystemPanel
                   components={cryptoComponents}
                   contribution={aapData.crypto_contribution}
+                  sharePercent={cryptoPercent}
                   rawHistory={rawComponentHistory}
                   smoothedHistory={smoothedComponentHistory}
                 />

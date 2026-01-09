@@ -13,11 +13,18 @@ interface AAPComponent {
 interface CryptoSubsystemPanelProps {
   components: AAPComponent[];
   contribution: number;
+  sharePercent?: number;
   rawHistory?: Record<string, { date: string; value: number | null }[]>;
   smoothedHistory?: Record<string, { date: string; value: number | null }[]>;
 }
 
-export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}, smoothedHistory = {} }: CryptoSubsystemPanelProps) {
+export function CryptoSubsystemPanel({
+  components,
+  contribution,
+  sharePercent,
+  rawHistory = {},
+  smoothedHistory = {}
+}: CryptoSubsystemPanelProps) {
   const activeCount = components.filter(c => c.status === 'active').length;
   const totalCount = components.length;
 
@@ -35,7 +42,9 @@ export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-blue-400">{contribution.toFixed(1)}%</div>
+          <div className="text-2xl font-bold text-blue-400">
+            {(sharePercent ?? (contribution * 100)).toFixed(1)}%
+          </div>
           <div className="text-xs text-stealth-400">{activeCount}/{totalCount} active</div>
         </div>
       </div>
@@ -89,6 +98,8 @@ export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}
                   const padding = range > 0 ? range * 0.1 : 0.02;
                   const domainMin = Math.max(0, min - padding);
                   const domainMax = Math.min(1, max + padding);
+                  const uniqueValues = new Set(values.map(value => Number(value.toFixed(2))));
+                  const isStepped = uniqueValues.size <= 4;
 
                   const rawMap = new Map(rawSeries.map(entry => [entry.date, entry.value]));
                   const smoothMap = new Map(smoothSeries.map(entry => [entry.date, entry.value]));
@@ -104,7 +115,7 @@ export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}
                       <LineChart data={chartData}>
                         <YAxis type="number" domain={[domainMin, domainMax]} hide />
                         <Line
-                          type="monotone"
+                          type={isStepped ? "stepAfter" : "monotone"}
                           dataKey="raw"
                           stroke="#94a3b8"
                           strokeOpacity={0.45}
@@ -113,7 +124,7 @@ export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}
                           connectNulls
                         />
                         <Line
-                          type="monotone"
+                          type={isStepped ? "stepAfter" : "monotone"}
                           dataKey="smooth"
                           stroke="#60a5fa"
                           strokeWidth={2}
