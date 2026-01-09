@@ -1,4 +1,8 @@
+import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { MetalsSubsystemPanel } from './MetalsSubsystemPanel';
+import { CryptoSubsystemPanel } from './CryptoSubsystemPanel';
+import { MethodologyPanel } from './MethodologyPanel';
 
 interface HistoricalData {
   date: string;
@@ -14,6 +18,8 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ aapData, history, timeframe, setTimeframe }: OverviewTabProps) {
+  const [showComponentHealth, setShowComponentHealth] = useState(false);
+  
   const getScoreColor = (score: number): string => {
     if (score >= 67) return 'text-green-600';
     if (score >= 34) return 'text-yellow-600';
@@ -52,6 +58,9 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
   const activeCount = components.filter((c: any) => c.status === 'active').length;
   const totalCount = components.length;
   const completenessPercent = totalCount > 0 ? (activeCount / totalCount) * 100 : 0;
+
+  const metalsComponents = components.filter((c: any) => c.category === 'metals');
+  const cryptoComponents = components.filter((c: any) => c.category === 'crypto');
 
   return (
     <div className="space-y-6">
@@ -240,6 +249,52 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
             }.
           </p>
         </div>
+      </div>
+
+      {/* Expandable Component Health Section */}
+      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg">
+        <button
+          onClick={() => setShowComponentHealth(!showComponentHealth)}
+          className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-stealth-700/30 transition-colors"
+        >
+          <div>
+            <h3 className="text-lg font-semibold text-stealth-100 mb-1">Component Health & Methodology</h3>
+            <p className="text-xs text-stealth-400">
+              Detailed breakdown of all 18 components, subsystem analysis, and indicator methodology
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-stealth-400">
+              {activeCount}/{totalCount} Active
+            </span>
+            <svg 
+              className={`w-6 h-6 text-stealth-400 transition-transform ${showComponentHealth ? 'rotate-180' : ''}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
+        
+        {showComponentHealth && (
+          <div className="border-t border-stealth-700 p-4 md:p-6 space-y-6">
+            {/* Subsystem Breakdown */}
+            <div>
+              <h4 className="text-md font-semibold text-stealth-100 mb-4">Subsystem Breakdown</h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MetalsSubsystemPanel components={metalsComponents} contribution={aapData.metals_contribution} />
+                <CryptoSubsystemPanel components={cryptoComponents} contribution={aapData.crypto_contribution} />
+              </div>
+            </div>
+
+            {/* Methodology */}
+            <div>
+              <MethodologyPanel />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

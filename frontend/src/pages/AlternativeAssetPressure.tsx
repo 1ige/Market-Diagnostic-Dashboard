@@ -3,7 +3,6 @@ import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { OverviewTab } from "../components/aap/OverviewTab";
-import { DeepDiveTab } from "../components/aap/DeepDiveTab";
 import PreciousMetalsDiagnostic from "./PreciousMetalsDiagnostic";
 
 export default function AlternativeAssetPressure() {
@@ -11,12 +10,12 @@ export default function AlternativeAssetPressure() {
   const { data: aapData, loading } = useApi<any>('/aap/components/breakdown');
   const { data: historyData } = useApi<any>('/aap/history?days=365');
   const [timeframe, setTimeframe] = useState<'30d' | '90d' | '180d' | '365d'>('90d');
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'metals' | 'deep-dive'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'metals'>('overview');
 
   // Handle tab query parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'metals' || tabParam === 'overview' || tabParam === 'deep-dive') {
+    if (tabParam === 'metals' || tabParam === 'overview') {
       setSelectedTab(tabParam);
     }
   }, [searchParams]);
@@ -89,16 +88,6 @@ export default function AlternativeAssetPressure() {
           >
             Precious Metals
           </button>
-          <button
-            onClick={() => setSelectedTab("deep-dive")}
-            className={`pb-3 px-2 font-semibold border-b-2 transition ${
-              selectedTab === "deep-dive"
-                ? "border-emerald-500 text-emerald-300"
-                : "border-transparent text-stealth-400 hover:text-gray-300"
-            }`}
-          >
-            Deep Dive
-          </button>
         </div>
 
         {/* Tab Content */}
@@ -115,10 +104,6 @@ export default function AlternativeAssetPressure() {
           <div className="text-stealth-100">
             <PreciousMetalsDiagnostic embedded={true} />
           </div>
-        )}
-
-        {selectedTab === "deep-dive" && (
-          <DeepDiveTab aapData={aapData} />
         )}
       </div>
     </div>
