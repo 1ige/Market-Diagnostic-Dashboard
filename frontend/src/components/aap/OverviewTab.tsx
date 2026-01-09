@@ -255,15 +255,15 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
       <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg">
         <button
           onClick={() => setShowComponentHealth(!showComponentHealth)}
-          className="w-full flex justify-between items-center p-4 md:p-6 hover:bg-stealth-700/30 transition-colors"
+          className="w-full flex justify-between items-start p-4 md:p-6 hover:bg-stealth-700/30 transition-colors"
         >
-          <div>
+          <div className="flex-1">
             <h3 className="text-lg font-semibold text-stealth-100 mb-1">Component Health & Methodology</h3>
             <p className="text-xs text-stealth-400">
               Detailed breakdown of all 18 components, subsystem analysis, and indicator methodology
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-4 mt-1">
             <span className="text-sm text-stealth-400">
               {activeCount}/{totalCount} Active
             </span>
