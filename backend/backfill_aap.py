@@ -23,14 +23,28 @@ def backfill_aap_data():
         # Calculate AAP for the past 90 days
         logger.info("🧮 Calculating AAP indicator for past 90 days...")
         
+        from app.models.alternative_assets import AAPIndicator
+        
         calculator = AAPCalculator(db)
         today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         
         successful_calculations = 0
         failed_calculations = 0
+        skipped_calculations = 0
         
         for days_ago in range(90, -1, -1):
             target_date = today - timedelta(days=days_ago)
+            
+            # Check if indicator already exists for this date
+            existing = db.query(AAPIndicator).filter(
+                AAPIndicator.date == target_date
+            ).first()
+            
+            if existing:
+                skipped_calculations += 1
+                if days_ago % 10 == 0:
+                    logger.info(f"  ⏭ {target_date.date()}: Already exists (Score={existing.stability_score:.1f})")
+                continue
             
             try:
                 indicator = calculator.calculate_for_date(target_date)
@@ -48,10 +62,10 @@ def backfill_aap_data():
         
         logger.info(f"\n📈 Backfill complete!")
         logger.info(f"   ✅ Successful: {successful_calculations} days")
+        logger.info(f"   ⏭  Skipped: {skipped_calculations} days (already exist)")
         logger.info(f"   ⚠️  Failed: {failed_calculations} days")
         
         # Show most recent calculation
-        from app.models.alternative_assets import AAPIndicator
         latest = db.query(AAPIndicator).order_by(AAPIndicator.date.desc()).first()
         if latest:
             logger.info(f"\n🎯 Latest AAP Reading:")
