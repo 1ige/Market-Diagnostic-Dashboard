@@ -1,4 +1,3 @@
-"""
 """Alternative Asset Stability (AAS) Indicator API Endpoints
 
 Provides access to AAP indicator data, components, and regime analysis.
