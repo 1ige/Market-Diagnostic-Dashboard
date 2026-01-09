@@ -15,11 +15,14 @@ import logging
 from app.models.alternative_assets import (
     CryptoPrice,
     MacroLiquidityData,
-    AAPComponent,
+    BitcoinNetworkMetric,
+    CryptoEcosystemMetric,
+    EquityPrice,
+    AAPComponentV2,
     AAPIndicator,
     AAPRegimeHistory
 )
-from app.models.precious_metals import MetalPrice, MetalRatio, COMEXInventory, CBHolding
+from app.models.precious_metals import MetalPrice, MetalRatio, COMEXInventory, CBHolding, ETFHolding
 
 logger = logging.getLogger(__name__)
 
@@ -32,29 +35,30 @@ class AAPCalculator:
                0 = minimum stability (max pressure), 100 = maximum stability
     """
     
-    # Component weights (must sum to 100%)
+    # Component weights (equal weighting within subsystem)
+    EQUAL_WEIGHT = 1.0 / 18.0
     WEIGHTS = {
-        # Metals subsystem (50%)
-        'gold_usd_zscore': 0.035,
-        'gold_real_rate_divergence': 0.040,
-        'cb_gold_momentum': 0.025,
-        'silver_usd_zscore': 0.020,
-        'gold_silver_ratio_signal': 0.060,
-        'platinum_gold_ratio': 0.050,
-        'palladium_gold_ratio': 0.040,
-        'comex_stress_ratio': 0.060,
-        'backwardation_signal': 0.050,
-        'etf_flow_divergence': 0.040,
-        
-        # Crypto subsystem (50%)
-        'btc_usd_zscore': 0.070,
-        'btc_gold_zscore': 0.070,
-        'btc_real_rate_break': 0.060,
-        'crypto_m2_ratio': 0.070,
-        'btc_dominance_momentum': 0.050,
-        'altcoin_btc_signal': 0.030,
-        'crypto_vs_fed_bs': 0.080,
-        'crypto_qt_resilience': 0.070,
+        # Metals subsystem (9)
+        'gold_dxy_ratio': EQUAL_WEIGHT,
+        'gold_real_rate_divergence': EQUAL_WEIGHT,
+        'silver_outperformance': EQUAL_WEIGHT,
+        'pgm_weakness': EQUAL_WEIGHT,
+        'cb_gold_accumulation': EQUAL_WEIGHT,
+        'comex_registered_inventory': EQUAL_WEIGHT,
+        'oi_to_registered_ratio': EQUAL_WEIGHT,
+        'gold_etf_flows': EQUAL_WEIGHT,
+        'mining_stock_divergence': EQUAL_WEIGHT,
+
+        # Crypto subsystem (9)
+        'btc_dominance': EQUAL_WEIGHT,
+        'btc_hash_rate': EQUAL_WEIGHT,
+        'btc_difficulty': EQUAL_WEIGHT,
+        'stablecoin_supply': EQUAL_WEIGHT,
+        'stablecoin_btc_ratio': EQUAL_WEIGHT,
+        'defi_tvl': EQUAL_WEIGHT,
+        'exchange_outflows': EQUAL_WEIGHT,
+        'btc_spy_correlation': EQUAL_WEIGHT,
+        'altcoin_weakness': EQUAL_WEIGHT,
     }
     
     # Regime thresholds
@@ -174,7 +178,7 @@ class AAPCalculator:
                 multiplier, correlation_regime
             )
 
-            existing_component = self.db.query(AAPComponent).filter_by(date=target_date).first()
+            existing_component = self.db.query(AAPComponentV2).filter_by(date=target_date).first()
             if existing_component:
                 self._apply_component_updates(existing_component, component_record)
             else:
@@ -237,105 +241,97 @@ class AAPCalculator:
         components = {}
         
         try:
-            # METALS SUBSYSTEM
-            
-            # A. Monetary Metals Strength
+            # METALS SUBSYSTEM (9)
             try:
-                components['gold_usd_zscore'] = self._calc_gold_usd_zscore(date)
+                components['gold_dxy_ratio'] = self._calc_gold_dxy_ratio(date)
             except Exception as e:
-                logger.debug(f"gold_usd_zscore failed: {e}")
-                
+                logger.debug(f"gold_dxy_ratio failed: {e}")
+
             try:
                 components['gold_real_rate_divergence'] = self._calc_gold_real_rate_divergence(date)
             except Exception as e:
                 logger.debug(f"gold_real_rate_divergence failed: {e}")
-                
+
             try:
-                components['cb_gold_momentum'] = self._calc_cb_gold_momentum(date)
+                components['silver_outperformance'] = self._calc_silver_outperformance(date)
             except Exception as e:
-                logger.debug(f"cb_gold_momentum failed: {e}")
-                
+                logger.debug(f"silver_outperformance failed: {e}")
+
             try:
-                components['silver_usd_zscore'] = self._calc_silver_usd_zscore(date)
+                components['pgm_weakness'] = self._calc_pgm_weakness(date)
             except Exception as e:
-                logger.debug(f"silver_usd_zscore failed: {e}")
-            
-            # B. Metals Ratio Signals
+                logger.debug(f"pgm_weakness failed: {e}")
+
             try:
-                components['gold_silver_ratio_signal'] = self._calc_gsr_signal(date)
+                components['cb_gold_accumulation'] = self._calc_cb_gold_accumulation(date)
             except Exception as e:
-                logger.debug(f"gold_silver_ratio_signal failed: {e}")
-                
+                logger.debug(f"cb_gold_accumulation failed: {e}")
+
             try:
-                components['platinum_gold_ratio'] = self._calc_pt_au_signal(date)
+                components['comex_registered_inventory'] = self._calc_comex_registered_inventory(date)
             except Exception as e:
-                logger.debug(f"platinum_gold_ratio failed: {e}")
-                
+                logger.debug(f"comex_registered_inventory failed: {e}")
+
             try:
-                components['palladium_gold_ratio'] = self._calc_pd_au_signal(date)
+                components['oi_to_registered_ratio'] = self._calc_oi_to_registered_ratio(date)
             except Exception as e:
-                logger.debug(f"palladium_gold_ratio failed: {e}")
-            
-            # C. Physical vs Paper Stress
+                logger.debug(f"oi_to_registered_ratio failed: {e}")
+
             try:
-                components['comex_stress_ratio'] = self._calc_comex_stress(date)
+                components['gold_etf_flows'] = self._calc_gold_etf_flows(date)
             except Exception as e:
-                logger.debug(f"comex_stress_ratio failed: {e}")
-                
+                logger.debug(f"gold_etf_flows failed: {e}")
+
             try:
-                components['backwardation_signal'] = self._calc_backwardation_signal(date)
+                components['mining_stock_divergence'] = self._calc_mining_stock_divergence(date)
             except Exception as e:
-                logger.debug(f"backwardation_signal failed: {e}")
-                
+                logger.debug(f"mining_stock_divergence failed: {e}")
+
+            # CRYPTO SUBSYSTEM (9)
             try:
-                components['etf_flow_divergence'] = self._calc_etf_divergence(date)
+                components['btc_dominance'] = self._calc_btc_dominance(date)
             except Exception as e:
-                logger.debug(f"etf_flow_divergence failed: {e}")
-            
-            # CRYPTO SUBSYSTEM
-            
-            # A. Bitcoin as Monetary Barometer
+                logger.debug(f"btc_dominance failed: {e}")
+
             try:
-                components['btc_usd_zscore'] = self._calc_btc_usd_zscore(date)
+                components['btc_hash_rate'] = self._calc_btc_hash_rate(date)
             except Exception as e:
-                logger.debug(f"btc_usd_zscore failed: {e}")
-                
+                logger.debug(f"btc_hash_rate failed: {e}")
+
             try:
-                components['btc_gold_zscore'] = self._calc_btc_gold_zscore(date)
+                components['btc_difficulty'] = self._calc_btc_difficulty(date)
             except Exception as e:
-                logger.debug(f"btc_gold_zscore failed: {e}")
-                
+                logger.debug(f"btc_difficulty failed: {e}")
+
             try:
-                components['btc_real_rate_break'] = self._calc_btc_real_rate_break(date)
+                components['stablecoin_supply'] = self._calc_stablecoin_supply(date)
             except Exception as e:
-                logger.debug(f"btc_real_rate_break failed: {e}")
-            
-            # B. Crypto Market Structure
+                logger.debug(f"stablecoin_supply failed: {e}")
+
             try:
-                components['crypto_m2_ratio'] = self._calc_crypto_m2_ratio(date)
+                components['stablecoin_btc_ratio'] = self._calc_stablecoin_btc_ratio(date)
             except Exception as e:
-                logger.debug(f"crypto_m2_ratio failed: {e}")
-                
+                logger.debug(f"stablecoin_btc_ratio failed: {e}")
+
             try:
-                components['btc_dominance_momentum'] = self._calc_btc_dominance_momentum(date)
+                components['defi_tvl'] = self._calc_defi_tvl(date)
             except Exception as e:
-                logger.debug(f"btc_dominance_momentum failed: {e}")
-                
+                logger.debug(f"defi_tvl failed: {e}")
+
             try:
-                components['altcoin_btc_signal'] = self._calc_altcoin_signal(date)
+                components['exchange_outflows'] = self._calc_exchange_outflows(date)
             except Exception as e:
-                logger.debug(f"altcoin_btc_signal failed: {e}")
-            
-            # C. Crypto vs Liquidity
+                logger.debug(f"exchange_outflows failed: {e}")
+
             try:
-                components['crypto_vs_fed_bs'] = self._calc_crypto_vs_fed(date)
+                components['btc_spy_correlation'] = self._calc_btc_spy_correlation(date)
             except Exception as e:
-                logger.debug(f"crypto_vs_fed_bs failed: {e}")
-                
+                logger.debug(f"btc_spy_correlation failed: {e}")
+
             try:
-                components['crypto_qt_resilience'] = self._calc_crypto_qt_resilience(date)
+                components['altcoin_weakness'] = self._calc_altcoin_weakness(date)
             except Exception as e:
-                logger.debug(f"crypto_qt_resilience failed: {e}")
+                logger.debug(f"altcoin_weakness failed: {e}")
             
             # Filter out None values
             components = {k: v for k, v in components.items() if v is not None}
@@ -344,8 +340,7 @@ class AAPCalculator:
             logger.info(f"AAP components: {len(components)}/{len(self.WEIGHTS)} available")
             
             # Need at least 70% of components for reliable signal
-            # With all data sources operational, we should hit 13-18 components
-            required = int(len(self.WEIGHTS) * 0.70)
+            required = int(np.ceil(len(self.WEIGHTS) * 0.70))
             if len(components) < required:
                 logger.warning(f"Insufficient components: {len(components)}/{required} required")
                 return None
@@ -362,6 +357,198 @@ class AAPCalculator:
             return None
     
     # ===== METALS COMPONENT CALCULATIONS =====
+
+    def _calc_gold_dxy_ratio(self, date: datetime) -> Optional[float]:
+        """Gold vs DXY ratio (high = monetary hedge bid)"""
+        latest = self.db.query(MetalRatio).filter(
+            MetalRatio.metal1 == 'AU',
+            MetalRatio.metal2 == 'DXY',
+            MetalRatio.date <= date
+        ).order_by(desc(MetalRatio.date)).first()
+
+        if not latest or not latest.ratio_value:
+            return None
+
+        zscore = latest.zscore_2y
+        if zscore is None:
+            history = self.db.query(MetalRatio).filter(
+                MetalRatio.metal1 == 'AU',
+                MetalRatio.metal2 == 'DXY',
+                MetalRatio.date >= date - timedelta(days=730),
+                MetalRatio.date <= date
+            ).all()
+            values = [r.ratio_value for r in history if r.ratio_value]
+            if len(values) < 20:
+                return None
+            mean = np.mean(values)
+            std = np.std(values)
+            if std == 0:
+                return 0.5
+            zscore = (latest.ratio_value - mean) / std
+
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_silver_outperformance(self, date: datetime) -> Optional[float]:
+        """Silver outperformance vs gold (low = monetary hedge dominance)"""
+        gold_prices = self._get_metal_prices('AU', date, days=730)
+        silver_prices = self._get_metal_prices('AG', date, days=730)
+
+        if len(gold_prices) < 30 or len(silver_prices) < 30:
+            return None
+
+        gold_map = {p.date.date(): p.price_usd_per_oz for p in gold_prices if p.price_usd_per_oz}
+        silver_map = {p.date.date(): p.price_usd_per_oz for p in silver_prices if p.price_usd_per_oz}
+
+        common_dates = sorted(set(gold_map.keys()) & set(silver_map.keys()))
+        if len(common_dates) < 30:
+            return None
+
+        values = [(silver_map[d] / gold_map[d]) for d in common_dates]
+        current_ratio = values[-1]
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (current_ratio - mean) / std
+        normalized = (-zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_pgm_weakness(self, date: datetime) -> Optional[float]:
+        """Platinum/palladium weakness vs gold"""
+        start_date = date - timedelta(days=730)
+
+        au_prices = self._get_metal_prices('AU', date, days=730)
+        pt_prices = self._get_metal_prices('PT', date, days=730)
+        pd_prices = self._get_metal_prices('PD', date, days=730)
+
+        if len(au_prices) < 30 or len(pt_prices) < 30 or len(pd_prices) < 30:
+            return None
+
+        au_map = {p.date.date(): p.price_usd_per_oz for p in au_prices if p.price_usd_per_oz}
+        pt_map = {p.date.date(): p.price_usd_per_oz for p in pt_prices if p.price_usd_per_oz}
+        pd_map = {p.date.date(): p.price_usd_per_oz for p in pd_prices if p.price_usd_per_oz}
+
+        common_dates = sorted(set(au_map.keys()) & set(pt_map.keys()) & set(pd_map.keys()))
+        if len(common_dates) < 30:
+            return None
+
+        ratios = []
+        for d in common_dates:
+            ratios.append(((pt_map[d] / au_map[d]) + (pd_map[d] / au_map[d])) / 2)
+
+        mean = np.mean(ratios)
+        std = np.std(ratios)
+        if std == 0:
+            return 0.5
+
+        current_ratio = ratios[-1]
+        zscore = (current_ratio - mean) / std
+        normalized = (-zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_cb_gold_accumulation(self, date: datetime) -> Optional[float]:
+        """Central bank net accumulation momentum"""
+        return self._calc_cb_gold_momentum(date)
+
+    def _calc_comex_registered_inventory(self, date: datetime) -> Optional[float]:
+        """COMEX registered inventory (low inventory = high pressure)"""
+        records = self.db.query(COMEXInventory).filter(
+            COMEXInventory.metal == 'AU',
+            COMEXInventory.date >= date - timedelta(days=180),
+            COMEXInventory.date <= date
+        ).order_by(COMEXInventory.date).all()
+
+        values = [r.registered_oz for r in records if r.registered_oz]
+        if len(values) < 20:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (-zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_oi_to_registered_ratio(self, date: datetime) -> Optional[float]:
+        """Open interest to registered inventory ratio"""
+        records = self.db.query(COMEXInventory).filter(
+            COMEXInventory.metal == 'AU',
+            COMEXInventory.date >= date - timedelta(days=180),
+            COMEXInventory.date <= date
+        ).order_by(COMEXInventory.date).all()
+
+        values = [r.oi_to_registered_ratio for r in records if r.oi_to_registered_ratio]
+        if len(values) < 20:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_gold_etf_flows(self, date: datetime) -> Optional[float]:
+        """Gold ETF flows (positive flows = high pressure)"""
+        records = self.db.query(ETFHolding).filter(
+            ETFHolding.ticker == 'GLD',
+            ETFHolding.date >= date - timedelta(days=180),
+            ETFHolding.date <= date
+        ).order_by(ETFHolding.date).all()
+
+        flows = [r.daily_flow for r in records if r.daily_flow is not None]
+        if len(flows) < 15:
+            return None
+
+        mean = np.mean(flows)
+        std = np.std(flows)
+        if std == 0:
+            return 0.5
+
+        zscore = (flows[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_mining_stock_divergence(self, date: datetime) -> Optional[float]:
+        """Mining stocks (GDX) vs gold divergence"""
+        gdx_prices = self.db.query(EquityPrice).filter(
+            EquityPrice.symbol == 'GDX',
+            EquityPrice.date >= date - timedelta(days=45),
+            EquityPrice.date <= date
+        ).order_by(EquityPrice.date).all()
+
+        gold_prices = self._get_metal_prices('AU', date, days=45)
+
+        if len(gdx_prices) < 20 or len(gold_prices) < 20:
+            return None
+
+        gdx_map = {p.date.date(): p.close for p in gdx_prices if p.close}
+        gold_map = {p.date.date(): p.price_usd_per_oz for p in gold_prices if p.price_usd_per_oz}
+
+        common_dates = sorted(set(gdx_map.keys()) & set(gold_map.keys()))
+        if len(common_dates) < 20:
+            return None
+
+        start = common_dates[0]
+        end = common_dates[-1]
+        gdx_return = (gdx_map[end] / gdx_map[start]) - 1
+        gold_return = (gold_map[end] / gold_map[start]) - 1
+
+        divergence = gdx_return - gold_return
+
+        if divergence <= -0.15:
+            return 0.85
+        if divergence <= -0.05:
+            return 0.65
+        if divergence >= 0.05:
+            return 0.35
+        return 0.50
     
     def _calc_gold_usd_zscore(self, date: datetime) -> Optional[float]:
         """Gold/USD z-score over 20-day window"""
@@ -615,6 +802,191 @@ class AAPCalculator:
         return None
     
     # ===== CRYPTO COMPONENT CALCULATIONS =====
+
+    def _calc_btc_dominance(self, date: datetime) -> Optional[float]:
+        """BTC dominance momentum (rising = pressure)"""
+        prices = self._get_crypto_prices(date, days=60)
+        if len(prices) < 30:
+            return None
+
+        dominance = [p.btc_dominance for p in prices if p.btc_dominance is not None]
+        if len(dominance) < 30:
+            return None
+
+        mean = np.mean(dominance)
+        std = np.std(dominance)
+        if std == 0:
+            return 0.5
+
+        zscore = (dominance[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_btc_hash_rate(self, date: datetime) -> Optional[float]:
+        """BTC hash rate (higher = more pressure)"""
+        metrics = self.db.query(BitcoinNetworkMetric).filter(
+            BitcoinNetworkMetric.date >= date - timedelta(days=180),
+            BitcoinNetworkMetric.date <= date
+        ).order_by(BitcoinNetworkMetric.date).all()
+
+        values = [m.hash_rate for m in metrics if m.hash_rate]
+        if len(values) < 20:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_btc_difficulty(self, date: datetime) -> Optional[float]:
+        """BTC difficulty (higher = more pressure)"""
+        metrics = self.db.query(BitcoinNetworkMetric).filter(
+            BitcoinNetworkMetric.date >= date - timedelta(days=180),
+            BitcoinNetworkMetric.date <= date
+        ).order_by(BitcoinNetworkMetric.date).all()
+
+        values = [m.difficulty for m in metrics if m.difficulty]
+        if len(values) < 20:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_stablecoin_supply(self, date: datetime) -> Optional[float]:
+        """Stablecoin supply (higher = more pressure)"""
+        metrics = self.db.query(CryptoEcosystemMetric).filter(
+            CryptoEcosystemMetric.date >= date - timedelta(days=180),
+            CryptoEcosystemMetric.date <= date
+        ).order_by(CryptoEcosystemMetric.date).all()
+
+        values = [m.stablecoin_supply_usd for m in metrics if m.stablecoin_supply_usd]
+        if len(values) < 10:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_stablecoin_btc_ratio(self, date: datetime) -> Optional[float]:
+        """Stablecoin supply vs BTC market cap ratio"""
+        metrics = self.db.query(CryptoEcosystemMetric).filter(
+            CryptoEcosystemMetric.date >= date - timedelta(days=180),
+            CryptoEcosystemMetric.date <= date
+        ).order_by(CryptoEcosystemMetric.date).all()
+
+        values = [m.stablecoin_btc_ratio for m in metrics if m.stablecoin_btc_ratio]
+        if len(values) < 10:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_defi_tvl(self, date: datetime) -> Optional[float]:
+        """DeFi TVL (higher = more pressure)"""
+        metrics = self.db.query(CryptoEcosystemMetric).filter(
+            CryptoEcosystemMetric.date >= date - timedelta(days=180),
+            CryptoEcosystemMetric.date <= date
+        ).order_by(CryptoEcosystemMetric.date).all()
+
+        values = [m.defi_tvl_usd for m in metrics if m.defi_tvl_usd]
+        if len(values) < 10:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_exchange_outflows(self, date: datetime) -> Optional[float]:
+        """BTC exchange net outflows (higher = more pressure)"""
+        metrics = self.db.query(CryptoEcosystemMetric).filter(
+            CryptoEcosystemMetric.date >= date - timedelta(days=180),
+            CryptoEcosystemMetric.date <= date
+        ).order_by(CryptoEcosystemMetric.date).all()
+
+        values = [m.exchange_net_outflow_btc for m in metrics if m.exchange_net_outflow_btc is not None]
+        if len(values) < 10:
+            return None
+
+        mean = np.mean(values)
+        std = np.std(values)
+        if std == 0:
+            return 0.5
+
+        zscore = (values[-1] - mean) / std
+        normalized = (zscore + 2) / 4
+        return max(0.0, min(1.0, normalized))
+
+    def _calc_btc_spy_correlation(self, date: datetime) -> Optional[float]:
+        """BTC-SPY correlation (negative = high pressure)"""
+        metric = self.db.query(CryptoEcosystemMetric).filter(
+            CryptoEcosystemMetric.date <= date
+        ).order_by(CryptoEcosystemMetric.date.desc()).first()
+
+        if not metric or metric.btc_spy_corr_30d is None:
+            return None
+
+        corr = metric.btc_spy_corr_30d
+        pressure = (1 - corr) / 2
+        return max(0.0, min(1.0, pressure))
+
+    def _calc_altcoin_weakness(self, date: datetime) -> Optional[float]:
+        """Altcoin weakness vs BTC (underperformance = pressure)"""
+        prices = self._get_crypto_prices(date, days=60)
+        if len(prices) < 31:
+            return None
+
+        current = prices[-1]
+        past = prices[-31]
+
+        if not current.total_crypto_mcap or not past.total_crypto_mcap:
+            return None
+        if current.btc_dominance is None or past.btc_dominance is None:
+            return None
+
+        current_alt = current.total_crypto_mcap * (1 - current.btc_dominance / 100)
+        past_alt = past.total_crypto_mcap * (1 - past.btc_dominance / 100)
+
+        if not past_alt or not past.btc_usd or not current.btc_usd:
+            return None
+
+        alt_return = (current_alt / past_alt) - 1
+        btc_return = (current.btc_usd / past.btc_usd) - 1
+
+        relative = alt_return - btc_return
+
+        if relative < -0.15:
+            return 0.80
+        if relative < -0.05:
+            return 0.65
+        if relative > 0.10:
+            return 0.30
+        return 0.50
     
     def _calc_btc_usd_zscore(self, date: datetime) -> Optional[float]:
         """BTC/USD z-score over 30-day window"""
@@ -859,9 +1231,9 @@ class AAPCalculator:
     def _compute_metals_instability(self, components: Dict[str, float]) -> float:
         """Aggregate metals subsystem into 0-1 instability score (lower stability)"""
         metals_keys = [
-            'gold_usd_zscore', 'gold_real_rate_divergence', 'cb_gold_momentum', 'silver_usd_zscore',
-            'gold_silver_ratio_signal', 'platinum_gold_ratio', 'palladium_gold_ratio',
-            'comex_stress_ratio', 'backwardation_signal', 'etf_flow_divergence'
+            'gold_dxy_ratio', 'gold_real_rate_divergence', 'silver_outperformance',
+            'pgm_weakness', 'cb_gold_accumulation', 'comex_registered_inventory',
+            'oi_to_registered_ratio', 'gold_etf_flows', 'mining_stock_divergence'
         ]
         
         total_weight = sum(self.WEIGHTS[k] for k in metals_keys if k in components)
@@ -879,9 +1251,9 @@ class AAPCalculator:
     def _compute_crypto_instability(self, components: Dict[str, float]) -> float:
         """Aggregate crypto subsystem into 0-1 instability score (lower stability)"""
         crypto_keys = [
-            'btc_usd_zscore', 'btc_gold_zscore', 'btc_real_rate_break',
-            'crypto_m2_ratio', 'btc_dominance_momentum', 'altcoin_btc_signal',
-            'crypto_vs_fed_bs', 'crypto_qt_resilience'
+            'btc_dominance', 'btc_hash_rate', 'btc_difficulty',
+            'stablecoin_supply', 'stablecoin_btc_ratio', 'defi_tvl',
+            'exchange_outflows', 'btc_spy_correlation', 'altcoin_weakness'
         ]
         
         total_weight = sum(self.WEIGHTS[k] for k in crypto_keys if k in components)
@@ -987,18 +1359,23 @@ class AAPCalculator:
             return "systemic"
         
         # Check specific signals
-        comex_stress = components.get('comex_stress_ratio', 0.5)
-        gsr = components.get('gold_silver_ratio_signal', 0.5)
-        crypto_liquidity = components.get('crypto_vs_fed_bs', 0.5)
-        
-        if comex_stress > 0.7 or (gsr > 0.7 and primary_driver == "metals"):
+        comex_inventory = components.get('comex_registered_inventory', 0.5)
+        oi_ratio = components.get('oi_to_registered_ratio', 0.5)
+        etf_flows = components.get('gold_etf_flows', 0.5)
+        exchange_outflows = components.get('exchange_outflows', 0.5)
+        btc_corr_pressure = components.get('btc_spy_correlation', 0.5)
+
+        if comex_inventory > 0.7 or oi_ratio > 0.7:
             return "liquidity"
-        elif primary_driver == "crypto" and crypto_liquidity < 0.4:
-            return "speculative"
-        elif primary_driver == "coordinated":
+        if primary_driver == "metals" and etf_flows > 0.65:
             return "monetary"
-        else:
-            return "mixed"
+        if primary_driver == "crypto" and exchange_outflows > 0.65:
+            return "monetary"
+        if primary_driver == "crypto" and btc_corr_pressure > 0.65:
+            return "speculative"
+        if primary_driver == "coordinated":
+            return "monetary"
+        return "mixed"
     
     # ===== HELPER FUNCTIONS =====
     
@@ -1221,7 +1598,7 @@ class AAPCalculator:
     def _create_component_record(
         self, date: datetime, components: Dict, metals_instability: float,
         crypto_instability: float, multiplier: float, correlation_regime: str
-    ) -> AAPComponent:
+    ) -> AAPComponentV2:
         """Create detailed component record for audit trail"""
         # Convert numpy types to Python types for PostgreSQL compatibility
         def to_python_float(val):
@@ -1229,31 +1606,31 @@ class AAPCalculator:
                 return None
             return float(val)
         
-        return AAPComponent(
+        return AAPComponentV2(
             date=date,
             # Metals components
-            gold_usd_zscore=to_python_float(components.get('gold_usd_zscore')),
+            gold_dxy_ratio=to_python_float(components.get('gold_dxy_ratio')),
             gold_real_rate_divergence=to_python_float(components.get('gold_real_rate_divergence')),
-            cb_gold_momentum=to_python_float(components.get('cb_gold_momentum')),
-            silver_usd_zscore=to_python_float(components.get('silver_usd_zscore')),
-            gold_silver_ratio_signal=to_python_float(components.get('gold_silver_ratio_signal')),
-            platinum_gold_ratio=to_python_float(components.get('platinum_gold_ratio')),
-            palladium_gold_ratio=to_python_float(components.get('palladium_gold_ratio')),
-            comex_stress_ratio=to_python_float(components.get('comex_stress_ratio')),
-            backwardation_signal=to_python_float(components.get('backwardation_signal')),
-            etf_flow_divergence=to_python_float(components.get('etf_flow_divergence')),
+            silver_outperformance=to_python_float(components.get('silver_outperformance')),
+            pgm_weakness=to_python_float(components.get('pgm_weakness')),
+            cb_gold_accumulation=to_python_float(components.get('cb_gold_accumulation')),
+            comex_registered_inventory=to_python_float(components.get('comex_registered_inventory')),
+            oi_to_registered_ratio=to_python_float(components.get('oi_to_registered_ratio')),
+            gold_etf_flows=to_python_float(components.get('gold_etf_flows')),
+            mining_stock_divergence=to_python_float(components.get('mining_stock_divergence')),
             # Crypto components
-            btc_usd_zscore=to_python_float(components.get('btc_usd_zscore')),
-            btc_gold_zscore=to_python_float(components.get('btc_gold_zscore')),
-            btc_real_rate_break=to_python_float(components.get('btc_real_rate_break')),
-            crypto_m2_ratio=to_python_float(components.get('crypto_m2_ratio')),
-            btc_dominance_momentum=to_python_float(components.get('btc_dominance_momentum')),
-            altcoin_btc_signal=to_python_float(components.get('altcoin_btc_signal')),
-            crypto_vs_fed_bs=to_python_float(components.get('crypto_vs_fed_bs')),
-            crypto_qt_resilience=to_python_float(components.get('crypto_qt_resilience')),
+            btc_dominance=to_python_float(components.get('btc_dominance')),
+            btc_hash_rate=to_python_float(components.get('btc_hash_rate')),
+            btc_difficulty=to_python_float(components.get('btc_difficulty')),
+            stablecoin_supply=to_python_float(components.get('stablecoin_supply')),
+            stablecoin_btc_ratio=to_python_float(components.get('stablecoin_btc_ratio')),
+            defi_tvl=to_python_float(components.get('defi_tvl')),
+            exchange_outflows=to_python_float(components.get('exchange_outflows')),
+            btc_spy_correlation=to_python_float(components.get('btc_spy_correlation')),
+            altcoin_weakness=to_python_float(components.get('altcoin_weakness')),
             # Aggregates (stored as instability scores)
-            metals_stability_score=to_python_float(metals_instability),
-            crypto_stability_score=to_python_float(crypto_instability),
+            metals_pressure_score=to_python_float(metals_instability),
+            crypto_pressure_score=to_python_float(crypto_instability),
             cross_asset_multiplier=to_python_float(multiplier),
             correlation_regime=correlation_regime,
         )
@@ -1319,8 +1696,8 @@ class AAPCalculator:
         for key, value in updates.items():
             setattr(model, key, value)
 
-    def _apply_component_updates(self, target: AAPComponent, source: AAPComponent) -> None:
-        for column in AAPComponent.__table__.columns:
+    def _apply_component_updates(self, target: AAPComponentV2, source: AAPComponentV2) -> None:
+        for column in AAPComponentV2.__table__.columns:
             if column.name in ("id", "created_at"):
                 continue
             setattr(target, column.name, getattr(source, column.name))

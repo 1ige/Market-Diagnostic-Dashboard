@@ -15,7 +15,7 @@ import numpy as np
 from app.utils.db_helpers import get_db_session
 from app.models.alternative_assets import (
     AAPIndicator,
-    AAPComponent,
+    AAPComponentV2,
     AAPRegimeHistory,
     CryptoPrice,
     MacroLiquidityData
@@ -140,8 +140,8 @@ def get_component_breakdown():
         if not indicator:
             raise HTTPException(status_code=404, detail="No AAP data available")
         
-        component = db.query(AAPComponent).filter(
-            AAPComponent.date == indicator.date
+        component = db.query(AAPComponentV2).filter(
+            AAPComponentV2.date == indicator.date
         ).first()
         
         # Define all 18 components with their weights
@@ -150,30 +150,30 @@ def get_component_breakdown():
         # Build component list with status
         components_list = []
         
-        # Metals components (10)
+        # Metals components (9)
         metals_comps = [
-            ('gold_usd_zscore', 'metals', getattr(component, 'gold_usd_zscore', None) if component else None),
+            ('gold_dxy_ratio', 'metals', getattr(component, 'gold_dxy_ratio', None) if component else None),
             ('gold_real_rate_divergence', 'metals', getattr(component, 'gold_real_rate_divergence', None) if component else None),
-            ('cb_gold_momentum', 'metals', getattr(component, 'cb_gold_momentum', None) if component else None),
-            ('silver_usd_zscore', 'metals', getattr(component, 'silver_usd_zscore', None) if component else None),
-            ('gold_silver_ratio_signal', 'metals', getattr(component, 'gold_silver_ratio_signal', None) if component else None),
-            ('platinum_gold_ratio', 'metals', getattr(component, 'platinum_gold_ratio', None) if component else None),
-            ('palladium_gold_ratio', 'metals', getattr(component, 'palladium_gold_ratio', None) if component else None),
-            ('comex_stress_ratio', 'metals', getattr(component, 'comex_stress_ratio', None) if component else None),
-            ('backwardation_signal', 'metals', getattr(component, 'backwardation_signal', None) if component else None),
-            ('etf_flow_divergence', 'metals', getattr(component, 'etf_flow_divergence', None) if component else None),
+            ('silver_outperformance', 'metals', getattr(component, 'silver_outperformance', None) if component else None),
+            ('pgm_weakness', 'metals', getattr(component, 'pgm_weakness', None) if component else None),
+            ('cb_gold_accumulation', 'metals', getattr(component, 'cb_gold_accumulation', None) if component else None),
+            ('comex_registered_inventory', 'metals', getattr(component, 'comex_registered_inventory', None) if component else None),
+            ('oi_to_registered_ratio', 'metals', getattr(component, 'oi_to_registered_ratio', None) if component else None),
+            ('gold_etf_flows', 'metals', getattr(component, 'gold_etf_flows', None) if component else None),
+            ('mining_stock_divergence', 'metals', getattr(component, 'mining_stock_divergence', None) if component else None),
         ]
         
-        # Crypto components (8)
+        # Crypto components (9)
         crypto_comps = [
-            ('btc_usd_zscore', 'crypto', getattr(component, 'btc_usd_zscore', None) if component else None),
-            ('btc_gold_zscore', 'crypto', getattr(component, 'btc_gold_zscore', None) if component else None),
-            ('btc_real_rate_break', 'crypto', getattr(component, 'btc_real_rate_break', None) if component else None),
-            ('crypto_m2_ratio', 'crypto', getattr(component, 'crypto_m2_ratio', None) if component else None),
-            ('btc_dominance_momentum', 'crypto', getattr(component, 'btc_dominance_momentum', None) if component else None),
-            ('altcoin_btc_signal', 'crypto', getattr(component, 'altcoin_btc_signal', None) if component else None),
-            ('crypto_vs_fed_bs', 'crypto', getattr(component, 'crypto_vs_fed_bs', None) if component else None),
-            ('crypto_qt_resilience', 'crypto', getattr(component, 'crypto_qt_resilience', None) if component else None),
+            ('btc_dominance', 'crypto', getattr(component, 'btc_dominance', None) if component else None),
+            ('btc_hash_rate', 'crypto', getattr(component, 'btc_hash_rate', None) if component else None),
+            ('btc_difficulty', 'crypto', getattr(component, 'btc_difficulty', None) if component else None),
+            ('stablecoin_supply', 'crypto', getattr(component, 'stablecoin_supply', None) if component else None),
+            ('stablecoin_btc_ratio', 'crypto', getattr(component, 'stablecoin_btc_ratio', None) if component else None),
+            ('defi_tvl', 'crypto', getattr(component, 'defi_tvl', None) if component else None),
+            ('exchange_outflows', 'crypto', getattr(component, 'exchange_outflows', None) if component else None),
+            ('btc_spy_correlation', 'crypto', getattr(component, 'btc_spy_correlation', None) if component else None),
+            ('altcoin_weakness', 'crypto', getattr(component, 'altcoin_weakness', None) if component else None),
         ]
         
         all_components = metals_comps + crypto_comps
@@ -190,7 +190,7 @@ def get_component_breakdown():
                 'weight': weight,
                 'contribution': contribution,
                 'status': 'active' if is_active else 'missing',
-                'description': f'Component: {name}'
+                'description': _get_component_description(name)
             })
         
         return {
@@ -213,8 +213,8 @@ def get_current_components():
     Useful for understanding what's driving the signal.
     """
     with get_db_session() as db:
-        component = db.query(AAPComponent).order_by(
-            desc(AAPComponent.date)
+        component = db.query(AAPComponentV2).order_by(
+            desc(AAPComponentV2.date)
         ).first()
         
         if not component:
@@ -224,43 +224,31 @@ def get_current_components():
             "date": component.date.isoformat(),
             "subsystems": {
                 "metals": {
-                    "pressure_score": round(component.metals_pressure_score, 3),
+                    "pressure_score": round(component.metals_pressure_score, 3) if component.metals_pressure_score is not None else None,
                     "components": {
-                        "monetary_strength": {
-                            "gold_usd_zscore": round(component.gold_usd_zscore, 3) if component.gold_usd_zscore else None,
-                            "gold_real_rate_divergence": round(component.gold_real_rate_divergence, 3) if component.gold_real_rate_divergence else None,
-                        "cb_gold_momentum": round(component.cb_gold_momentum, 3) if component.cb_gold_momentum else None,
-                        "silver_usd_zscore": round(component.silver_usd_zscore, 3) if component.silver_usd_zscore else None,
-                    },
-                    "ratio_signals": {
-                        "gold_silver_ratio": round(component.gold_silver_ratio_signal, 3) if component.gold_silver_ratio_signal else None,
-                        "platinum_gold_ratio": round(component.platinum_gold_ratio, 3) if component.platinum_gold_ratio else None,
-                        "palladium_gold_ratio": round(component.palladium_gold_ratio, 3) if component.palladium_gold_ratio else None,
-                    },
-                    "physical_stress": {
-                        "comex_stress_ratio": round(component.comex_stress_ratio, 3) if component.comex_stress_ratio else None,
-                        "backwardation_signal": round(component.backwardation_signal, 3) if component.backwardation_signal else None,
-                        "etf_flow_divergence": round(component.etf_flow_divergence, 3) if component.etf_flow_divergence else None,
-                        }
+                        "gold_dxy_ratio": round(component.gold_dxy_ratio, 3) if component.gold_dxy_ratio is not None else None,
+                        "gold_real_rate_divergence": round(component.gold_real_rate_divergence, 3) if component.gold_real_rate_divergence is not None else None,
+                        "silver_outperformance": round(component.silver_outperformance, 3) if component.silver_outperformance is not None else None,
+                        "pgm_weakness": round(component.pgm_weakness, 3) if component.pgm_weakness is not None else None,
+                        "cb_gold_accumulation": round(component.cb_gold_accumulation, 3) if component.cb_gold_accumulation is not None else None,
+                        "comex_registered_inventory": round(component.comex_registered_inventory, 3) if component.comex_registered_inventory is not None else None,
+                        "oi_to_registered_ratio": round(component.oi_to_registered_ratio, 3) if component.oi_to_registered_ratio is not None else None,
+                        "gold_etf_flows": round(component.gold_etf_flows, 3) if component.gold_etf_flows is not None else None,
+                        "mining_stock_divergence": round(component.mining_stock_divergence, 3) if component.mining_stock_divergence is not None else None,
                     }
                 },
                 "crypto": {
-                    "pressure_score": round(component.crypto_pressure_score, 3),
+                    "pressure_score": round(component.crypto_pressure_score, 3) if component.crypto_pressure_score is not None else None,
                     "components": {
-                        "monetary_barometer": {
-                            "btc_usd_zscore": round(component.btc_usd_zscore, 3) if component.btc_usd_zscore else None,
-                            "btc_gold_zscore": round(component.btc_gold_zscore, 3) if component.btc_gold_zscore else None,
-                            "btc_real_rate_break": round(component.btc_real_rate_break, 3) if component.btc_real_rate_break else None,
-                        },
-                        "market_structure": {
-                            "crypto_m2_ratio": round(component.crypto_m2_ratio, 3) if component.crypto_m2_ratio else None,
-                            "btc_dominance_momentum": round(component.btc_dominance_momentum, 3) if component.btc_dominance_momentum else None,
-                            "altcoin_btc_signal": round(component.altcoin_btc_signal, 3) if component.altcoin_btc_signal else None,
-                        },
-                        "liquidity_correlation": {
-                            "crypto_vs_fed_bs": round(component.crypto_vs_fed_bs, 3) if component.crypto_vs_fed_bs else None,
-                            "crypto_qt_resilience": round(component.crypto_qt_resilience, 3) if component.crypto_qt_resilience else None,
-                        }
+                        "btc_dominance": round(component.btc_dominance, 3) if component.btc_dominance is not None else None,
+                        "btc_hash_rate": round(component.btc_hash_rate, 3) if component.btc_hash_rate is not None else None,
+                        "btc_difficulty": round(component.btc_difficulty, 3) if component.btc_difficulty is not None else None,
+                        "stablecoin_supply": round(component.stablecoin_supply, 3) if component.stablecoin_supply is not None else None,
+                        "stablecoin_btc_ratio": round(component.stablecoin_btc_ratio, 3) if component.stablecoin_btc_ratio is not None else None,
+                        "defi_tvl": round(component.defi_tvl, 3) if component.defi_tvl is not None else None,
+                        "exchange_outflows": round(component.exchange_outflows, 3) if component.exchange_outflows is not None else None,
+                        "btc_spy_correlation": round(component.btc_spy_correlation, 3) if component.btc_spy_correlation is not None else None,
+                        "altcoin_weakness": round(component.altcoin_weakness, 3) if component.altcoin_weakness is not None else None,
                     }
                 }
             },
@@ -370,8 +358,8 @@ def get_dashboard_summary():
         ).first()
         
         # Components
-        components = db.query(AAPComponent).filter(
-            AAPComponent.date == current.date
+        components = db.query(AAPComponentV2).filter(
+            AAPComponentV2.date == current.date
         ).first()
         
         return {
@@ -541,63 +529,93 @@ def _calculate_trend(indicators: List[AAPIndicator]) -> str:
     elif trend < -5:
         return "deteriorating"
     else:
-        return "stable"
+    return "stable"
 
 
-def _get_top_metal_signals(component: AAPComponent) -> List[dict]:
+def _get_top_metal_signals(component: AAPComponentV2) -> List[dict]:
     """Identify top metal signals driving pressure"""
     signals = []
     
-    if component.comex_stress_ratio and component.comex_stress_ratio > 0.6:
+    if component.oi_to_registered_ratio and component.oi_to_registered_ratio > 0.65:
         signals.append({
-            "name": "COMEX Stress",
-            "value": round(component.comex_stress_ratio, 2),
-            "interpretation": "Physical vs paper tension high"
+            "name": "Paper vs Physical Stress",
+            "value": round(component.oi_to_registered_ratio, 2),
+            "interpretation": "Open interest elevated vs registered inventory"
         })
     
-    if component.gold_silver_ratio_signal and component.gold_silver_ratio_signal > 0.65:
+    if component.gold_dxy_ratio and component.gold_dxy_ratio > 0.65:
         signals.append({
-            "name": "Gold/Silver Ratio",
-            "value": round(component.gold_silver_ratio_signal, 2),
-            "interpretation": "Monetary stress signal elevated"
+            "name": "Gold vs Dollar",
+            "value": round(component.gold_dxy_ratio, 2),
+            "interpretation": "Gold strength against dollar"
         })
     
     if component.gold_real_rate_divergence and component.gold_real_rate_divergence > 0.65:
         signals.append({
-            "name": "Gold/Real Rate Divergence",
+            "name": "Gold vs Real Rates",
             "value": round(component.gold_real_rate_divergence, 2),
-            "interpretation": "Gold strength despite high real rates"
+            "interpretation": "Gold rising despite high real rates"
         })
-    
+
+    if component.gold_etf_flows and component.gold_etf_flows > 0.65:
+        signals.append({
+            "name": "Gold ETF Inflows",
+            "value": round(component.gold_etf_flows, 2),
+            "interpretation": "Institutional gold demand rising"
+        })
+
     return signals[:3]  # Top 3
 
 
-def _get_top_crypto_signals(component: AAPComponent) -> List[dict]:
+def _get_top_crypto_signals(component: AAPComponentV2) -> List[dict]:
     """Identify top crypto signals driving pressure"""
     signals = []
     
-    if component.btc_usd_zscore and component.btc_usd_zscore > 0.65:
-        signals.append({
-            "name": "BTC Strength",
-            "value": round(component.btc_usd_zscore, 2),
-            "interpretation": "Bitcoin outperforming significantly"
-        })
-    
-    if component.crypto_vs_fed_bs and component.crypto_vs_fed_bs > 0.65:
-        signals.append({
-            "name": "Crypto/Fed BS Divergence",
-            "value": round(component.crypto_vs_fed_bs, 2),
-            "interpretation": "Crypto rising despite QT"
-        })
-    
-    if component.btc_dominance_momentum and component.btc_dominance_momentum > 0.65:
+    if component.btc_dominance and component.btc_dominance > 0.65:
         signals.append({
             "name": "BTC Dominance",
-            "value": round(component.btc_dominance_momentum, 2),
-            "interpretation": "Flight to hardest crypto"
+            "value": round(component.btc_dominance, 2),
+            "interpretation": "Flight to digital gold"
+        })
+    
+    if component.exchange_outflows and component.exchange_outflows > 0.65:
+        signals.append({
+            "name": "Exchange Outflows",
+            "value": round(component.exchange_outflows, 2),
+            "interpretation": "Self-custody preference rising"
+        })
+    
+    if component.btc_spy_correlation and component.btc_spy_correlation > 0.65:
+        signals.append({
+            "name": "BTC vs SPY Decoupling",
+            "value": round(component.btc_spy_correlation, 2),
+            "interpretation": "BTC behaving as alternative asset"
         })
     
     return signals[:3]  # Top 3
 
 
-import numpy as np  # For trend calculation
+def _get_component_description(component_key: str) -> str:
+    descriptions = {
+        # Metals
+        "gold_dxy_ratio": "Gold price normalized by dollar strength; higher implies hedge demand.",
+        "gold_real_rate_divergence": "Gold strength versus real rates; divergence implies monetary stress.",
+        "silver_outperformance": "Silver vs gold ratio; low values signal defensive posture.",
+        "pgm_weakness": "Platinum/palladium underperformance vs gold; indicates industrial weakness.",
+        "cb_gold_accumulation": "Central bank net gold buying momentum; sustained purchases signal concern.",
+        "comex_registered_inventory": "Deliverable COMEX inventory; declines indicate physical stress.",
+        "oi_to_registered_ratio": "Open interest vs registered inventory; high ratios signal squeeze risk.",
+        "gold_etf_flows": "Net GLD flows; positive flows reflect institutional flight to safety.",
+        "mining_stock_divergence": "Gold miners vs gold; underperformance implies stress in risk assets.",
+        # Crypto
+        "btc_dominance": "BTC share of total crypto market cap; rising implies flight to quality.",
+        "btc_hash_rate": "Network security proxy; rising indicates infrastructure commitment.",
+        "btc_difficulty": "Mining competition; higher difficulty implies stronger incentives.",
+        "stablecoin_supply": "USDT+USDC supply; growth shows fiat entering crypto rails.",
+        "stablecoin_btc_ratio": "Stablecoins vs BTC market cap; high values suggest dry powder.",
+        "defi_tvl": "Total value locked in DeFi protocols; growth signals adoption.",
+        "exchange_outflows": "BTC leaving exchanges; net outflows indicate self-custody preference.",
+        "btc_spy_correlation": "BTC-SPY correlation; negative indicates alternative behavior.",
+        "altcoin_weakness": "Altcoins underperforming BTC; weakness signals risk-off crypto.",
+    }
+    return descriptions.get(component_key, f"Component: {component_key}")

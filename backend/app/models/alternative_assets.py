@@ -36,6 +36,46 @@ class CryptoPrice(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class BitcoinNetworkMetric(Base):
+    """Daily Bitcoin network metrics for AAP calculation"""
+    __tablename__ = "bitcoin_network_metric"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+    hash_rate = Column(Float)  # Hashes per second (or EH/s depending on source)
+    difficulty = Column(Float)
+    source = Column(String, default="API")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CryptoEcosystemMetric(Base):
+    """Daily crypto ecosystem metrics for AAP calculation"""
+    __tablename__ = "crypto_ecosystem_metric"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+    stablecoin_supply_usd = Column(Float)  # Total stablecoin market cap
+    stablecoin_btc_ratio = Column(Float)
+    defi_tvl_usd = Column(Float)
+    exchange_net_outflow_btc = Column(Float)
+    exchange_net_outflow_usd = Column(Float)
+    btc_spy_corr_30d = Column(Float)
+    source = Column(String, default="API")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class EquityPrice(Base):
+    """Daily equity prices for AAP correlation calculations"""
+    __tablename__ = "equity_price"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+    close = Column(Float)
+    source = Column(String, default="YAHOO")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class MacroLiquidityData(Base):
     """Global liquidity proxies for crypto correlation analysis"""
     __tablename__ = "macro_liquidity_data"
@@ -108,6 +148,46 @@ class AAPComponent(Base):
     cross_asset_multiplier = Column(Float)  # 0.6-1.4 range
     correlation_regime = Column(String)  # "coordinated", "divergent", "crypto_led", "metals_led"
     
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AAPComponentV2(Base):
+    """V2 component calculations aligned to 9+9 AAP specification"""
+    __tablename__ = "aap_component_v2"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+
+    # Metals (9)
+    gold_dxy_ratio = Column(Float)
+    gold_real_rate_divergence = Column(Float)
+    silver_outperformance = Column(Float)
+    pgm_weakness = Column(Float)
+    cb_gold_accumulation = Column(Float)
+    comex_registered_inventory = Column(Float)
+    oi_to_registered_ratio = Column(Float)
+    gold_etf_flows = Column(Float)
+    mining_stock_divergence = Column(Float)
+
+    # Crypto (9)
+    btc_dominance = Column(Float)
+    btc_hash_rate = Column(Float)
+    btc_difficulty = Column(Float)
+    stablecoin_supply = Column(Float)
+    stablecoin_btc_ratio = Column(Float)
+    defi_tvl = Column(Float)
+    exchange_outflows = Column(Float)
+    btc_spy_correlation = Column(Float)
+    altcoin_weakness = Column(Float)
+
+    # Aggregated subsystem scores
+    metals_pressure_score = Column(Float)
+    crypto_pressure_score = Column(Float)
+
+    # Cross-asset confirmation
+    cross_asset_multiplier = Column(Float)
+    correlation_regime = Column(String)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
