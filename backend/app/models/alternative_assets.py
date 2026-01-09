@@ -1,11 +1,11 @@
 """
-Alternative Asset Pressure (AAP) Indicator Models
+"""Alternative Asset Stability (AAS) Indicator Models
 
-Tracks systemic pressure toward alternative assets (precious metals + crypto)
+Tracks systemic stability vs. pressure toward alternative assets (precious metals + crypto)
 as a regime and trust diagnostic.
 
 Higher stability score = more confidence in traditional system
-Lower stability score = greater alternative asset pressure
+Lower stability score = less stability, greater alternative asset adoption
 """
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Index
@@ -102,8 +102,8 @@ class AAPComponent(Base):
     crypto_qt_resilience = Column(Float)  # 7.0% weight
     
     # Aggregated subsystem scores
-    metals_pressure_score = Column(Float)  # 0-1 scale
-    crypto_pressure_score = Column(Float)  # 0-1 scale
+    metals_stability_score = Column(Float)  # 0-1 scale (inverted from pressure)
+    crypto_stability_score = Column(Float)  # 0-1 scale (inverted from pressure)
     
     # Cross-asset confirmation
     cross_asset_multiplier = Column(Float)  # 0.6-1.4 range
@@ -113,19 +113,19 @@ class AAPComponent(Base):
 
 
 class AAPIndicator(Base):
-    """Final Alternative Asset Pressure indicator values and regime classification"""
+    """Final Alternative Asset Stability indicator values and regime classification"""
     __tablename__ = "aap_indicator"
     
     id = Column(Integer, primary_key=True, index=True)
     date = Column(DateTime, nullable=False, unique=True, index=True)
     
-    # Core output (INVARIANT: 0 = max pressure, 100 = min pressure)
+    # Core output (INVARIANT: 0 = min stability, 100 = max stability)
     stability_score = Column(Float, nullable=False)  # 0-100 scale
-    pressure_index = Column(Float, nullable=False)  # 0-1 scale (inverted for stability)
+    pressure_index = Column(Float, nullable=False)  # 0-1 scale (internal use only, inverted)
     
     # Component contributions
-    metals_contribution = Column(Float)  # Weighted metals pressure
-    crypto_contribution = Column(Float)  # Weighted crypto pressure
+    metals_contribution = Column(Float)  # Weighted metals instability
+    crypto_contribution = Column(Float)  # Weighted crypto instability
     
     # Regime classification
     regime = Column(String, nullable=False)  # "normal_confidence", "mild_caution", etc.

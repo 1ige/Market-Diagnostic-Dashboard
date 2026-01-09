@@ -1,14 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { OverviewTab } from "../components/aap/OverviewTab";
 import { DeepDiveTab } from "../components/aap/DeepDiveTab";
+import PreciousMetalsDiagnostic from "./PreciousMetalsDiagnostic";
 
 export default function AlternativeAssetPressure() {
+  const [searchParams] = useSearchParams();
   const { data: aapData, loading } = useApi<any>('/aap/components/breakdown');
   const { data: historyData } = useApi<any>('/aap/history?days=365');
   const [timeframe, setTimeframe] = useState<'30d' | '90d' | '180d' | '365d'>('90d');
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'deep-dive'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'metals' | 'deep-dive'>('overview');
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'metals' || tabParam === 'overview' || tabParam === 'deep-dive') {
+      setSelectedTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Filter history based on timeframe
   const history = React.useMemo(() => {
@@ -47,12 +58,12 @@ export default function AlternativeAssetPressure() {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-2 h-8 bg-gradient-to-b from-amber-400 to-blue-500 rounded"></div>
             <h1 className="text-2xl md:text-4xl font-bold text-stealth-100">
-              Alternative Asset Pressure (AAP)
+              Alternative Asset Stability (AAS)
             </h1>
           </div>
           <p className="text-sm md:text-base text-stealth-400 max-w-4xl">
-            Comprehensive 18-component indicator measuring systemic monetary stress through precious metals and cryptocurrency signals.
-            Tracks "flight to alternatives" as a proxy for confidence in traditional financial assets and fiat currencies.
+            Comprehensive 18-component indicator measuring systemic stability through precious metals and cryptocurrency signals.
+            Tracks alternative asset adoption as a proxy for confidence in traditional financial assets and fiat currencies.
           </p>
         </div>
 
@@ -66,7 +77,17 @@ export default function AlternativeAssetPressure() {
                 : "border-transparent text-stealth-400 hover:text-gray-300"
             }`}
           >
-            Overview
+            Stability Overview
+          </button>
+          <button
+            onClick={() => setSelectedTab("metals")}
+            className={`pb-3 px-2 font-semibold border-b-2 transition ${
+              selectedTab === "metals"
+                ? "border-amber-500 text-amber-300"
+                : "border-transparent text-stealth-400 hover:text-gray-300"
+            }`}
+          >
+            Precious Metals
           </button>
           <button
             onClick={() => setSelectedTab("deep-dive")}
@@ -88,6 +109,12 @@ export default function AlternativeAssetPressure() {
             timeframe={timeframe}
             setTimeframe={setTimeframe}
           />
+        )}
+
+        {selectedTab === "metals" && (
+          <div className="text-stealth-100">
+            <PreciousMetalsDiagnostic embedded={true} />
+          </div>
         )}
 
         {selectedTab === "deep-dive" && (

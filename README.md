@@ -254,7 +254,7 @@ Proprietary - All rights reserved © 2026 Steven J Meyer LLC
 - ✅ Improved data freshness indicators
 
 ### v2.0 (January 2026)
-- ✅ Added Alternative Asset Pressure (AAP) indicator
+- ✅ Added Alternative Asset Stability (AAS) indicator
 - ✅ Implemented 18-component framework
 - ✅ Replaced all seed data with real sources
 - ✅ Comprehensive documentation and deployment automation

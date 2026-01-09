@@ -166,7 +166,7 @@ const getBiasText = (bias: string): string => {
   return "Neutral";
 };
 
-export default function PreciousMetalsDiagnostic() {
+export default function PreciousMetalsDiagnostic({ embedded = false }: { embedded?: boolean }) {
   const { data: indicators, loading, error } = useApi<MetalIndicators>("/precious-metals/regime");
   const { data: correlations } = useApi<CorrelationMatrix>("/precious-metals/correlations");
   const { data: cb_holdings } = useApi<CBHolding[]>("/precious-metals/cb-holdings");
@@ -180,8 +180,8 @@ export default function PreciousMetalsDiagnostic() {
 
   if (loading) {
     return (
-      <div className="p-6 text-gray-200">
-        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+      <div className={embedded ? "py-8" : "p-6"}>
+        {!embedded && <h1 className="text-3xl font-bold mb-6 text-gray-200">Precious Metals Diagnostic</h1>}
         <div className="text-stealth-400">Loading precious metals analysis...</div>
       </div>
     );
@@ -189,8 +189,8 @@ export default function PreciousMetalsDiagnostic() {
 
   if (error) {
     return (
-      <div className="p-6 text-gray-200">
-        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+      <div className={embedded ? "py-8" : "p-6"}>
+        {!embedded && <h1 className="text-3xl font-bold mb-6 text-gray-200">Precious Metals Diagnostic</h1>}
         <div className="bg-red-900/20 border border-red-700 text-red-200 p-4 rounded">
           Error loading data: {error}
         </div>
@@ -200,8 +200,8 @@ export default function PreciousMetalsDiagnostic() {
 
   if (!indicators) {
     return (
-      <div className="p-6 text-gray-200">
-        <h1 className="text-3xl font-bold mb-6">Precious Metals Diagnostic</h1>
+      <div className={embedded ? "py-8" : "p-6"}>
+        {!embedded && <h1 className="text-3xl font-bold mb-6 text-gray-200">Precious Metals Diagnostic</h1>}
         <div className="text-stealth-400">No data available.</div>
       </div>
     );
@@ -210,11 +210,15 @@ export default function PreciousMetalsDiagnostic() {
   const projections = projectionsData?.projections || [];
 
   return (
-    <div className="p-3 md:p-6 text-gray-200">
-      <h1 className="text-2xl md:text-3xl font-bold mb-2">Precious Metals Diagnostic</h1>
-      <p className="text-stealth-400 mb-6 text-sm md:text-base">
-        Macro-structural analysis of precious metals as monetary hedges, industrial commodities, and risk-off assets.
-      </p>
+    <div className={embedded ? "text-gray-200" : "p-3 md:p-6 text-gray-200"}>
+      {!embedded && (
+        <>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Precious Metals Diagnostic</h1>
+          <p className="text-stealth-400 mb-6 text-sm md:text-base">
+            Macro-structural analysis of precious metals as monetary hedges, industrial commodities, and risk-off assets.
+          </p>
+        </>
+      )}
 
       {/* SECTION 1: REGIME CLASSIFICATION PANEL (PINNED TOP) */}
       <div className="mb-6 bg-stealth-800 rounded-lg border border-stealth-700 p-4 md:p-6">

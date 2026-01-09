@@ -1,7 +1,10 @@
 """
-Alternative Asset Pressure (AAP) Indicator API Endpoints
+"""Alternative Asset Stability (AAS) Indicator API Endpoints
 
 Provides access to AAP indicator data, components, and regime analysis.
+
+Note: The indicator measures systemic stability - lower scores indicate
+less stability and greater alternative asset adoption.
 """
 
 from fastapi import APIRouter, HTTPException, Query
@@ -20,7 +23,7 @@ from app.models.alternative_assets import (
 )
 from app.services.aap_calculator import AAPCalculator
 
-router = APIRouter(prefix="/aap", tags=["Alternative Asset Pressure"])
+router = APIRouter(prefix="/aap", tags=["Alternative Asset Stability"])
 
 
 @router.get("/current")
@@ -29,7 +32,7 @@ def get_current_aap():
     Get the most recent AAP indicator reading.
     
     Returns:
-        - stability_score: 0-100 (higher = more stable, less alternative pressure)
+        - stability_score: 0-100 (higher = more stable system)
         - regime: Current market regime classification
         - primary_driver: What's driving the signal (metals/crypto/coordinated)
         - stress_type: Type of stress being indicated

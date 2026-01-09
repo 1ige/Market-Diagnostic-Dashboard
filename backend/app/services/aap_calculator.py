@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 class AAPCalculator:
     """
-    Calculates the Alternative Asset Pressure indicator.
+    Calculates the Alternative Asset Stability indicator.
     
-    INVARIANT: Higher stability score = less alternative asset pressure
-               0 = maximum distrust, 100 = maximum confidence
+    INVARIANT: Higher stability score = more systemic stability
+               0 = minimum stability (max pressure), 100 = maximum stability
     """
     
     # Component weights (must sum to 100%)
@@ -83,35 +83,35 @@ class AAPCalculator:
                 logger.warning(f"Insufficient data for AAP calculation on {target_date}")
                 return None
             
-            # Step 2: Compute subsystem pressure scores
-            metals_pressure = self._compute_metals_pressure(components)
-            crypto_pressure = self._compute_crypto_pressure(components)
+            # Step 2: Compute subsystem instability scores
+            metals_instability = self._compute_metals_instability(components)
+            crypto_instability = self._compute_crypto_instability(components)
             
             # Step 3: Apply cross-asset confirmation
             multiplier, correlation_regime = self._compute_cross_asset_multiplier(
-                components, metals_pressure, crypto_pressure, target_date
+                components, metals_instability, crypto_instability, target_date
             )
             
-            # Step 4: Calculate final pressure index
+            # Step 4: Calculate aggregate instability index
             pressure_index = (
-                0.50 * metals_pressure +
-                0.50 * crypto_pressure
+                0.50 * metals_instability +
+                0.50 * crypto_instability
             ) * multiplier
             
             # Clamp to [0, 1]
             pressure_index = max(0.0, min(1.0, pressure_index))
             
-            # Step 5: Convert to stability score (INVARIANT)
+            # Step 5: Convert to stability score (INVARIANT: invert pressure to stability)
             stability_score = 100 - (pressure_index * 100)
             
             # Step 6: Classify regime
             regime, regime_confidence = self._classify_regime(
-                stability_score, components, metals_pressure, crypto_pressure
+                stability_score, components, metals_instability, crypto_instability
             )
             
             # Step 7: Determine drivers and stress type
             primary_driver = self._identify_primary_driver(
-                metals_pressure, crypto_pressure, correlation_regime
+                metals_instability, crypto_instability, correlation_regime
             )
             stress_type = self._identify_stress_type(
                 components, regime, primary_driver
@@ -143,8 +143,8 @@ class AAPCalculator:
                 "date": target_date,
                 "stability_score": to_python_type(stability_score),
                 "pressure_index": to_python_type(pressure_index),
-                "metals_contribution": to_python_type(metals_pressure * 0.50 * multiplier),
-                "crypto_contribution": to_python_type(crypto_pressure * 0.50 * multiplier),
+                "metals_contribution": to_python_type(metals_instability * 0.50 * multiplier),
+                "crypto_contribution": to_python_type(crypto_instability * 0.50 * multiplier),
                 "regime": regime,
                 "regime_confidence": to_python_type(regime_confidence),
                 "primary_driver": primary_driver,
@@ -170,7 +170,7 @@ class AAPCalculator:
             
             # Persist component details
             component_record = self._create_component_record(
-                target_date, components, metals_pressure, crypto_pressure,
+                target_date, components, metals_instability, crypto_instability,
                 multiplier, correlation_regime
             )
 
@@ -232,7 +232,7 @@ class AAPCalculator:
         """
         Calculate all individual components for the AAP indicator.
         
-        Returns dict with normalized component values (0-1 scale, higher = more pressure)
+        Returns dict with normalized component values (0-1 scale, higher = less stability)
         """
         components = {}
         
@@ -856,8 +856,8 @@ class AAPCalculator:
     
     # ===== AGGREGATION & REGIME CLASSIFICATION =====
     
-    def _compute_metals_pressure(self, components: Dict[str, float]) -> float:
-        """Aggregate metals subsystem into 0-1 pressure score"""
+    def _compute_metals_instability(self, components: Dict[str, float]) -> float:
+        """Aggregate metals subsystem into 0-1 instability score (lower stability)"""
         metals_keys = [
             'gold_usd_zscore', 'gold_real_rate_divergence', 'cb_gold_momentum', 'silver_usd_zscore',
             'gold_silver_ratio_signal', 'platinum_gold_ratio', 'palladium_gold_ratio',
@@ -876,8 +876,8 @@ class AAPCalculator:
         # Normalize to 0-1 subsystem scale
         return weighted_sum / total_weight
     
-    def _compute_crypto_pressure(self, components: Dict[str, float]) -> float:
-        """Aggregate crypto subsystem into 0-1 pressure score"""
+    def _compute_crypto_instability(self, components: Dict[str, float]) -> float:
+        """Aggregate crypto subsystem into 0-1 instability score (lower stability)"""
         crypto_keys = [
             'btc_usd_zscore', 'btc_gold_zscore', 'btc_real_rate_break',
             'crypto_m2_ratio', 'btc_dominance_momentum', 'altcoin_btc_signal',
@@ -896,23 +896,23 @@ class AAPCalculator:
         return weighted_sum / total_weight
     
     def _compute_cross_asset_multiplier(
-        self, components: Dict, metals_pressure: float, 
-        crypto_pressure: float, date: datetime
+        self, components: Dict, metals_instability: float, 
+        crypto_instability: float, date: datetime
     ) -> Tuple[float, str]:
         """
         Compute cross-asset confirmation multiplier.
         Returns: (multiplier, correlation_regime)
         """
-        diff = abs(metals_pressure - crypto_pressure)
+        diff = abs(metals_instability - crypto_instability)
         
         # Base correlation regime
-        if metals_pressure > 0.6 and crypto_pressure > 0.6:
+        if metals_instability > 0.6 and crypto_instability > 0.6:
             regime = "coordinated"
             base_mult = 1.3
-        elif metals_pressure > 0.6 and crypto_pressure < 0.4:
+        elif metals_instability > 0.6 and crypto_instability < 0.4:
             regime = "metals_led"
             base_mult = 1.0
-        elif crypto_pressure > 0.6 and metals_pressure < 0.4:
+        elif crypto_instability > 0.6 and metals_instability < 0.4:
             regime = "crypto_led"
             base_mult = 0.7  # Likely speculative
         elif diff < 0.15:
@@ -943,7 +943,7 @@ class AAPCalculator:
     
     def _classify_regime(
         self, stability_score: float, components: Dict,
-        metals_pressure: float, crypto_pressure: float
+        metals_instability: float, crypto_instability: float
     ) -> Tuple[str, float]:
         """
         Classify regime based on stability score.
@@ -955,7 +955,7 @@ class AAPCalculator:
             return "mild_caution", 0.85
         elif stability_score >= 40:
             # Need to distinguish monetary stress from speculative
-            if metals_pressure > crypto_pressure:
+            if metals_instability > crypto_instability:
                 return "monetary_stress", 0.80
             else:
                 return "mild_caution", 0.70  # Likely crypto speculation
@@ -965,14 +965,14 @@ class AAPCalculator:
             return "systemic_breakdown", 0.90
     
     def _identify_primary_driver(
-        self, metals_pressure: float, crypto_pressure: float, correlation_regime: str
+        self, metals_instability: float, crypto_instability: float, correlation_regime: str
     ) -> str:
         """Identify which asset class is driving the signal"""
         if correlation_regime == "coordinated":
             return "coordinated"
-        elif metals_pressure > crypto_pressure + 0.15:
+        elif metals_instability > crypto_instability + 0.15:
             return "metals"
-        elif crypto_pressure > metals_pressure + 0.15:
+        elif crypto_instability > metals_instability + 0.15:
             return "crypto"
         else:
             return "mixed"
@@ -1219,8 +1219,8 @@ class AAPCalculator:
         return available_components / total_components
     
     def _create_component_record(
-        self, date: datetime, components: Dict, metals_pressure: float,
-        crypto_pressure: float, multiplier: float, correlation_regime: str
+        self, date: datetime, components: Dict, metals_instability: float,
+        crypto_instability: float, multiplier: float, correlation_regime: str
     ) -> AAPComponent:
         """Create detailed component record for audit trail"""
         # Convert numpy types to Python types for PostgreSQL compatibility
@@ -1251,9 +1251,9 @@ class AAPCalculator:
             altcoin_btc_signal=to_python_float(components.get('altcoin_btc_signal')),
             crypto_vs_fed_bs=to_python_float(components.get('crypto_vs_fed_bs')),
             crypto_qt_resilience=to_python_float(components.get('crypto_qt_resilience')),
-            # Aggregates
-            metals_pressure_score=to_python_float(metals_pressure),
-            crypto_pressure_score=to_python_float(crypto_pressure),
+            # Aggregates (stored as instability scores)
+            metals_pressure_score=to_python_float(metals_instability),
+            crypto_pressure_score=to_python_float(crypto_instability),
             cross_asset_multiplier=to_python_float(multiplier),
             correlation_regime=correlation_regime,
         )

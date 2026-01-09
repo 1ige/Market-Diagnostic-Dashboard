@@ -27,7 +27,7 @@ const getHistoryDays = (indicatorCode: string): number => {
 export default function Indicators() {
   const { data, loading, error } = useApi<IndicatorStatus[]>("/indicators");
 
-  // Filter out AAP (Alternative Asset Pressure) since it has its own dedicated page
+  // Filter out AAP (Alternative Asset Stability) since it has its own dedicated page
   const filteredData = data?.filter(i => i.code !== "AAP") || [];
 
   if (loading) {

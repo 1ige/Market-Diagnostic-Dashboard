@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Topbar from "./components/layout/Topbar";
 import Footer from "./components/layout/Footer";
@@ -10,7 +10,6 @@ import SystemBreakdown from "./pages/SystemBreakdown";
 import MarketMap from "./pages/MarketMap";
 import SectorProjections from "./pages/SectorProjections";
 import StockProjections from "./pages/StockProjections";
-import PreciousMetalsDiagnostic from "./pages/PreciousMetalsDiagnostic";
 import AlternativeAssetPressure from "./pages/AlternativeAssetPressure";
 import AAPComponentBreakdown from "./pages/AAPComponentBreakdown";
 import { trackPageView } from "./utils/analytics";
@@ -51,7 +50,8 @@ function AppWithAnalytics() {
           <Route path="/market-map" element={<MarketMap />} />
           <Route path="/sector-projections" element={<SectorProjections />} />
           <Route path="/stock-projections" element={<StockProjections />} />
-          <Route path="/precious-metals" element={<PreciousMetalsDiagnostic />} />
+          {/* Redirect old precious-metals route to alternative-assets */}
+          <Route path="/precious-metals" element={<Navigate to="/alternative-assets?tab=metals" replace />} />
           <Route path="/alternative-assets" element={<AlternativeAssetPressure />} />
           <Route path="/aap-breakdown" element={<AAPComponentBreakdown />} />
         </Routes>

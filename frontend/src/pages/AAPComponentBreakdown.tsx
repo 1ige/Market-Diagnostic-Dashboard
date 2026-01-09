@@ -45,11 +45,11 @@ interface AAPComponent {
 interface AAPData {
   date: string;
   stability_score: number;
-  pressure_index: number;
+  pressure_index: number;  // Internal metric (inverted)
   regime: string;
   primary_driver: string;
-  metals_contribution: number;
-  crypto_contribution: number;
+  metals_contribution: number;  // Contribution to instability
+  crypto_contribution: number;  // Contribution to instability
   components: AAPComponent[];
   data_completeness: number;
 }
@@ -170,10 +170,10 @@ const AAPComponentBreakdown: React.FC = () => {
           
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Alternative Asset Pressure (AAP)
+              Alternative Asset Stability (AAS)
             </h1>
             <p className="text-gray-600 mb-6">
-              Comprehensive 18-component indicator measuring monetary stress through precious metals and cryptocurrency signals
+              Comprehensive 18-component indicator measuring systemic stability through precious metals and cryptocurrency signals
             </p>
 
             {/* Current Status */}
@@ -183,7 +183,7 @@ const AAPComponentBreakdown: React.FC = () => {
                 <div className="text-3xl font-bold text-gray-900">
                   {data.stability_score.toFixed(1)}
                 </div>
-                <div className="text-xs text-gray-500">0=max pressure, 100=normal</div>
+                <div className="text-xs text-gray-500">0=min stability, 100=max stability</div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-4">
@@ -222,7 +222,7 @@ const AAPComponentBreakdown: React.FC = () => {
             </h2>
             <div className="mb-4">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Contribution to Pressure</span>
+                <span className="text-gray-600">Contribution to Instability</span>
                 <span className="font-semibold">{(data.metals_contribution * 100).toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -244,7 +244,7 @@ const AAPComponentBreakdown: React.FC = () => {
             </h2>
             <div className="mb-4">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Contribution to Pressure</span>
+                <span className="text-gray-600">Contribution to Instability</span>
                 <span className="font-semibold">{(data.crypto_contribution * 100).toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -395,11 +395,11 @@ const AAPComponentBreakdown: React.FC = () => {
               <Info className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-blue-900 mb-2">About AAP Indicator</h3>
+              <h3 className="font-semibold text-blue-900 mb-2">About AAS Indicator</h3>
               <p className="text-blue-800 text-sm mb-3">
-                The Alternative Asset Pressure (AAP) indicator measures monetary system stress through 18 weighted components
-                split equally between precious metals and cryptocurrency markets. Higher pressure (lower stability score) 
-                indicates growing distrust in fiat currencies and increased demand for alternative stores of value.
+                The Alternative Asset Stability (AAS) indicator measures systemic stability through 18 weighted components
+                split equally between precious metals and cryptocurrency markets. Lower stability scores
+                indicate growing distrust in fiat currencies and increased demand for alternative stores of value.
               </p>
               <div className="text-sm text-blue-800">
                 <strong>Data Sources:</strong> FRED API (macro/crypto), YAHOO Finance (metals), CME (COMEX), 
