@@ -9,6 +9,7 @@ export default function AlternativeAssetPressure() {
   const [searchParams] = useSearchParams();
   const { data: aapData, loading } = useApi<any>('/aap/components/breakdown');
   const { data: historyData } = useApi<any>('/aap/history?days=365');
+  const { data: componentHistory } = useApi<any>('/aap/components/history?days=365');
   const [timeframe, setTimeframe] = useState<'30d' | '90d' | '180d' | '365d'>('90d');
   const [selectedTab, setSelectedTab] = useState<'overview' | 'metals'>('overview');
 
@@ -95,6 +96,7 @@ export default function AlternativeAssetPressure() {
           <OverviewTab 
             aapData={aapData}
             history={history}
+            componentHistory={componentHistory}
             timeframe={timeframe}
             setTimeframe={setTimeframe}
           />

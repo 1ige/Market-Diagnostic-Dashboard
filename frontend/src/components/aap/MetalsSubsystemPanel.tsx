@@ -1,3 +1,5 @@
+import { LineChart, Line, ResponsiveContainer } from "recharts";
+
 interface AAPComponent {
   name: string;
   category: string;
@@ -11,9 +13,10 @@ interface AAPComponent {
 interface MetalsSubsystemPanelProps {
   components: AAPComponent[];
   contribution: number;
+  componentHistory?: Record<string, { date: string; value: number | null }[]>;
 }
 
-export function MetalsSubsystemPanel({ components, contribution }: MetalsSubsystemPanelProps) {
+export function MetalsSubsystemPanel({ components, contribution, componentHistory = {} }: MetalsSubsystemPanelProps) {
   const activeCount = components.filter(c => c.status === 'active').length;
   const totalCount = components.length;
 
@@ -69,6 +72,23 @@ export function MetalsSubsystemPanel({ components, contribution }: MetalsSubsyst
                   </div>
                 </>
               )}
+            </div>
+            <div className="mt-3">
+              <div className="text-xs text-stealth-500 mb-1">52w trend (smoothed)</div>
+              <div className="h-14">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={componentHistory[component.name] || []}>
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         ))}

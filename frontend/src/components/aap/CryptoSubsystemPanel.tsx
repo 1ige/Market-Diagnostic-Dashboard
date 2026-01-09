@@ -1,3 +1,5 @@
+import { LineChart, Line, ResponsiveContainer } from "recharts";
+
 interface AAPComponent {
   name: string;
   category: string;
@@ -11,9 +13,10 @@ interface AAPComponent {
 interface CryptoSubsystemPanelProps {
   components: AAPComponent[];
   contribution: number;
+  componentHistory?: Record<string, { date: string; value: number | null }[]>;
 }
 
-export function CryptoSubsystemPanel({ components, contribution }: CryptoSubsystemPanelProps) {
+export function CryptoSubsystemPanel({ components, contribution, componentHistory = {} }: CryptoSubsystemPanelProps) {
   const activeCount = components.filter(c => c.status === 'active').length;
   const totalCount = components.length;
 
@@ -69,6 +72,23 @@ export function CryptoSubsystemPanel({ components, contribution }: CryptoSubsyst
                   </div>
                 </>
               )}
+            </div>
+            <div className="mt-3">
+              <div className="text-xs text-stealth-500 mb-1">52w trend (smoothed)</div>
+              <div className="h-14">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={componentHistory[component.name] || []}>
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         ))}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { MetalsSubsystemPanel } from './MetalsSubsystemPanel';
 import { CryptoSubsystemPanel } from './CryptoSubsystemPanel';
@@ -13,11 +13,37 @@ interface HistoricalData {
 interface OverviewTabProps {
   aapData: any;
   history: HistoricalData[];
+  componentHistory?: any;
   timeframe: '30d' | '90d' | '180d' | '365d';
   setTimeframe: (tf: '30d' | '90d' | '180d' | '365d') => void;
 }
 
-export function OverviewTab({ aapData, history, timeframe, setTimeframe }: OverviewTabProps) {
+function smoothSeries(
+  series: { date: string; value: number | null }[],
+  windowSize: number
+): { date: string; value: number | null }[] {
+  const smoothed: { date: string; value: number | null }[] = [];
+
+  for (let i = 0; i < series.length; i += 1) {
+    const start = Math.max(0, i - windowSize + 1);
+    const window = series.slice(start, i + 1);
+    const values = window
+      .map((entry) => entry.value)
+      .filter((value): value is number => value !== null && value !== undefined);
+
+    if (values.length === 0) {
+      smoothed.push({ date: series[i].date, value: null });
+      continue;
+    }
+
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    smoothed.push({ date: series[i].date, value: avg });
+  }
+
+  return smoothed;
+}
+
+export function OverviewTab({ aapData, history, componentHistory, timeframe, setTimeframe }: OverviewTabProps) {
   const [showComponentHealth, setShowComponentHealth] = useState(false);
   
   const getScoreColor = (score: number): string => {
@@ -61,6 +87,22 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
 
   const metalsComponents = components.filter((c: any) => c.category === 'metals');
   const cryptoComponents = components.filter((c: any) => c.category === 'crypto');
+
+  const smoothedComponentHistory = useMemo(() => {
+    const rawHistory = componentHistory?.data ?? {};
+    const windowSize = 7;
+    const output: Record<string, { date: string; value: number | null }[]> = {};
+
+    Object.entries(rawHistory).forEach(([key, series]) => {
+      if (!Array.isArray(series)) {
+        output[key] = [];
+        return;
+      }
+      output[key] = smoothSeries(series as { date: string; value: number | null }[], windowSize);
+    });
+
+    return output;
+  }, [componentHistory]);
 
   // Calculate relative contributions as percentages
   const totalContribution = aapData.metals_contribution + aapData.crypto_contribution;
@@ -289,8 +331,16 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
             <div>
               <h4 className="text-md font-semibold text-stealth-100 mb-4">Subsystem Breakdown</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <MetalsSubsystemPanel components={metalsComponents} contribution={aapData.metals_contribution} />
-                <CryptoSubsystemPanel components={cryptoComponents} contribution={aapData.crypto_contribution} />
+                <MetalsSubsystemPanel
+                  components={metalsComponents}
+                  contribution={aapData.metals_contribution}
+                  componentHistory={smoothedComponentHistory}
+                />
+                <CryptoSubsystemPanel
+                  components={cryptoComponents}
+                  contribution={aapData.crypto_contribution}
+                  componentHistory={smoothedComponentHistory}
+                />
               </div>
             </div>
 

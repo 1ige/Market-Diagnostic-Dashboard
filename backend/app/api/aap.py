@@ -259,6 +259,45 @@ def get_current_components():
         }
 
 
+@router.get("/components/history")
+def get_component_history(
+    days: int = Query(365, ge=30, le=730, description="Number of days of history")
+):
+    """
+    Get historical values for all AAP components.
+    Returns per-component time series for charting.
+    """
+    with get_db_session() as db:
+        start_date = datetime.utcnow() - timedelta(days=days)
+        rows = db.query(AAPComponentV2).filter(
+            AAPComponentV2.date >= start_date
+        ).order_by(AAPComponentV2.date).all()
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No component history available")
+
+        component_keys = list(AAPCalculator.WEIGHTS.keys())
+        history = {key: [] for key in component_keys}
+
+        for row in rows:
+            date_value = row.date.isoformat()
+            for key in component_keys:
+                value = getattr(row, key, None)
+                history[key].append({
+                    "date": date_value,
+                    "value": float(value) if value is not None else None
+                })
+
+        return {
+            "period": {
+                "start": rows[0].date.isoformat(),
+                "end": rows[-1].date.isoformat(),
+                "days": len(rows),
+            },
+            "data": history
+        }
+
+
 @router.get("/regime/current")
 def get_current_regime():
     """
