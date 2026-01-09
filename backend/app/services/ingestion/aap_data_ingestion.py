@@ -102,74 +102,112 @@ class CryptoDataIngestion:
         """
         Backfill historical crypto prices.
         
-        Note: CoinGecko historical data - using simple/price endpoint for recent days
+        Note: Uses CoinGecko market chart data for daily history.
         """
         try:
-            # For free tier, fetch daily data one day at a time for last N days
-            end_date = datetime.utcnow()
-            
-            for day_offset in range(days, 0, -1):
-                date = (end_date - timedelta(days=day_offset)).replace(hour=0, minute=0, second=0, microsecond=0)
-                
-                # Check if exists
+            btc_chart = self._fetch_market_chart("bitcoin", days)
+            eth_chart = self._fetch_market_chart("ethereum", days)
+            global_chart = self._fetch_global_market_chart(days)
+
+            if not btc_chart or "prices" not in btc_chart:
+                logger.error("No BTC market chart data returned from CoinGecko")
+                return False
+
+            btc_prices = self._series_to_date_map(btc_chart.get("prices", []))
+            btc_market_caps = self._series_to_date_map(btc_chart.get("market_caps", []))
+            btc_volumes = self._series_to_date_map(btc_chart.get("total_volumes", []))
+            eth_prices = self._series_to_date_map(eth_chart.get("prices", [])) if eth_chart else {}
+
+            total_market_caps = {}
+            if global_chart:
+                total_market_caps = self._series_to_date_map(
+                    global_chart.get("market_cap", []) or global_chart.get("market_caps", [])
+                )
+
+            all_dates = sorted(set(btc_prices.keys()) | set(eth_prices.keys()))
+
+            added = 0
+            for date_obj in all_dates:
+                date = datetime.combine(date_obj, datetime.min.time())
+
                 existing = self.db.query(CryptoPrice).filter(
                     CryptoPrice.date == date
                 ).first()
-                
                 if existing:
                     continue
-                
-                # Fetch current price (we'll use this as approximation for historical)
-                # For production, use proper historical API or paid tier
-                try:
-                    url = f"{self.COINGECKO_BASE}/simple/price"
-                    params = {
-                        "ids": "bitcoin,ethereum",
-                        "vs_currencies": "usd",
-                        "include_24hr_vol": "true",
-                        "include_market_cap": "true"
-                    }
-                    
-                    response = requests.get(url, params=params, timeout=10)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    # Get global data
-                    global_url = f"{self.COINGECKO_BASE}/global"
-                    global_response = requests.get(global_url, timeout=10)
-                    global_response.raise_for_status()
-                    global_data = global_response.json()["data"]
-                    
-                    gold_price = self._fetch_gold_price()
-                    
-                    crypto_price = CryptoPrice(
-                        date=date,
-                        btc_usd=data["bitcoin"]["usd"],
-                        eth_usd=data["ethereum"]["usd"],
-                        total_crypto_mcap=global_data["total_market_cap"]["usd"] / 1_000_000_000,
-                        btc_dominance=global_data["market_cap_percentage"]["btc"],
-                        btc_gold_ratio=data["bitcoin"]["usd"] / gold_price if gold_price else None,
-                        btc_volume_24h=data["bitcoin"]["usd_24h_vol"],
-                        source="CoinGecko"
-                    )
-                    self.db.add(crypto_price)
-                    
-                    # Rate limit: sleep between requests
-                    import time
-                    time.sleep(1.5)  # Conservative rate limiting
-                    
-                except Exception as e:
-                    logger.warning(f"Could not fetch crypto data for {date.date()}: {e}")
+
+                btc_price = btc_prices.get(date_obj)
+                if btc_price is None:
                     continue
-            
+
+                total_mcap = total_market_caps.get(date_obj)
+                btc_mcap = btc_market_caps.get(date_obj)
+                btc_dominance = None
+                if total_mcap and btc_mcap:
+                    btc_dominance = (btc_mcap / total_mcap) * 100
+
+                gold_price = self._fetch_gold_price()
+
+                crypto_price = CryptoPrice(
+                    date=date,
+                    btc_usd=btc_price,
+                    eth_usd=eth_prices.get(date_obj),
+                    total_crypto_mcap=(total_mcap / 1_000_000_000) if total_mcap else None,
+                    btc_dominance=btc_dominance,
+                    btc_gold_ratio=btc_price / gold_price if gold_price else None,
+                    btc_volume_24h=btc_volumes.get(date_obj),
+                    source="CoinGecko"
+                )
+                self.db.add(crypto_price)
+                added += 1
+
             self.db.commit()
-            logger.info(f"Backfilled up to {days} days of crypto historical data")
+            logger.info(f"Backfilled {added} days of crypto historical data")
             return True
             
         except Exception as e:
             logger.error(f"Error fetching historical crypto data: {e}", exc_info=True)
             self.db.rollback()
             return False
+
+    def _fetch_market_chart(self, coin_id: str, days: int) -> Optional[Dict[str, List[List[float]]]]:
+        url = f"{self.COINGECKO_BASE}/coins/{coin_id}/market_chart"
+        params = {
+            "vs_currency": "usd",
+            "days": days,
+            "interval": "daily"
+        }
+        try:
+            response = requests.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.warning(f"Error fetching {coin_id} market chart: {e}")
+            return None
+
+    def _fetch_global_market_chart(self, days: int) -> Optional[Dict[str, List[List[float]]]]:
+        url = f"{self.COINGECKO_BASE}/global/market_cap_chart"
+        params = {
+            "vs_currency": "usd",
+            "days": days
+        }
+        try:
+            response = requests.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.warning(f"Error fetching global market cap chart: {e}")
+            return None
+
+    def _series_to_date_map(self, series: List[List[float]]) -> Dict[date, float]:
+        data = {}
+        for entry in series:
+            if not entry or len(entry) < 2:
+                continue
+            timestamp_ms, value = entry[0], entry[1]
+            day = datetime.utcfromtimestamp(timestamp_ms / 1000).date()
+            data[day] = value
+        return data
     
     def _fetch_gold_price(self) -> Optional[float]:
         """Helper to fetch current gold price for ratio calculation"""

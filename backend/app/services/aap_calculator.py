@@ -139,37 +139,46 @@ class AAPCalculator:
                     return None
                 return float(val) if hasattr(val, 'item') else val
             
-            # Create indicator record
-            indicator = AAPIndicator(
-                date=target_date,
-                stability_score=to_python_type(stability_score),
-                pressure_index=to_python_type(pressure_index),
-                metals_contribution=to_python_type(metals_pressure * 0.50 * multiplier),
-                crypto_contribution=to_python_type(crypto_pressure * 0.50 * multiplier),
-                regime=regime,
-                regime_confidence=to_python_type(regime_confidence),
-                primary_driver=primary_driver,
-                stress_type=stress_type,
-                vix_level=to_python_type(vix_level),
-                liquidity_regime=liquidity_regime,
-                fed_pivot_signal=to_python_type(fed_pivot),
-                score_1d_change=to_python_type(rolling_stats.get('change_1d')),
-                score_5d_change=to_python_type(rolling_stats.get('change_5d')),
-                score_20d_avg=to_python_type(rolling_stats.get('avg_20d')),
-                score_90d_avg=to_python_type(rolling_stats.get('avg_90d')),
-                is_critical=is_critical,
-                is_transitioning=is_transitioning,
-                circuit_breaker_active=circuit_breaker,
-                data_completeness=to_python_type(data_completeness),
-            )
+            indicator_data = {
+                "date": target_date,
+                "stability_score": to_python_type(stability_score),
+                "pressure_index": to_python_type(pressure_index),
+                "metals_contribution": to_python_type(metals_pressure * 0.50 * multiplier),
+                "crypto_contribution": to_python_type(crypto_pressure * 0.50 * multiplier),
+                "regime": regime,
+                "regime_confidence": to_python_type(regime_confidence),
+                "primary_driver": primary_driver,
+                "stress_type": stress_type,
+                "vix_level": to_python_type(vix_level),
+                "liquidity_regime": liquidity_regime,
+                "fed_pivot_signal": to_python_type(fed_pivot),
+                "score_1d_change": to_python_type(rolling_stats.get('change_1d')),
+                "score_5d_change": to_python_type(rolling_stats.get('change_5d')),
+                "score_20d_avg": to_python_type(rolling_stats.get('avg_20d')),
+                "score_90d_avg": to_python_type(rolling_stats.get('avg_90d')),
+                "is_critical": is_critical,
+                "is_transitioning": is_transitioning,
+                "circuit_breaker_active": circuit_breaker,
+                "data_completeness": to_python_type(data_completeness),
+            }
+
+            indicator = self.db.query(AAPIndicator).filter_by(date=target_date).first()
+            if indicator:
+                self._apply_model_updates(indicator, indicator_data)
+            else:
+                indicator = AAPIndicator(**indicator_data)
             
             # Persist component details
             component_record = self._create_component_record(
                 target_date, components, metals_pressure, crypto_pressure,
                 multiplier, correlation_regime
             )
-            
-            self.db.add(component_record)
+
+            existing_component = self.db.query(AAPComponent).filter_by(date=target_date).first()
+            if existing_component:
+                self._apply_component_updates(existing_component, component_record)
+            else:
+                self.db.add(component_record)
             self.db.add(indicator)
             
             # Also create IndicatorValue record for dashboard display
@@ -182,17 +191,28 @@ class AAPCalculator:
                 # Map stability_score to indicator value
                 # Stability score is 0-100 (higher = less pressure = better)
                 # So we can use it directly as the indicator score
-                indicator_value = IndicatorValue(
-                    indicator_id=aap_indicator_def.id,
-                    timestamp=target_date,
-                    raw_value=to_python_type(pressure_index),  # 0-1 pressure index
-                    score=to_python_type(stability_score),  # 0-100 stability score
-                    state=self._map_regime_to_state(regime)
-                )
-                self.db.add(indicator_value)
+                indicator_value = self.db.query(IndicatorValue).filter(
+                    IndicatorValue.indicator_id == aap_indicator_def.id,
+                    IndicatorValue.timestamp == target_date
+                ).first()
+                if indicator_value:
+                    indicator_value.raw_value = to_python_type(pressure_index)
+                    indicator_value.score = to_python_type(stability_score)
+                    indicator_value.state = self._map_regime_to_state(regime)
+                else:
+                    indicator_value = IndicatorValue(
+                        indicator_id=aap_indicator_def.id,
+                        timestamp=target_date,
+                        raw_value=to_python_type(pressure_index),  # 0-1 pressure index
+                        score=to_python_type(stability_score),  # 0-100 stability score
+                        state=self._map_regime_to_state(regime)
+                    )
+                    self.db.add(indicator_value)
             
             # Update regime history if needed
-            self._update_regime_history(target_date, regime)
+            regime_start = self._update_regime_history(target_date, regime)
+            if regime_start:
+                indicator.regime_days_persistent = (target_date - regime_start).days + 1
             
             self.db.commit()
             
@@ -583,7 +603,7 @@ class AAPCalculator:
         (Not implemented yet - requires futures curve data)
         """
         # TODO: Implement when futures data available
-        return 0.5  # Neutral for now
+        return None
     
     def _calc_etf_divergence(self, date: datetime) -> Optional[float]:
         """
@@ -592,7 +612,7 @@ class AAPCalculator:
         (Not implemented yet - requires ETF flow data)
         """
         # TODO: Implement when ETF data available
-        return 0.5  # Neutral for now
+        return None
     
     # ===== CRYPTO COMPONENT CALCULATIONS =====
     
@@ -790,7 +810,9 @@ class AAPCalculator:
         crypto_return = (crypto_prices[-1].total_crypto_mcap / crypto_prices[-61].total_crypto_mcap) - 1
         
         # Fed BS change
-        fed_change = (macro_data[-1].fed_balance_sheet / macro_data[0].fed_balance_sheet) - 1 if macro_data[0].fed_balance_sheet else 0
+        if not macro_data[-1].fed_balance_sheet or not macro_data[0].fed_balance_sheet:
+            return None
+        fed_change = (macro_data[-1].fed_balance_sheet / macro_data[0].fed_balance_sheet) - 1
         
         # Divergence scoring
         if crypto_return > 0.20 and fed_change < -0.05:
@@ -1027,13 +1049,24 @@ class AAPCalculator:
         """Calculate historical BTC/Gold ratios"""
         start_date = date - timedelta(days=days)
         
-        # This is expensive - would be better to pre-calculate
         ratios = []
         crypto_prices = self._get_crypto_prices(date, days=days)
-        
+
+        gold_prices = self.db.query(MetalPrice).filter(
+            MetalPrice.metal == 'AU',
+            MetalPrice.date >= start_date,
+            MetalPrice.date <= date
+        ).order_by(MetalPrice.date).all()
+
+        if not gold_prices:
+            return ratios
+
+        gold_idx = 0
         for cp in crypto_prices:
-            gold = self._get_latest_metal_price('AU', cp.date)
-            if cp.btc_usd and gold:
+            while (gold_idx + 1) < len(gold_prices) and gold_prices[gold_idx + 1].date <= cp.date:
+                gold_idx += 1
+            gold = gold_prices[gold_idx]
+            if cp.btc_usd and gold and gold.price_usd_per_oz:
                 ratios.append(cp.btc_usd / gold.price_usd_per_oz)
         
         return ratios
@@ -1044,12 +1077,19 @@ class AAPCalculator:
         
         ratios = []
         crypto_prices = self._get_crypto_prices(date, days=days)
-        
+        macro_data = self.db.query(MacroLiquidityData).filter(
+            MacroLiquidityData.date >= start_date,
+            MacroLiquidityData.date <= date
+        ).order_by(MacroLiquidityData.date).all()
+
+        if not macro_data:
+            return ratios
+
+        macro_idx = 0
         for cp in crypto_prices:
-            macro = self.db.query(MacroLiquidityData).filter(
-                MacroLiquidityData.date <= cp.date
-            ).order_by(desc(MacroLiquidityData.date)).first()
-            
+            while (macro_idx + 1) < len(macro_data) and macro_data[macro_idx + 1].date <= cp.date:
+                macro_idx += 1
+            macro = macro_data[macro_idx]
             if cp.total_crypto_mcap and macro and macro.global_m2:
                 ratio = cp.total_crypto_mcap / (macro.global_m2 * 1000)
                 ratios.append(ratio)
@@ -1229,7 +1269,7 @@ class AAPCalculator:
         }
         return regime_to_state.get(regime, 'YELLOW')
     
-    def _update_regime_history(self, date: datetime, regime: str):
+    def _update_regime_history(self, date: datetime, regime: str) -> Optional[datetime]:
         """Update regime history tracking"""
         # Get most recent regime history entry
         current = self.db.query(AAPRegimeHistory).filter(
@@ -1244,6 +1284,7 @@ class AAPCalculator:
                 duration_days=1
             )
             self.db.add(new_regime)
+            return new_regime.regime_start
         elif current.regime_name != regime:
             # Regime change - close old, open new
             current.regime_end = date
@@ -1268,6 +1309,18 @@ class AAPCalculator:
                 duration_days=1
             )
             self.db.add(new_regime)
+            return new_regime.regime_start
         else:
             # Same regime continues
             current.duration_days = (date - current.regime_start).days + 1
+            return current.regime_start
+
+    def _apply_model_updates(self, model, updates: Dict) -> None:
+        for key, value in updates.items():
+            setattr(model, key, value)
+
+    def _apply_component_updates(self, target: AAPComponent, source: AAPComponent) -> None:
+        for column in AAPComponent.__table__.columns:
+            if column.name in ("id", "created_at"):
+                continue
+            setattr(target, column.name, getattr(source, column.name))
