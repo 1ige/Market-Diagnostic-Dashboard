@@ -162,9 +162,11 @@ export default function Dashboard() {
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
-        {indicators?.map((i) => (
-          <IndicatorCard key={i.code} indicator={i} />
-        ))}
+        {indicators
+          ?.filter((i) => i.code !== 'AAP')
+          .map((i) => (
+            <IndicatorCard key={i.code} indicator={i} />
+          ))}
       </div>
     </div>
   );
