@@ -1252,8 +1252,8 @@ class AAPCalculator:
             crypto_vs_fed_bs=to_python_float(components.get('crypto_vs_fed_bs')),
             crypto_qt_resilience=to_python_float(components.get('crypto_qt_resilience')),
             # Aggregates (stored as instability scores)
-            metals_pressure_score=to_python_float(metals_instability),
-            crypto_pressure_score=to_python_float(crypto_instability),
+            metals_stability_score=to_python_float(metals_instability),
+            crypto_stability_score=to_python_float(crypto_instability),
             cross_asset_multiplier=to_python_float(multiplier),
             correlation_regime=correlation_regime,
         )
