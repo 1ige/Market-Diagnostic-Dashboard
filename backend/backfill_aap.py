@@ -1,12 +1,14 @@
 """
 Backfill AAP (Alternative Asset Pressure) indicator data.
 
-This script populates historical AAP calculations by running AAP calculations for the past 90 days.
+This script populates historical AAP calculations by running AAP calculations for the past 365 days.
+Ensures only one record per calendar date (no duplicate timestamps).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from app.core.db import SessionLocal
 from app.services.aap_calculator import AAPCalculator
+from sqlalchemy import func
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -34,10 +36,11 @@ def backfill_aap_data():
         
         for days_ago in range(365, -1, -1):
             target_date = today - timedelta(days=days_ago)
+            target_date_only = target_date.date()
             
-            # Check if indicator already exists for this date
+            # Check if indicator already exists for this date (date-only comparison)
             existing = db.query(AAPIndicator).filter(
-                AAPIndicator.date == target_date
+                func.date(AAPIndicator.date) == target_date_only
             ).first()
             
             if existing:
