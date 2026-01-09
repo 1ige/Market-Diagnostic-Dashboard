@@ -1,4 +1,4 @@
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 
 interface AAPComponent {
   name: string;
@@ -13,10 +13,11 @@ interface AAPComponent {
 interface CryptoSubsystemPanelProps {
   components: AAPComponent[];
   contribution: number;
-  componentHistory?: Record<string, { date: string; value: number | null }[]>;
+  rawHistory?: Record<string, { date: string; value: number | null }[]>;
+  smoothedHistory?: Record<string, { date: string; value: number | null }[]>;
 }
 
-export function CryptoSubsystemPanel({ components, contribution, componentHistory = {} }: CryptoSubsystemPanelProps) {
+export function CryptoSubsystemPanel({ components, contribution, rawHistory = {}, smoothedHistory = {} }: CryptoSubsystemPanelProps) {
   const activeCount = components.filter(c => c.status === 'active').length;
   const totalCount = components.length;
 
@@ -74,20 +75,55 @@ export function CryptoSubsystemPanel({ components, contribution, componentHistor
               )}
             </div>
             <div className="mt-3">
-              <div className="text-xs text-stealth-500 mb-1">52w trend (smoothed)</div>
+              <div className="text-xs text-stealth-500 mb-1">52w trend (raw + smoothed)</div>
               <div className="h-14">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={componentHistory[component.name] || []}>
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#60a5fa"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {(() => {
+                  const rawSeries = rawHistory[component.name] || [];
+                  const smoothSeries = smoothedHistory[component.name] || [];
+                  const values = (rawSeries.length ? rawSeries : smoothSeries)
+                    .map(entry => entry.value)
+                    .filter((value): value is number => value !== null && value !== undefined);
+                  const min = values.length ? Math.min(...values) : 0;
+                  const max = values.length ? Math.max(...values) : 1;
+                  const range = max - min;
+                  const padding = range > 0 ? range * 0.1 : 0.02;
+                  const domainMin = Math.max(0, min - padding);
+                  const domainMax = Math.min(1, max + padding);
+
+                  const rawMap = new Map(rawSeries.map(entry => [entry.date, entry.value]));
+                  const smoothMap = new Map(smoothSeries.map(entry => [entry.date, entry.value]));
+                  const baseSeries = smoothSeries.length ? smoothSeries : rawSeries;
+                  const chartData = baseSeries.map(entry => ({
+                    date: entry.date,
+                    raw: rawMap.get(entry.date) ?? null,
+                    smooth: smoothMap.get(entry.date) ?? null,
+                  }));
+
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <YAxis type="number" domain={[domainMin, domainMax]} hide />
+                        <Line
+                          type="monotone"
+                          dataKey="raw"
+                          stroke="#94a3b8"
+                          strokeOpacity={0.45}
+                          strokeWidth={1}
+                          dot={false}
+                          connectNulls
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="smooth"
+                          stroke="#60a5fa"
+                          strokeWidth={2}
+                          dot={false}
+                          connectNulls
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
               </div>
             </div>
           </div>

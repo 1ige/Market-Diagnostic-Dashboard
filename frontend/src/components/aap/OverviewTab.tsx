@@ -18,11 +18,13 @@ interface OverviewTabProps {
   setTimeframe: (tf: '30d' | '90d' | '180d' | '365d') => void;
 }
 
+type ComponentSeries = { date: string; value: number | null }[];
+
 function smoothSeries(
-  series: { date: string; value: number | null }[],
+  series: ComponentSeries,
   windowSize: number
-): { date: string; value: number | null }[] {
-  const smoothed: { date: string; value: number | null }[] = [];
+): ComponentSeries {
+  const smoothed: ComponentSeries = [];
 
   for (let i = 0; i < series.length; i += 1) {
     const start = Math.max(0, i - windowSize + 1);
@@ -88,21 +90,24 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
   const metalsComponents = components.filter((c: any) => c.category === 'metals');
   const cryptoComponents = components.filter((c: any) => c.category === 'crypto');
 
-  const smoothedComponentHistory = useMemo(() => {
-    const rawHistory = componentHistory?.data ?? {};
-    const windowSize = 7;
-    const output: Record<string, { date: string; value: number | null }[]> = {};
+  const rawComponentHistory = useMemo(() => {
+    return (componentHistory?.data ?? {}) as Record<string, ComponentSeries>;
+  }, [componentHistory]);
 
-    Object.entries(rawHistory).forEach(([key, series]) => {
+  const smoothedComponentHistory = useMemo(() => {
+    const windowSize = 7;
+    const output: Record<string, ComponentSeries> = {};
+
+    Object.entries(rawComponentHistory).forEach(([key, series]) => {
       if (!Array.isArray(series)) {
         output[key] = [];
         return;
       }
-      output[key] = smoothSeries(series as { date: string; value: number | null }[], windowSize);
+      output[key] = smoothSeries(series, windowSize);
     });
 
     return output;
-  }, [componentHistory]);
+  }, [rawComponentHistory]);
 
   // Calculate relative contributions as percentages
   const totalContribution = aapData.metals_contribution + aapData.crypto_contribution;
@@ -334,12 +339,14 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 <MetalsSubsystemPanel
                   components={metalsComponents}
                   contribution={aapData.metals_contribution}
-                  componentHistory={smoothedComponentHistory}
+                  rawHistory={rawComponentHistory}
+                  smoothedHistory={smoothedComponentHistory}
                 />
                 <CryptoSubsystemPanel
                   components={cryptoComponents}
                   contribution={aapData.crypto_contribution}
-                  componentHistory={smoothedComponentHistory}
+                  rawHistory={rawComponentHistory}
+                  smoothedHistory={smoothedComponentHistory}
                 />
               </div>
             </div>
