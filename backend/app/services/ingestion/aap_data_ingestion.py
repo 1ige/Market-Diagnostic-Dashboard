@@ -427,39 +427,45 @@ class CryptoEcosystemIngestion:
 
     def _fetch_stablecoin_supply(self) -> Optional[float]:
         try:
-            url = f"{self.COINGECKO_BASE}/coins/markets"
-            params = {
-                "vs_currency": "usd",
-                "ids": "tether,usd-coin",
-            }
-            response = requests.get(url, params=params, timeout=15)
+            url = "https://stablecoins.llama.fi/stablecoincharts/all"
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
             data = response.json()
-            if not isinstance(data, list):
+            if not isinstance(data, list) or not data:
                 return None
-            total = 0.0
-            for entry in data:
-                total += float(entry.get("market_cap") or 0.0)
-            return total if total > 0 else None
+            latest = data[-1]
+            totals = latest.get("totalCirculatingUSD", {})
+            pegged_usd = totals.get("peggedUSD")
+            return float(pegged_usd) if pegged_usd is not None else None
         except Exception as e:
             logger.warning(f"Stablecoin supply fetch failed: {e}")
             return None
 
     def _fetch_stablecoin_supply_series(self, days: int) -> Dict[date, float]:
-        usdt_chart = self._fetch_market_chart("tether", days)
-        usdc_chart = self._fetch_market_chart("usd-coin", days)
-        if not usdt_chart and not usdc_chart:
+        try:
+            url = "https://stablecoins.llama.fi/stablecoincharts/all"
+            response = requests.get(url, timeout=20)
+            response.raise_for_status()
+            data = response.json()
+            if not isinstance(data, list):
+                return {}
+
+            cutoff = datetime.utcnow().date() - timedelta(days=days)
+            series = {}
+            for entry in data:
+                timestamp = entry.get("date")
+                totals = entry.get("totalCirculatingUSD", {})
+                pegged_usd = totals.get("peggedUSD")
+                if timestamp is None or pegged_usd is None:
+                    continue
+                day = datetime.utcfromtimestamp(int(timestamp)).date()
+                if day < cutoff:
+                    continue
+                series[day] = float(pegged_usd)
+            return series
+        except Exception as e:
+            logger.warning(f"Stablecoin supply series fetch failed: {e}")
             return {}
-
-        usdt_caps = self._series_to_date_map(usdt_chart.get("market_caps", []) if usdt_chart else [])
-        usdc_caps = self._series_to_date_map(usdc_chart.get("market_caps", []) if usdc_chart else [])
-
-        series = {}
-        for day in set(usdt_caps.keys()) | set(usdc_caps.keys()):
-            total = (usdt_caps.get(day) or 0.0) + (usdc_caps.get(day) or 0.0)
-            if total > 0:
-                series[day] = total
-        return series
 
     def _fetch_defi_tvl(self) -> Optional[float]:
         try:
@@ -505,7 +511,6 @@ class CryptoEcosystemIngestion:
             "assets": "btc",
             "metrics": "FlowOutExNtv,FlowOutExUSD,FlowInExNtv,FlowInExUSD",
             "frequency": "1d",
-            "limit": 1,
         }
         try:
             response = requests.get(
