@@ -20,8 +20,8 @@ def backfill_aap_data():
     try:
         logger.info("🚀 Starting AAP data backfill...")
         
-        # Calculate AAP for the past 90 days
-        logger.info("🧮 Calculating AAP indicator for past 90 days...")
+        # Calculate AAP for the past 365 days
+        logger.info("🧮 Calculating AAP indicator for past 365 days...")
         
         from app.models.alternative_assets import AAPIndicator
         
@@ -32,7 +32,7 @@ def backfill_aap_data():
         failed_calculations = 0
         skipped_calculations = 0
         
-        for days_ago in range(90, -1, -1):
+        for days_ago in range(365, -1, -1):
             target_date = today - timedelta(days=days_ago)
             
             # Check if indicator already exists for this date
