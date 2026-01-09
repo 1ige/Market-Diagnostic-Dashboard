@@ -668,7 +668,7 @@ class EquityPriceIngestion:
     def fetch_daily_prices(self) -> int:
         count = 0
         try:
-            for symbol in ["SPY", "GDX"]:
+            for symbol in ["SPY", "GDX", "GLD"]:
                 data = yf.download(symbol, period="60d", progress=False, auto_adjust=True)
                 if data.empty:
                     continue

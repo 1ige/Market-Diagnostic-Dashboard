@@ -504,7 +504,24 @@ class AAPCalculator:
 
         flows = [r.daily_flow for r in records if r.daily_flow is not None]
         if len(flows) < 15:
-            return None
+            gld_prices = self.db.query(EquityPrice).filter(
+                EquityPrice.symbol == 'GLD',
+                EquityPrice.date >= date - timedelta(days=90),
+                EquityPrice.date <= date
+            ).order_by(EquityPrice.date).all()
+
+            values = [p.close for p in gld_prices if p.close]
+            if len(values) < 20:
+                return None
+
+            mean = np.mean(values)
+            std = np.std(values)
+            if std == 0:
+                return 0.5
+
+            zscore = (values[-1] - mean) / std
+            normalized = (zscore + 2) / 4
+            return max(0.0, min(1.0, normalized))
 
         mean = np.mean(flows)
         std = np.std(flows)
