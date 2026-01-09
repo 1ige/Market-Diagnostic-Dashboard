@@ -529,7 +529,7 @@ def _calculate_trend(indicators: List[AAPIndicator]) -> str:
     elif trend < -5:
         return "deteriorating"
     else:
-    return "stable"
+        return "stable"
 
 
 def _get_top_metal_signals(component: AAPComponentV2) -> List[dict]:
