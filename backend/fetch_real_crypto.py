@@ -24,7 +24,7 @@ def fetch_fred_series(series_id, start_date):
     return {obs['date']: float(obs['value']) if obs['value'] != '.' else None 
             for obs in data.get('observations', [])}
 
-def fetch_crypto_history(days=90):
+def fetch_crypto_history(days=365):
     """Fetch historical crypto data from FRED"""
     db = SessionLocal()
     
