@@ -1,6 +1,6 @@
 # Market Stability Diagnostic Dashboard
 
-A comprehensive real-time market health monitoring system featuring **11 core indicators** plus the **Alternative Asset Pressure (AAP)** indicator with 18 weighted components tracking monetary system stress through precious metals and cryptocurrency markets.
+A comprehensive real-time market health monitoring system featuring **11 core indicators** tracking volatility, rates, liquidity, and sentiment across multiple timeframes.
 
 🌐 **Live at**: https://marketdiagnostictool.com
 
@@ -19,24 +19,6 @@ A comprehensive real-time market health monitoring system featuring **11 core in
 - **Liquidity Proxy**: 3-component z-score (M2, Fed BS, RRP)
 - **Analyst Confidence**: Market sentiment gauge
 - **Sentiment Composite**: Combined consumer & corporate sentiment
-
-### Alternative Asset Pressure (AAP) - 18 Components
-The AAP indicator measures systemic monetary stress by tracking flight to alternative stores of value:
-
-**Metals Subsystem** (10 components, 50% weight)
-- Gold/silver z-scores and ratio signals
-- Platinum/palladium ratios
-- COMEX inventory stress
-- Central bank accumulation momentum
-- ETF flow divergence
-- Backwardation signals
-
-**Crypto Subsystem** (8 components, 50% weight)
-- Bitcoin price momentum (USD & vs gold)
-- BTC dominance and real rate correlation
-- Crypto market cap ratios (M2, Fed balance sheet)
-- Altcoin performance signals
-- DeFi and liquidity metrics
 
 ---
 
@@ -58,8 +40,7 @@ The AAP indicator measures systemic monetary stress by tracking flight to altern
 ### User Experience
 - **Responsive Design**: Mobile-first, works on all devices
 - **Market News Integration**: Cached Seeking Alpha headlines with ticker filtering
-- **System Breakdown**: Historical heatmap and state distribution visualization
-- **Component Breakdown**: Detailed AAP component status at `/aap-breakdown`
+- **System Breakdown**: Historical heatmap and indicator state distribution visualization
 
 ---
 
@@ -156,18 +137,15 @@ docker exec market_backend python backfill_aap.py
 
 ### Operational Scripts
 - **`seed_indicators.py`**: Initialize 11 core indicators in database
-- **`complete_aap_components.py`**: Implement all 18 AAP components
-- **`backfill_aap.py`**: Backfill 90 days of AAP calculations
 - **`backfill_metals.py`**: Backfill precious metals data
-- **`fetch_real_crypto.py`**: Fetch BTC/ETH from FRED
-- **`fetch_real_macro.py`**: Fetch macro liquidity data
+- **`fetch_real_macro.py`**: Fetch macro liquidity data from FRED
 - **`fetch_cb_holdings.py`**: Fetch central bank gold holdings
 - **`fetch_comex_data.py`**: Estimate COMEX inventory stress
-- **`refresh_aap_data.py`**: Master script to refresh all AAP data sources
+- **`refresh_aap_data.py`**: Master script to refresh all data sources
 
 ### Deployment Scripts
 - **`deploy_full_aap.sh`**: One-command full system deployment
-- Pulls code, runs all fetchers, implements components, backfills data
+- Pulls code, runs all data fetchers, backfills historical data
 
 ### Maintenance Scripts (in `backend/maintenance_scripts/`)
 - One-time use scripts for debugging and development
@@ -178,16 +156,9 @@ docker exec market_backend python backfill_aap.py
 ## 🎯 API Endpoints
 
 ### Core Indicators
-- `GET /indicators` - List all indicators with current values
+- `GET /indicators` - List all 11 indicators with current values
 - `GET /indicators/{code}` - Detailed indicator data
 - `GET /indicators/{code}/history?days=90` - Historical data
-
-### AAP Indicator
-- `GET /aap/current` - Latest AAP score and regime
-- `GET /aap/components/breakdown` - All 18 components with status
-- `GET /aap/history?days=90` - Historical AAP data
-- `GET /aap/regime/current` - Current regime details
-- `GET /aap/dashboard` - Dashboard summary
 
 ### System
 - `GET /health` - System health check
@@ -205,14 +176,13 @@ docker exec market_backend python backfill_aap.py
 ## 📊 Frontend Pages
 
 ### Main Pages
-- `/` - Dashboard with composite score and overview
-- `/indicators` - All 11 + AAP indicators with sparklines
-- `/system-breakdown` - Historical heatmap and state distribution
+- `/` - Dashboard with all 11 indicators overview
+- `/indicators` - All indicators with sparklines and detailed data
+- `/system-breakdown` - Historical heatmap and indicator state distribution
 - `/market-map` - Sector performance visualization
 - `/news` - Market news with ticker filtering
 
 ### Specialized Pages
-- `/aap-breakdown` - AAP 18-component detailed breakdown
 - `/precious-metals` - Comprehensive metals diagnostic
 - `/sector-projections` - Sector forward analysis
 - `/stock-projections` - Individual stock projections
@@ -254,32 +224,6 @@ docker exec market_backend alembic upgrade head
 
 ---
 
-## 📈 AAP Implementation Details
-
-### Component Status
-- **10 components** working from day 1 (metals ratios, BTC/gold signals)
-- **8 components** added via `complete_aap_components.py`:
-  - Real rate divergence (FRED DFII10)
-  - BTC real rate correlation break
-  - Backwardation signal (volatility proxy)
-  - ETF flow divergence (price momentum)
-  - BTC dominance momentum (CoinGecko)
-  - Altcoin signal (dominance calculations)
-  - Platinum/palladium z-scores
-
-### Calculation Threshold
-- **70% threshold**: Requires 13/18 components for calculations
-- **Current**: 18/18 (100%) operational
-- **Confidence**: Maximum - all subsystems fully operational
-
-### Data Quality Notes
-- Real rates: Direct from FRED (⭐⭐⭐⭐⭐)
-- COMEX: Estimated from volatility until CME feed (⭐⭐⭐)
-- ETF flows: Price momentum proxy until scraper (⭐⭐⭐)
-- BTC dominance: CoinGecko current + estimates (⭐⭐⭐⭐)
-
----
-
 ## 🤝 Contributing
 
 This is a private project. For questions or issues, contact the development team.
@@ -302,10 +246,16 @@ Proprietary - All rights reserved © 2026 Steven J Meyer LLC
 
 ## 📝 Version History
 
+### v2.1 (January 2026)
+- ✅ Integrated CoinGecko for 365-day crypto historical data
+- ✅ Added precious metals diagnostic page
+- ✅ Comprehensive system breakdown visualization
+- ✅ Removed AAP from main dashboard (moved to specialized section)
+- ✅ Improved data freshness indicators
+
 ### v2.0 (January 2026)
-- ✅ Added AAP indicator with 18 components
-- ✅ Implemented precious metals diagnostic page
-- ✅ Created component breakdown visualization
+- ✅ Added Alternative Asset Pressure (AAP) indicator
+- ✅ Implemented 18-component framework
 - ✅ Replaced all seed data with real sources
 - ✅ Comprehensive documentation and deployment automation
 
