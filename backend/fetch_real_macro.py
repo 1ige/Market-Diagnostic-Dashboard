@@ -67,10 +67,9 @@ def fetch_macro_history(days=365):
         
         added = 0
         for date_str in all_dates:
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            
-            # Skip if too old
-            if date < datetime.utcnow() - timedelta(days=days):
+            try:
+                date = datetime.strptime(date_str, "%Y-%m-%d")
+            except:
                 continue
             
             # Calculate real rate
@@ -107,4 +106,4 @@ def fetch_macro_history(days=365):
         db.close()
 
 if __name__ == "__main__":
-    fetch_macro_history(90)
+    fetch_macro_history(365)
