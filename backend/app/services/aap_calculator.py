@@ -851,8 +851,8 @@ class AAPCalculator:
             for k in metals_keys if k in components
         )
         
-        # Normalize to subsystem scale (should be 0.5 total)
-        return (weighted_sum / total_weight) * 2  # Scale to 0-1
+        # Normalize to 0-1 subsystem scale
+        return weighted_sum / total_weight
     
     def _compute_crypto_pressure(self, components: Dict[str, float]) -> float:
         """Aggregate crypto subsystem into 0-1 pressure score"""
@@ -871,7 +871,7 @@ class AAPCalculator:
             for k in crypto_keys if k in components
         )
         
-        return (weighted_sum / total_weight) * 2
+        return weighted_sum / total_weight
     
     def _compute_cross_asset_multiplier(
         self, components: Dict, metals_pressure: float, 
@@ -1102,9 +1102,24 @@ class AAPCalculator:
         if len(macro_data) < 3:
             return 0.0
         
-        # Rate of change in balance sheet
-        recent_slope = (macro_data[-1].fed_balance_sheet - macro_data[-30].fed_balance_sheet) if len(macro_data) > 30 else 0
-        earlier_slope = (macro_data[-30].fed_balance_sheet - macro_data[-60].fed_balance_sheet) if len(macro_data) > 60 else 0
+        # Rate of change in balance sheet; fallback to neutral if data is missing
+        if len(macro_data) > 30:
+            recent_latest = macro_data[-1].fed_balance_sheet
+            recent_base = macro_data[-30].fed_balance_sheet
+            if recent_latest is None or recent_base is None:
+                return 0.0
+            recent_slope = recent_latest - recent_base
+        else:
+            recent_slope = 0.0
+
+        if len(macro_data) > 60:
+            earlier_latest = macro_data[-30].fed_balance_sheet
+            earlier_base = macro_data[-60].fed_balance_sheet
+            if earlier_latest is None or earlier_base is None:
+                return 0.0
+            earlier_slope = earlier_latest - earlier_base
+        else:
+            earlier_slope = 0.0
         
         if recent_slope > earlier_slope:
             pivot = 0.5
