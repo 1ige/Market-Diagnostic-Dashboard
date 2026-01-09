@@ -196,7 +196,6 @@ docker exec market_backend python backfill_aap.py
 # Backend (.env or devops/env/backend.env)
 DATABASE_URL=postgresql://user:pass@db:5432/market_diagnostic
 FRED_API_KEY=your_fred_api_key
-ALPHA_VANTAGE_KEY=your_alphavantage_key
 
 # Frontend (devops/env/frontend.env)
 VITE_API_URL=http://localhost:8000

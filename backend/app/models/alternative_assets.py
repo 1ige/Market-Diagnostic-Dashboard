@@ -1,4 +1,3 @@
-"""
 """Alternative Asset Stability (AAS) Indicator Models
 
 Tracks systemic stability vs. pressure toward alternative assets (precious metals + crypto)
