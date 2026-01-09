@@ -62,6 +62,11 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
   const metalsComponents = components.filter((c: any) => c.category === 'metals');
   const cryptoComponents = components.filter((c: any) => c.category === 'crypto');
 
+  // Calculate relative contributions as percentages
+  const totalContribution = aapData.metals_contribution + aapData.crypto_contribution;
+  const metalsPercent = totalContribution > 0 ? (aapData.metals_contribution / totalContribution) * 100 : 50;
+  const cryptoPercent = totalContribution > 0 ? (aapData.crypto_contribution / totalContribution) * 100 : 50;
+
   return (
     <div className="space-y-6">
       {/* Key Metrics Row */}
@@ -145,14 +150,14 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div>
               <div className="text-amber-400 text-sm font-medium">Metals</div>
-              <div className="text-2xl font-bold text-stealth-100">{aapData.metals_contribution.toFixed(1)}%</div>
+              <div className="text-2xl font-bold text-stealth-100">{metalsPercent.toFixed(1)}%</div>
             </div>
             <div>
               <div className="text-blue-400 text-sm font-medium">Crypto</div>
-              <div className="text-2xl font-bold text-stealth-100">{aapData.crypto_contribution.toFixed(1)}%</div>
+              <div className="text-2xl font-bold text-stealth-100">{cryptoPercent.toFixed(1)}%</div>
             </div>
           </div>
-          <div className="text-xs text-stealth-500">Target: 50% / 50%</div>
+          <div className="text-xs text-stealth-500">Relative contribution to instability</div>
         </div>
       </div>
 
@@ -239,7 +244,7 @@ export function OverviewTab({ aapData, history, timeframe, setTimeframe }: Overv
           </p>
           <p>
             <strong className="text-stealth-100">Primary Driver:</strong> The dominant signal is coming from <strong className="text-emerald-400 capitalize">{aapData.primary_driver}</strong> markets, 
-            contributing {aapData.primary_driver === 'metals' ? aapData.metals_contribution.toFixed(1) : aapData.crypto_contribution.toFixed(1)}% to the overall index.
+            contributing {aapData.primary_driver === 'metals' ? metalsPercent.toFixed(1) : cryptoPercent.toFixed(1)}% of the instability signal.
           </p>
           <p>
             <strong className="text-stealth-100">System Health:</strong> {activeCount} of {totalCount} components are operational 
