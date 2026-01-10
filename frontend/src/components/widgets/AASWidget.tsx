@@ -23,10 +23,9 @@ interface HistoricalData {
 
 interface AASWidgetProps {
   timeframe?: '30d' | '90d' | '180d' | '365d';
-  setTimeframe?: (tf: '30d' | '90d' | '180d' | '365d') => void;
 }
 
-export default function AASWidget({ timeframe = '90d', setTimeframe }: AASWidgetProps) {
+export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
   const { data: aasData, loading } = useApi<AASData>('/aap/current');
   const { data: historyData } = useApi<any>(`/aap/history?days=${parseInt(timeframe)}`);
   const [metalsPercent, setMetalsPercent] = useState(50);
@@ -173,26 +172,7 @@ export default function AASWidget({ timeframe = '90d', setTimeframe }: AASWidget
 
         {/* Historical Chart */}
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-stealth-400">{parseInt(timeframe)}-Day Contribution Trend</p>
-            {setTimeframe && (
-              <div className="flex gap-1">
-                {(['30d', '90d', '180d', '365d'] as const).map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => setTimeframe(tf)}
-                    className={`px-2 py-0.5 rounded text-xs ${
-                      timeframe === tf
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-stealth-700 text-stealth-300 hover:bg-stealth-600'
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <p className="text-xs text-stealth-400 mb-2">{parseInt(timeframe)}-Day Contribution Trend</p>
           {chartData.length > 0 ? (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -237,20 +217,9 @@ export default function AASWidget({ timeframe = '90d', setTimeframe }: AASWidget
                     type="monotone" 
                     dataKey="sma20" 
                     stroke="#f59e0b" 
-                    strokeWidth={1.5}
-                    strokeDasharray="5 5"
+                    strokeWidth={3}
                     dot={false}
                     name="20-Day SMA"
-                  />
-                  <Line 
-                    yAxisId="right"
-                    type="monotone" 
-                    dataKey="sma200" 
-                    stroke="#ef4444" 
-                    strokeWidth={1.5}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name="200-Day SMA"
                   />
                 </ComposedChart>
               </ResponsiveContainer>
