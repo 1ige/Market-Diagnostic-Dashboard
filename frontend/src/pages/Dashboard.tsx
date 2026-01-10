@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [trendPeriod, setTrendPeriod] = useState<90 | 180 | 365>(90);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [aasTimeframe, setAasTimeframe] = useState<'30d' | '90d' | '180d' | '365d'>('90d');
 
   useEffect(() => {
     const apiUrl = getLegacyApiUrl();
@@ -157,7 +158,7 @@ export default function Dashboard() {
         <SystemOverviewWidget trendPeriod={trendPeriod} />
         <DowTheoryWidget trendPeriod={trendPeriod} />
         <SectorDivergenceWidget />
-        <AASWidget />
+        <AASWidget timeframe={aasTimeframe} setTimeframe={setAasTimeframe} />
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>

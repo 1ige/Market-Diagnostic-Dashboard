@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface AASData {
   stability_score: number;
@@ -17,11 +17,18 @@ interface HistoricalData {
   stability_score: number;
   metals_contribution: number;
   crypto_contribution: number;
+  sma20?: number;
+  sma200?: number;
 }
 
-export default function AASWidget() {
+interface AASWidgetProps {
+  timeframe?: '30d' | '90d' | '180d' | '365d';
+  setTimeframe?: (tf: '30d' | '90d' | '180d' | '365d') => void;
+}
+
+export default function AASWidget({ timeframe = '90d', setTimeframe }: AASWidgetProps) {
   const { data: aasData, loading } = useApi<AASData>('/aap/current');
-  const { data: historyData } = useApi<any>('/aap/history?days=90');
+  const { data: historyData } = useApi<any>(`/aap/history?days=${parseInt(timeframe)}`);
   const [metalsPercent, setMetalsPercent] = useState(50);
   const [cryptoPercent, setCryptoPercent] = useState(50);
   const [chartData, setChartData] = useState<HistoricalData[]>([]);
@@ -38,17 +45,23 @@ export default function AASWidget() {
 
   useEffect(() => {
     if (historyData && historyData.data && Array.isArray(historyData.data)) {
+      const days = parseInt(timeframe);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      
       const processed = historyData.data
+        .filter((d: any) => new Date(d.date) >= cutoffDate)
         .map((d: any) => ({
           date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           stability_score: d.stability_score || 0,
           metals_contribution: d.metals_contribution || 0,
-          crypto_contribution: d.crypto_contribution || 0
-        }))
-        .slice(-30); // Show last 30 days for clarity
+          crypto_contribution: d.crypto_contribution || 0,
+          sma20: d.sma_20 || 0,
+          sma200: d.sma_200 || 0
+        }));
       setChartData(processed);
     }
-  }, [historyData]);
+  }, [historyData, timeframe]);
 
   const getScoreColor = (score: number): string => {
     if (score >= 67) return 'text-green-400';
@@ -160,22 +173,41 @@ export default function AASWidget() {
 
         {/* Historical Chart */}
         <div className="mb-4">
-          <p className="text-xs text-stealth-400 mb-2">90-Day Contribution Trend</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-stealth-400">{parseInt(timeframe)}-Day Contribution Trend</p>
+            {setTimeframe && (
+              <div className="flex gap-1">
+                {(['30d', '90d', '180d', '365d'] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-2 py-0.5 rounded text-xs ${
+                      timeframe === tf
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-stealth-700 text-stealth-300 hover:bg-stealth-600'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            )}
           {chartData.length > 0 ? (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
+                <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey="date" 
                     stroke="#9ca3af" 
                     tick={{ fontSize: 10 }}
-                    interval={Math.floor(chartData.length / 4)}
+                    interval={Math.floor(Math.max(0, chartData.length / 4))}
                   />
                   <YAxis 
                     stroke="#9ca3af" 
                     tick={{ fontSize: 10 }}
                   />
+                  <YAxis yAxisId="right" stroke="#9ca3af" tick={{ fontSize: 10 }} domain={[0, 100]} />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#1f2937', 
@@ -199,7 +231,27 @@ export default function AASWidget() {
                     name="Crypto"
                     radius={[2, 2, 0, 0]}
                   />
-                </BarChart>
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="sma20" 
+                    stroke="#f59e0b" 
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name="20-Day SMA"
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="sma200" 
+                    stroke="#ef4444" 
+                    strokeWidth={1.5}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name="200-Day SMA"
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           ) : (
