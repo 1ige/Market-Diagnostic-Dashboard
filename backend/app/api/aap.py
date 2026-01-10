@@ -94,9 +94,14 @@ def get_aap_history(
         indicators = db.query(AAPIndicator).filter(
             AAPIndicator.date >= start_date
         ).order_by(AAPIndicator.date).all()
-        
+
         if not indicators:
             raise HTTPException(status_code=404, detail="No historical data available")
+
+        by_day = {}
+        for ind in indicators:
+            by_day[ind.date.date()] = ind
+        indicators = sorted(by_day.values(), key=lambda ind: ind.date)
         
         return {
             "period": {
@@ -275,6 +280,11 @@ def get_component_history(
 
         if not rows:
             raise HTTPException(status_code=404, detail="No component history available")
+
+        rows_by_day = {}
+        for row in rows:
+            rows_by_day[row.date.date()] = row
+        rows = sorted(rows_by_day.values(), key=lambda row: row.date)
 
         component_keys = list(AAPCalculator.WEIGHTS.keys())
         history = {key: [] for key in component_keys}

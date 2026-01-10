@@ -72,6 +72,21 @@ class AAPCalculator:
     
     def __init__(self, db: Session):
         self.db = db
+
+    def _normalize_date(self, target_date: datetime) -> datetime:
+        return target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def _get_latest_daily_record(self, model, date_field, target_date: datetime):
+        day = target_date.date()
+        rows = (
+            self.db.query(model)
+            .filter(func.date(date_field) == day)
+            .order_by(desc(date_field))
+            .all()
+        )
+        for extra in rows[1:]:
+            self.db.delete(extra)
+        return rows[0] if rows else None
     
     def calculate_for_date(self, target_date: datetime) -> Optional[AAPIndicator]:
         """
@@ -81,6 +96,8 @@ class AAPCalculator:
             AAPIndicator object or None if insufficient data
         """
         try:
+            target_date = self._normalize_date(target_date)
+
             # Step 1: Calculate all components
             components = self._calculate_components(target_date)
             if not components:
@@ -166,7 +183,7 @@ class AAPCalculator:
                 "data_completeness": to_python_type(data_completeness),
             }
 
-            indicator = self.db.query(AAPIndicator).filter_by(date=target_date).first()
+            indicator = self._get_latest_daily_record(AAPIndicator, AAPIndicator.date, target_date)
             if indicator:
                 self._apply_model_updates(indicator, indicator_data)
             else:
@@ -178,7 +195,7 @@ class AAPCalculator:
                 multiplier, correlation_regime
             )
 
-            existing_component = self.db.query(AAPComponentV2).filter_by(date=target_date).first()
+            existing_component = self._get_latest_daily_record(AAPComponentV2, AAPComponentV2.date, target_date)
             if existing_component:
                 self._apply_component_updates(existing_component, component_record)
             else:
@@ -195,10 +212,13 @@ class AAPCalculator:
                 # Map stability_score to indicator value
                 # Stability score is 0-100 (higher = less pressure = better)
                 # So we can use it directly as the indicator score
-                indicator_value = self.db.query(IndicatorValue).filter(
+                indicator_values = self.db.query(IndicatorValue).filter(
                     IndicatorValue.indicator_id == aap_indicator_def.id,
-                    IndicatorValue.timestamp == target_date
-                ).first()
+                    func.date(IndicatorValue.timestamp) == target_date.date()
+                ).order_by(desc(IndicatorValue.timestamp)).all()
+                indicator_value = indicator_values[0] if indicator_values else None
+                for extra in indicator_values[1:]:
+                    self.db.delete(extra)
                 if indicator_value:
                     indicator_value.raw_value = to_python_type(pressure_index)
                     indicator_value.score = to_python_type(stability_score)

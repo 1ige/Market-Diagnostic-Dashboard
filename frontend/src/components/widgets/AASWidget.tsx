@@ -1,0 +1,147 @@
+import { useState, useEffect } from "react";
+import { useApi } from "../../hooks/useApi";
+import { Link } from "react-router-dom";
+
+interface AASData {
+  stability_score: number;
+  regime: string;
+  primary_driver: string;
+  metals_contribution: number;
+  crypto_contribution: number;
+  pressure_index: number;
+}
+
+export default function AASWidget() {
+  const { data: aasData, loading } = useApi<AASData>('/aap/current');
+  const [metalsPercent, setMetalsPercent] = useState(50);
+  const [cryptoPercent, setCryptoPercent] = useState(50);
+
+  useEffect(() => {
+    if (aasData) {
+      const total = aasData.metals_contribution + aasData.crypto_contribution;
+      if (total > 0) {
+        setMetalsPercent((aasData.metals_contribution / total) * 100);
+        setCryptoPercent((aasData.crypto_contribution / total) * 100);
+      }
+    }
+  }, [aasData]);
+
+  const getScoreColor = (score: number): string => {
+    if (score >= 67) return 'text-green-400';
+    if (score >= 34) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getRegimeColor = (regime: string): string => {
+    const colors: Record<string, string> = {
+      'normal_confidence': '#10b981',
+      'mild_caution': '#f59e0b',
+      'monetary_stress': '#f59e0b',
+      'liquidity_crisis': '#ef4444',
+      'systemic_breakdown': '#dc2626'
+    };
+    return colors[regime] || '#6b7280';
+  };
+
+  const getRegimeLabel = (regime: string): string => {
+    const labels: Record<string, string> = {
+      'normal_confidence': 'Normal Confidence',
+      'mild_caution': 'Mild Caution',
+      'monetary_stress': 'Monetary Stress',
+      'liquidity_crisis': 'Liquidity Crisis',
+      'systemic_breakdown': 'Systemic Breakdown'
+    };
+    return labels[regime] || regime.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-stealth-700 rounded mb-3 w-1/3"></div>
+          <div className="h-12 bg-stealth-700 rounded mb-4"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!aasData) {
+    return (
+      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6">
+        <p className="text-stealth-400 text-sm">Unable to load AAS data</p>
+      </div>
+    );
+  }
+
+  return (
+    <Link to="/alternative-assets">
+      <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6 hover:border-stealth-600 transition cursor-pointer h-full">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-stealth-100">Alternative Asset Stability</h3>
+          <svg className="w-5 h-5 text-stealth-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </div>
+
+        {/* Stability Score */}
+        <div className="mb-4">
+          <div className="flex items-end gap-2 mb-2">
+            <div className={`text-4xl font-bold ${getScoreColor(aasData.stability_score)}`}>
+              {aasData.stability_score.toFixed(1)}
+            </div>
+            <div className="text-xs text-stealth-400 mb-1">/ 100</div>
+          </div>
+          <div className="w-full bg-stealth-700 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all ${
+                aasData.stability_score >= 67 ? 'bg-green-500' :
+                aasData.stability_score >= 34 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${aasData.stability_score}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Regime */}
+        <div className="mb-4">
+          <p className="text-xs text-stealth-400 mb-1">Current Regime</p>
+          <div 
+            className="text-base font-semibold"
+            style={{ color: getRegimeColor(aasData.regime) }}
+          >
+            {getRegimeLabel(aasData.regime)}
+          </div>
+        </div>
+
+        {/* Primary Driver */}
+        <div className="mb-4">
+          <p className="text-xs text-stealth-400 mb-2">Primary Driver</p>
+          <div className="flex gap-2">
+            <div className={`flex-1 p-2 rounded text-center text-xs font-semibold ${
+              aasData.primary_driver === 'metals' 
+                ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300' 
+                : 'bg-stealth-700/50 border border-stealth-600 text-stealth-400'
+            }`}>
+              Metals {metalsPercent.toFixed(0)}%
+            </div>
+            <div className={`flex-1 p-2 rounded text-center text-xs font-semibold ${
+              aasData.primary_driver === 'crypto' 
+                ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300' 
+                : 'bg-stealth-700/50 border border-stealth-600 text-stealth-400'
+            }`}>
+              Crypto {cryptoPercent.toFixed(0)}%
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Info */}
+        <div className="text-xs text-stealth-400 border-t border-stealth-700 pt-3">
+          <p className="leading-relaxed">
+            Measures systemic stability through precious metals and crypto signals. 
+            Click to view full analysis.
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}

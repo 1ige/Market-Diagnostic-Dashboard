@@ -4,7 +4,7 @@ import IndicatorCard from "../components/widgets/IndicatorCard";
 import DowTheoryWidget from "../components/widgets/DowTheoryWidget";
 import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
 import SectorDivergenceWidget from "../components/widgets/SectorDivergenceWidget";
-import PreciousMetalsWidget from "../components/widgets/PreciousMetalsWidget";
+import AASWidget from "../components/widgets/AASWidget";
 import { getLegacyApiUrl } from "../utils/apiUtils";
 
 interface NewsArticle {
@@ -157,7 +157,7 @@ export default function Dashboard() {
         <SystemOverviewWidget trendPeriod={trendPeriod} />
         <DowTheoryWidget trendPeriod={trendPeriod} />
         <SectorDivergenceWidget />
-        <PreciousMetalsWidget />
+        <AASWidget />
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
