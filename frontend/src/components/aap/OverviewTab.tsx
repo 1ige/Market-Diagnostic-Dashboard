@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AreaChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { MetalsSubsystemPanel } from './MetalsSubsystemPanel';
 import { CryptoSubsystemPanel } from './CryptoSubsystemPanel';
 import { MethodologyPanel } from './MethodologyPanel';
@@ -239,48 +239,37 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 tick={{ fill: '#9ca3af', fontSize: 12 }}
               />
               <YAxis 
-              <Area 
+                stroke="#9ca3af"
                 domain={[0, 100]}
                 tick={{ fill: '#9ca3af', fontSize: 12 }}
               />
-                fill="#10b981"
-                fillOpacity={0.3}
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#1f2937', 
                   border: '1px solid #374151',
-              <Area 
+                  borderRadius: '0.5rem',
                   color: '#f3f4f6'
                 }}
               />
-                fill="#f59e0b"
-                fillOpacity={0.2}
-                strokeWidth={2}
+              <Area 
+                type="monotone" 
                 dataKey="score" 
                 stroke="#10b981" 
+                fill="#10b981"
+                fillOpacity={0.25}
                 strokeWidth={2}
-            </AreaChart>
+                dot={false}
                 name="Stability Score"
               />
               <Line 
                 type="monotone" 
                 dataKey="sma20" 
                 stroke="#f59e0b" 
-                strokeWidth={1.5}
-                strokeDasharray="5 5"
+                strokeWidth={3}
                 dot={false}
                 name="20-Day SMA"
               />
-              <Line 
-                type="monotone" 
-                dataKey="sma200" 
-                stroke="#ef4444" 
-                strokeWidth={1.5}
-                strokeDasharray="5 5"
-                dot={false}
-                name="200-Day SMA"
-              />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
