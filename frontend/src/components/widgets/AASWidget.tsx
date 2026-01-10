@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Link } from "react-router-dom";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface AASData {
   stability_score: number;
@@ -198,19 +198,23 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     }}
                     formatter={(value) => (value as number).toFixed(3)}
                   />
-                  <Bar 
+                  <Area 
+                    type="monotone" 
                     dataKey="metals_contribution" 
-                    stackId="a" 
+                    stackId="1" 
                     fill="#f59e0b" 
+                    stroke="#f59e0b"
+                    fillOpacity={0.7}
                     name="Metals"
-                    radius={[2, 2, 0, 0]}
                   />
-                  <Bar 
+                  <Area 
+                    type="monotone" 
                     dataKey="crypto_contribution" 
-                    stackId="a" 
+                    stackId="1" 
                     fill="#3b82f6" 
+                    stroke="#3b82f6"
+                    fillOpacity={0.7}
                     name="Crypto"
-                    radius={[2, 2, 0, 0]}
                   />
                   <Line 
                     yAxisId="right"
