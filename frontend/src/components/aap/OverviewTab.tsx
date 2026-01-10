@@ -72,9 +72,9 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
 
   const getRegimeLabel = (regime: string): string => {
     const labels: Record<string, string> = {
-      'LOW': 'Low Pressure',
-      'MODERATE': 'Moderate Pressure',
-      'HIGH': 'High Pressure',
+      'LOW': 'High Stability',
+      'MODERATE': 'Moderate Stability',
+      'HIGH': 'Low Stability',
       'normal_confidence': 'Normal Confidence',
       'mild_caution': 'Mild Caution',
       'monetary_stress': 'Monetary Stress',
@@ -132,7 +132,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
             {aapData.stability_score.toFixed(1)}
           </div>
           <div className="flex items-center gap-2 text-xs md:text-sm text-stealth-500">
-            <span>0 = Max Pressure</span>
+            <span>0 = Min Stability</span>
             <span>•</span>
             <span>100 = Normal</span>
           </div>
@@ -288,7 +288,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
         <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-2">
             <div>
-              <div className="text-stealth-400">Low Pressure</div>
+              <div className="text-stealth-400">High Stability</div>
               <div className="text-green-400 font-semibold">67-100</div>
             </div>
             <div>
@@ -296,7 +296,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
               <div className="text-yellow-400 font-semibold">34-66</div>
             </div>
             <div>
-              <div className="text-stealth-400">High Pressure</div>
+              <div className="text-stealth-400">Low Stability</div>
               <div className="text-red-400 font-semibold">0-33</div>
             </div>
           </div>
@@ -328,9 +328,9 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
         <h3 className="text-lg font-semibold text-stealth-100 mb-3">Quick Interpretation</h3>
         <div className="space-y-3 text-sm text-stealth-300">
           <p>
-            <strong className="text-stealth-100">Current State:</strong> The AAP Stability Score of {aapData.stability_score.toFixed(1)} 
+            <strong className="text-stealth-100">Current State:</strong> The AAS Stability Score of {aapData.stability_score.toFixed(1)} 
             indicates <strong className={aapData.stability_score >= 67 ? 'text-green-400' : aapData.stability_score >= 34 ? 'text-yellow-400' : 'text-red-400'}>
-              {aapData.stability_score >= 67 ? 'low pressure' : aapData.stability_score >= 34 ? 'moderate pressure' : 'high pressure'}
+              {aapData.stability_score >= 67 ? 'high stability' : aapData.stability_score >= 34 ? 'moderate stability' : 'low stability'}
             </strong> in alternative asset markets.
           </p>
           <p>

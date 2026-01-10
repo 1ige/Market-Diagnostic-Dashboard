@@ -43,10 +43,10 @@ export function MethodologyPanel() {
       </div>
 
       <div className="divide-y divide-stealth-700">
-        <Section id="overview" title="What AAP Measures">
+        <Section id="overview" title="What AAS Measures">
           <div className="space-y-3">
             <p>
-              The Alternative Asset Pressure (AAP) index is a composite indicator that tracks "flight to alternatives" 
+              The Alternative Asset Stability (AAS) index is a composite indicator that tracks "flight to alternatives" 
               as a proxy for confidence in traditional financial assets and fiat currencies. It combines 18 components 
               across two major subsystems:
             </p>
@@ -99,9 +99,9 @@ export function MethodologyPanel() {
 
             <div className="mt-4 p-3 bg-emerald-950/20 border border-emerald-900/30 rounded">
               <p className="text-xs">
-                <strong className="text-emerald-400">Key Insight:</strong> AAP measures <em>systemic monetary stress</em> by 
-                tracking capital flows into assets that exist outside the traditional financial system. High pressure (low scores) 
-                indicates confidence erosion; low pressure (high scores) suggests confidence in traditional assets.
+                <strong className="text-emerald-400">Key Insight:</strong> AAS measures <em>systemic monetary stress</em> by 
+                tracking capital flows into assets that exist outside the traditional financial system. Low stability (low scores) 
+                indicates confidence erosion; high stability (high scores) suggests confidence in traditional assets.
               </p>
             </div>
           </div>
@@ -110,14 +110,14 @@ export function MethodologyPanel() {
         <Section id="scoring" title="Scoring Framework">
           <div className="space-y-3">
             <p>
-              AAP uses an inverted scoring system where <strong>lower scores = higher pressure</strong> and 
-              <strong> higher scores = lower pressure</strong>. The index ranges from 0 to 100:
+              AAS uses a direct scoring system where <strong>lower scores = lower stability</strong> and 
+              <strong> higher scores = higher stability</strong>. The index ranges from 0 to 100:
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-4">
               <div className="bg-green-950/20 border border-green-900/30 rounded p-3">
                 <div className="text-green-400 font-bold text-lg mb-1">67-100</div>
-                <div className="text-xs text-green-300 font-semibold mb-2">LOW PRESSURE</div>
+                <div className="text-xs text-green-300 font-semibold mb-2">HIGH STABILITY</div>
                 <p className="text-xs text-stealth-300">
                   Normal market conditions. Capital prefers traditional assets. Alternative assets underperforming 
                   or moving in line with risk-on sentiment.
@@ -126,7 +126,7 @@ export function MethodologyPanel() {
 
               <div className="bg-yellow-950/20 border border-yellow-900/30 rounded p-3">
                 <div className="text-yellow-400 font-bold text-lg mb-1">34-66</div>
-                <div className="text-xs text-yellow-300 font-semibold mb-2">MODERATE PRESSURE</div>
+                <div className="text-xs text-yellow-300 font-semibold mb-2">MODERATE STABILITY</div>
                 <p className="text-xs text-stealth-300">
                   Rising concerns. Selective flows into alternatives. Mixed signals between metals and crypto. 
                   Transitional regime.
@@ -135,7 +135,7 @@ export function MethodologyPanel() {
 
               <div className="bg-red-950/20 border border-red-900/30 rounded p-3">
                 <div className="text-red-400 font-bold text-lg mb-1">0-33</div>
-                <div className="text-xs text-red-300 font-semibold mb-2">HIGH PRESSURE</div>
+                <div className="text-xs text-red-300 font-semibold mb-2">LOW STABILITY</div>
                 <p className="text-xs text-stealth-300">
                   Severe stress. Significant capital flight to alternatives. Both subsystems showing elevated signals. 
                   Loss of confidence in fiat/traditional system.
@@ -148,7 +148,7 @@ export function MethodologyPanel() {
               <ul className="space-y-2 text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400 mt-0.5">1.</span>
-                  <span>Each component is normalized to 0-100 scale where higher values indicate more pressure</span>
+                  <span>Each component is normalized to 0-100 scale where higher values indicate less stability</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400 mt-0.5">2.</span>
@@ -174,7 +174,7 @@ export function MethodologyPanel() {
         <Section id="regimes" title="Regime Classification">
           <div className="space-y-3">
             <p>
-              AAP identifies distinct market regimes based on the primary driver and pressure magnitude:
+              AAS identifies distinct market regimes based on the primary driver and stability magnitude:
             </p>
 
             <div className="space-y-3 mt-4">
@@ -189,7 +189,7 @@ export function MethodologyPanel() {
               <div className="bg-yellow-950/20 border-l-4 border-yellow-500 p-3">
                 <div className="font-semibold text-yellow-400 mb-1">MILD CAUTION (Score 50-74)</div>
                 <p className="text-xs text-stealth-300">
-                  Selective flows beginning. One subsystem showing pressure, other stable. 
+                  Selective flows beginning. One subsystem showing instability, other stable. 
                   Watch for confirmation from both metals and crypto before major positioning.
                 </p>
               </div>
@@ -213,7 +213,7 @@ export function MethodologyPanel() {
               <div className="bg-red-950/30 border-l-4 border-red-600 p-3">
                 <div className="font-semibold text-red-300 mb-1">SYSTEMIC BREAKDOWN (Score 0-9)</div>
                 <p className="text-xs text-stealth-300">
-                  Extreme readings. Historical precedent rare. Both subsystems at maximum pressure. 
+                  Extreme readings. Historical precedent rare. Both subsystems at minimum stability. 
                   Potential currency crisis, payment system stress, or major monetary regime change.
                 </p>
               </div>
@@ -221,19 +221,19 @@ export function MethodologyPanel() {
           </div>
         </Section>
 
-        <Section id="interpretation" title="How to Use AAP">
+        <Section id="interpretation" title="How to Use AAS">
           <div className="space-y-3">
             <div className="p-3 bg-blue-950/20 border border-blue-900/30 rounded">
-              <h4 className="text-blue-400 font-semibold mb-2">AAP is a Strategic Filter, Not a Timing Tool</h4>
+              <h4 className="text-blue-400 font-semibold mb-2">AAS is a Strategic Filter, Not a Timing Tool</h4>
               <p className="text-xs text-stealth-300">
-                AAP changes slowly and identifies <em>regimes</em>, not tactical entry/exit points. 
+                AAS changes slowly and identifies <em>regimes</em>, not tactical entry/exit points. 
                 Use it to adjust portfolio allocation and risk positioning over weeks/months, not days.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <h4 className="text-emerald-400 font-semibold mb-2 text-sm">When AAP is Low (High Pressure)</h4>
+                <h4 className="text-emerald-400 font-semibold mb-2 text-sm">When AAS is Low (Low Stability)</h4>
                 <ul className="space-y-1.5 text-xs text-stealth-300">
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400">✓</span>
@@ -259,7 +259,7 @@ export function MethodologyPanel() {
               </div>
 
               <div>
-                <h4 className="text-red-400 font-semibold mb-2 text-sm">When AAP is High (Low Pressure)</h4>
+                <h4 className="text-red-400 font-semibold mb-2 text-sm">When AAS is High (High Stability)</h4>
                 <ul className="space-y-1.5 text-xs text-stealth-300">
                   <li className="flex items-start gap-2">
                     <span className="text-red-400">✗</span>
@@ -279,7 +279,7 @@ export function MethodologyPanel() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-400">✗</span>
-                    <span>Monitor for turning points (increasing pressure)</span>
+                    <span>Monitor for turning points (decreasing stability)</span>
                   </li>
                 </ul>
               </div>
@@ -290,7 +290,7 @@ export function MethodologyPanel() {
               <ul className="space-y-1.5 text-xs text-stealth-300">
                 <li className="flex items-start gap-2">
                   <span className="text-amber-400">⚠</span>
-                  <span><strong>Not Predictive of Crashes:</strong> Low AAP doesn't predict imminent stock market crashes</span>
+                  <span><strong>Not Predictive of Crashes:</strong> Low AAS doesn't predict imminent stock market crashes</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-amber-400">⚠</span>

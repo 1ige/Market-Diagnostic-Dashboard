@@ -5,7 +5,7 @@ import { useApi } from "../hooks/useApi";
 import { OverviewTab } from "../components/aap/OverviewTab";
 import PreciousMetalsDiagnostic from "./PreciousMetalsDiagnostic";
 
-export default function AlternativeAssetPressure() {
+export default function AlternativeAssetStability() {
   const [searchParams] = useSearchParams();
   const { data: aapData, loading } = useApi<any>('/aap/components/breakdown');
   const { data: historyData } = useApi<any>('/aap/history?days=365');
@@ -47,7 +47,7 @@ export default function AlternativeAssetPressure() {
       <div className="min-h-screen bg-stealth-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <p className="text-stealth-300 text-lg">Loading AAP diagnostic...</p>
+          <p className="text-stealth-300 text-lg">Loading AAS diagnostic...</p>
         </div>
       </div>
     );
