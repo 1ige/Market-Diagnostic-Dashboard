@@ -53,8 +53,8 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
         .map((d: any) => ({
           date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           stability_score: d.stability_score || 0,
-          metals_contribution: d.metals_contribution || 0,
-          crypto_contribution: d.crypto_contribution || 0,
+          metals_contribution: (d.metals_contribution || 0) * 100,
+          crypto_contribution: (d.crypto_contribution || 0) * 100,
           sma20: d.sma_20 || 0,
           sma200: d.sma_200 || 0
         }));

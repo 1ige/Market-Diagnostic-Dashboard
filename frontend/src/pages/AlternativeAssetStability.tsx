@@ -37,8 +37,8 @@ export default function AlternativeAssetStability() {
         regime: d.regime || '',
         sma20: d.sma_20 || 0,
         sma200: d.sma_200 || 0,
-        metals_contribution: d.metals_contribution || 0,
-        crypto_contribution: d.crypto_contribution || 0
+        metals_contribution: (d.metals_contribution || 0) * 100,
+        crypto_contribution: (d.crypto_contribution || 0) * 100
       }));
   }, [historyData, timeframe]);
 
