@@ -192,6 +192,7 @@ export default function AASWidget({ timeframe = '90d', setTimeframe }: AASWidget
                 ))}
               </div>
             )}
+          </div>
           {chartData.length > 0 ? (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
