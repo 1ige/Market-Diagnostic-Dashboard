@@ -151,9 +151,6 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
         <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-stealth-400 text-xs md:text-sm font-medium">Current Regime</span>
-            <svg className="w-5 h-5 text-stealth-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
-            </svg>
           </div>
           <div 
             className="text-xl md:text-2xl font-bold mb-2"
@@ -170,11 +167,6 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
         <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-stealth-400 text-xs md:text-sm font-medium">Component Status</span>
-            <svg className="w-5 h-5 text-stealth-500" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
-              <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
-              <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
-            </svg>
           </div>
           <div className="text-3xl md:text-5xl font-bold text-stealth-100 mb-2">
             {activeCount}<span className="text-2xl md:text-3xl text-stealth-400">/{totalCount}</span>
@@ -192,9 +184,6 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
         <div className="bg-gradient-to-br from-stealth-800 to-stealth-850 border border-stealth-700 rounded-lg p-4 md:p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-stealth-400 text-xs md:text-sm font-medium">Subsystem Balance</span>
-            <svg className="w-5 h-5 text-stealth-500" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-            </svg>
           </div>
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div>
@@ -259,7 +248,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 stackId="1" 
                 fill="#f59e0b" 
                 stroke="#f59e0b"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 fillOpacity={0.5}
                 name="Metals"
               />
@@ -269,7 +258,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 stackId="1" 
                 fill="#3b82f6" 
                 stroke="#3b82f6"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 fillOpacity={0.5}
                 name="Crypto"
               />
@@ -280,6 +269,8 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 strokeWidth={3}
                 dot={false}
                 name="20-Day SMA"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </AreaChart>
           </ResponsiveContainer>
