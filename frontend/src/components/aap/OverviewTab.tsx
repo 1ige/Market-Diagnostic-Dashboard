@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { MetalsSubsystemPanel } from './MetalsSubsystemPanel';
 import { CryptoSubsystemPanel } from './CryptoSubsystemPanel';
 import { MethodologyPanel } from './MethodologyPanel';
@@ -231,7 +231,7 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
 
         <div className="h-64 md:h-96">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history}>
+            <AreaChart data={history}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="date" 
@@ -239,24 +239,27 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 tick={{ fill: '#9ca3af', fontSize: 12 }}
               />
               <YAxis 
-                stroke="#9ca3af" 
+              <Area 
                 domain={[0, 100]}
                 tick={{ fill: '#9ca3af', fontSize: 12 }}
               />
+                fill="#10b981"
+                fillOpacity={0.3}
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#1f2937', 
                   border: '1px solid #374151',
-                  borderRadius: '0.5rem',
+              <Area 
                   color: '#f3f4f6'
                 }}
               />
-              <Line 
-                type="monotone" 
+                fill="#f59e0b"
+                fillOpacity={0.2}
+                strokeWidth={2}
                 dataKey="score" 
                 stroke="#10b981" 
                 strokeWidth={2}
-                dot={false}
+            </AreaChart>
                 name="Stability Score"
               />
               <Line 

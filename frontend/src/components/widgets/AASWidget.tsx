@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Link } from "react-router-dom";
-import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface AASData {
   stability_score: number;
@@ -176,7 +176,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
           {chartData.length > 0 ? (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey="date" 
@@ -204,6 +204,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     stackId="1" 
                     fill="#f59e0b" 
                     stroke="#f59e0b"
+                    strokeWidth={1.5}
                     fillOpacity={0.7}
                     name="Metals"
                   />
@@ -213,6 +214,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     stackId="1" 
                     fill="#3b82f6" 
                     stroke="#3b82f6"
+                    strokeWidth={1.5}
                     fillOpacity={0.7}
                     name="Crypto"
                   />
@@ -225,7 +227,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     dot={false}
                     name="20-Day SMA"
                   />
-                </ComposedChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
