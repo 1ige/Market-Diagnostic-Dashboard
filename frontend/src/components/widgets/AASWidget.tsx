@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../../hooks/useApi";
 import { Link } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface AASData {
   stability_score: number;
@@ -11,10 +12,19 @@ interface AASData {
   pressure_index: number;
 }
 
+interface HistoricalData {
+  date: string;
+  stability_score: number;
+  metals_contribution: number;
+  crypto_contribution: number;
+}
+
 export default function AASWidget() {
   const { data: aasData, loading } = useApi<AASData>('/aap/current');
+  const { data: historyData } = useApi<any>('/aap/history?days=90');
   const [metalsPercent, setMetalsPercent] = useState(50);
   const [cryptoPercent, setCryptoPercent] = useState(50);
+  const [chartData, setChartData] = useState<HistoricalData[]>([]);
 
   useEffect(() => {
     if (aasData) {
@@ -25,6 +35,20 @@ export default function AASWidget() {
       }
     }
   }, [aasData]);
+
+  useEffect(() => {
+    if (historyData && historyData.data && Array.isArray(historyData.data)) {
+      const processed = historyData.data
+        .map((d: any) => ({
+          date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          stability_score: d.stability_score || 0,
+          metals_contribution: d.metals_contribution || 0,
+          crypto_contribution: d.crypto_contribution || 0
+        }))
+        .slice(-30); // Show last 30 days for clarity
+      setChartData(processed);
+    }
+  }, [historyData]);
 
   const getScoreColor = (score: number): string => {
     if (score >= 67) return 'text-green-400';
@@ -115,7 +139,7 @@ export default function AASWidget() {
 
         {/* Primary Driver */}
         <div className="mb-4">
-          <p className="text-xs text-stealth-400 mb-2">Primary Driver</p>
+          <p className="text-xs text-stealth-400 mb-2">Current Breakdown</p>
           <div className="flex gap-2">
             <div className={`flex-1 p-2 rounded text-center text-xs font-semibold ${
               aasData.primary_driver === 'metals' 
@@ -132,6 +156,57 @@ export default function AASWidget() {
               Crypto {cryptoPercent.toFixed(0)}%
             </div>
           </div>
+        </div>
+
+        {/* Historical Chart */}
+        <div className="mb-4">
+          <p className="text-xs text-stealth-400 mb-2">90-Day Contribution Trend</p>
+          {chartData.length > 0 ? (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#9ca3af" 
+                    tick={{ fontSize: 10 }}
+                    interval={Math.floor(chartData.length / 4)}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af" 
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1f2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '0.5rem',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value) => (value as number).toFixed(3)}
+                  />
+                  <Bar 
+                    dataKey="metals_contribution" 
+                    stackId="a" 
+                    fill="#f59e0b" 
+                    name="Metals"
+                    radius={[2, 2, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="crypto_contribution" 
+                    stackId="a" 
+                    fill="#3b82f6" 
+                    name="Crypto"
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-stealth-400 text-sm">
+              Loading chart data...
+            </div>
+          )}
         </div>
 
         {/* Quick Info */}
