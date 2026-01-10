@@ -53,18 +53,31 @@ def _get_or_compute_historical_scores(db: Session) -> Dict[str, float]:
     try:
         price_data = fetch_sector_price_history(days=500)
         
-        # Build historical price_data dict with all sectors cut off at 90 days ago
+        # Build historical price_data dict with all sectors cut off at exactly 90 trading days ago
+        # We need 90 trading days back + 63 trading days (for 3m projection) = 153 minimum days
         hist_price_data = {}
         min_length = float('inf')
         
         for sector_symbol, sector_df in price_data.items():
-            if len(sector_df) > 153:  # Need 90 days ago + 63 days lookback
+            # Sort by date to ensure chronological order
+            sector_df = sector_df.sort_values("date").reset_index(drop=True)
+            
+            # Need at least 90 + 63 = 153 trading days for accurate historical calculation
+            if len(sector_df) >= 153:
+                # Cut off at exactly 90 trading days ago
+                # This gives us the data as it was 90 trading days in the past
                 cutoff_idx = len(sector_df) - 90
-                hist_price_data[sector_symbol] = sector_df.iloc[:cutoff_idx]
-                min_length = min(min_length, len(hist_price_data[sector_symbol]))
+                hist_df = sector_df.iloc[:cutoff_idx].copy()
+                hist_price_data[sector_symbol] = hist_df
+                min_length = min(min_length, len(hist_df))
         
         # Compute projections for all sectors from that historical point
-        if len(hist_price_data) > 1 and min_length > 63:  # Have multiple sectors + SPY
+        # Need SPY + at least one sector for valid calculation
+        has_spy = "SPY" in hist_price_data
+        num_sectors = len([s for s in hist_price_data.keys() if s != "SPY"])
+        
+        if has_spy and num_sectors > 0 and min_length >= 63:
+            # Use "YELLOW" as default system state for historical scoring
             hist_projections = compute_sector_projections(hist_price_data, "YELLOW")
             # Extract the 3m projection for each sector
             for proj in hist_projections:
