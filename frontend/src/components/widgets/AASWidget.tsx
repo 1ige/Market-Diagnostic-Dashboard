@@ -188,7 +188,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     stroke="#9ca3af" 
                     tick={{ fontSize: 10 }}
                   />
-                  <YAxis yAxisId="right" stroke="#9ca3af" tick={{ fontSize: 10 }} domain={[0, 100]} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" tick={{ fontSize: 10 }} domain={[0, 100]} />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#1f2937', 
@@ -205,7 +205,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     fill="#f59e0b" 
                     stroke="#f59e0b"
                     strokeWidth={1.5}
-                    fillOpacity={0.7}
+                    fillOpacity={0.5}
                     name="Metals"
                   />
                   <Area 
@@ -215,7 +215,7 @@ export default function AASWidget({ timeframe = '90d' }: AASWidgetProps) {
                     fill="#3b82f6" 
                     stroke="#3b82f6"
                     strokeWidth={1.5}
-                    fillOpacity={0.7}
+                    fillOpacity={0.5}
                     name="Crypto"
                   />
                   <Line 

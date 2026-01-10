@@ -8,6 +8,8 @@ interface HistoricalData {
   date: string;
   score: number;
   regime: string;
+  sma20?: number;
+  sma200?: number;
 }
 
 interface OverviewTabProps {
@@ -253,13 +255,23 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
               />
               <Area 
                 type="monotone" 
-                dataKey="score" 
-                stroke="#10b981" 
-                fill="#10b981"
-                fillOpacity={0.25}
-                strokeWidth={2}
-                dot={false}
-                name="Stability Score"
+                dataKey="metals_contribution" 
+                stackId="1" 
+                fill="#f59e0b" 
+                stroke="#f59e0b"
+                strokeWidth={1.5}
+                fillOpacity={0.5}
+                name="Metals"
+              />
+              <Area 
+                type="monotone" 
+                dataKey="crypto_contribution" 
+                stackId="1" 
+                fill="#3b82f6" 
+                stroke="#3b82f6"
+                strokeWidth={1.5}
+                fillOpacity={0.5}
+                name="Crypto"
               />
               <Line 
                 type="monotone" 
