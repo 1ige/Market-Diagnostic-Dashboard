@@ -34,7 +34,9 @@ export default function AlternativeAssetPressure() {
       .map((d: any) => ({
         date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         score: d.stability_score || 0,
-        regime: d.regime || ''
+        regime: d.regime || '',
+        sma20: d.sma_20 || 0,
+        sma200: d.sma_200 || 0
       }));
   }, [historyData, timeframe]);
 

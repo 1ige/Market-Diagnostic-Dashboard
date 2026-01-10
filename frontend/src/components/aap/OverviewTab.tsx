@@ -259,22 +259,62 @@ export function OverviewTab({ aapData, history, componentHistory, timeframe, set
                 dot={false}
                 name="Stability Score"
               />
+              <Line 
+                type="monotone" 
+                dataKey="sma20" 
+                stroke="#f59e0b" 
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                dot={false}
+                name="20-Day SMA"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="sma200" 
+                stroke="#ef4444" 
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                dot={false}
+                name="200-Day SMA"
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
-          <div>
-            <div className="text-stealth-400">Low Pressure</div>
-            <div className="text-green-400 font-semibold">67-100</div>
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-2">
+            <div>
+              <div className="text-stealth-400">Low Pressure</div>
+              <div className="text-green-400 font-semibold">67-100</div>
+            </div>
+            <div>
+              <div className="text-stealth-400">Moderate</div>
+              <div className="text-yellow-400 font-semibold">34-66</div>
+            </div>
+            <div>
+              <div className="text-stealth-400">High Pressure</div>
+              <div className="text-red-400 font-semibold">0-33</div>
+            </div>
           </div>
-          <div>
-            <div className="text-stealth-400">Moderate</div>
-            <div className="text-yellow-400 font-semibold">34-66</div>
-          </div>
-          <div>
-            <div className="text-stealth-400">High Pressure</div>
-            <div className="text-red-400 font-semibold">0-33</div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-1" viewBox="0 0 24 4" preserveAspectRatio="none">
+                <line x1="0" y1="2" x2="24" y2="2" stroke="#10b981" strokeWidth="2"/>
+              </svg>
+              <span className="text-stealth-300 text-xs">Current Score</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-1" viewBox="0 0 24 4" preserveAspectRatio="none">
+                <line x1="0" y1="2" x2="24" y2="2" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="2 2"/>
+              </svg>
+              <span className="text-stealth-300 text-xs">20-Day SMA</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-6 h-1" viewBox="0 0 24 4" preserveAspectRatio="none">
+                <line x1="0" y1="2" x2="24" y2="2" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 2"/>
+              </svg>
+              <span className="text-stealth-300 text-xs">200-Day SMA</span>
+            </div>
           </div>
         </div>
       </div>

@@ -103,6 +103,20 @@ def get_aap_history(
             by_day[ind.date.date()] = ind
         indicators = sorted(by_day.values(), key=lambda ind: ind.date)
         
+        # Calculate SMAs
+        scores = [ind.stability_score for ind in indicators]
+        sma_20 = []
+        sma_200 = []
+        
+        for i, score in enumerate(scores):
+            # 20-day SMA
+            start_20 = max(0, i - 19)
+            sma_20.append(np.mean(scores[start_20:i+1]))
+            
+            # 200-day SMA
+            start_200 = max(0, i - 199)
+            sma_200.append(np.mean(scores[start_200:i+1]))
+        
         return {
             "period": {
             "start": indicators[0].date.isoformat(),
@@ -113,13 +127,15 @@ def get_aap_history(
             {
                 "date": ind.date.isoformat(),
                 "stability_score": round(ind.stability_score, 1),
+                "sma_20": round(sma_20[i], 1),
+                "sma_200": round(sma_200[i], 1),
                 "regime": ind.regime,
                 "primary_driver": ind.primary_driver,
                 "metals_contribution": round(ind.metals_contribution, 3),
                 "crypto_contribution": round(ind.crypto_contribution, 3),
                 "is_critical": bool(ind.is_critical),
             }
-            for ind in indicators
+            for i, ind in enumerate(indicators)
         ],
         "summary": {
             "current_score": round(indicators[-1].stability_score, 1),
