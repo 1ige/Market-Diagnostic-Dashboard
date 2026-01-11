@@ -32,12 +32,39 @@
  * @component
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApi } from "../hooks/useApi";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { CHART_MARGIN, commonGridProps, commonTooltipStyle } from "../utils/chartUtils";
 import "../index.css";
 
 const HORIZONS = ["3m", "6m", "12m"];
 const CHART_HORIZONS = ["T", "3m", "6m", "12m"];
+const DEFENSIVE_SECTORS = new Set(["XLU", "XLP", "XLV"]);
+const CYCLICAL_SECTORS = new Set(["XLE", "XLF", "XLK", "XLY"]);
+
+interface SectorHistoryEntry {
+  as_of_date: string;
+  score_total: number;
+}
+
+type SectorProjectionHistory = Record<string, Record<string, SectorHistoryEntry[]>>;
+
+interface SectorHistoryPoint {
+  as_of_date: string;
+  timestampNum: number;
+  defensive_avg: number;
+  cyclical_avg: number;
+  spread: number;
+}
 
 /**
  * Visual score bar component for displaying normalized 0-100 scores
@@ -59,6 +86,7 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
 
 export default function SectorProjections() {
   const { data, loading, error } = useApi("/sectors/projections/latest");
+  const { data: historyData } = useApi("/sectors/projections/history?days=365");
   const [projections, setProjections] = useState<any>({});
   const [historicalScores, setHistoricalScores] = useState<Record<string, number>>({});
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -66,6 +94,46 @@ export default function SectorProjections() {
   const [selectedHorizon, setSelectedHorizon] = useState<"T" | "3m" | "6m" | "12m">("12m");
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
   const [readingGuideOpen, setReadingGuideOpen] = useState(false);
+  const divergenceHistory = useMemo(() => {
+    const history = historyData as SectorProjectionHistory | null;
+    if (!history) return [];
+    const buckets = new Map<string, { defensive: number[]; cyclical: number[] }>();
+
+    Object.entries(history).forEach(([symbol, horizons]) => {
+      const entries = horizons?.["3m"];
+      if (!entries) return;
+      const isDefensive = DEFENSIVE_SECTORS.has(symbol);
+      const isCyclical = CYCLICAL_SECTORS.has(symbol);
+      if (!isDefensive && !isCyclical) return;
+
+      entries.forEach((entry) => {
+        if (!Number.isFinite(entry.score_total)) return;
+        const dateKey = entry.as_of_date;
+        if (!buckets.has(dateKey)) {
+          buckets.set(dateKey, { defensive: [], cyclical: [] });
+        }
+        const bucket = buckets.get(dateKey)!;
+        if (isDefensive) bucket.defensive.push(entry.score_total);
+        if (isCyclical) bucket.cyclical.push(entry.score_total);
+      });
+    });
+
+    const points: SectorHistoryPoint[] = [];
+    for (const [dateKey, bucket] of buckets.entries()) {
+      if (!bucket.defensive.length || !bucket.cyclical.length) continue;
+      const defensiveAvg = bucket.defensive.reduce((sum, val) => sum + val, 0) / bucket.defensive.length;
+      const cyclicalAvg = bucket.cyclical.reduce((sum, val) => sum + val, 0) / bucket.cyclical.length;
+      points.push({
+        as_of_date: dateKey,
+        timestampNum: new Date(`${dateKey}T00:00:00Z`).getTime(),
+        defensive_avg: Number(defensiveAvg.toFixed(2)),
+        cyclical_avg: Number(cyclicalAvg.toFixed(2)),
+        spread: Number((defensiveAvg - cyclicalAvg).toFixed(2)),
+      });
+    }
+
+    return points.sort((a, b) => a.timestampNum - b.timestampNum);
+  }, [historyData]);
 
   useEffect(() => {
     if (data && data.projections) {
@@ -124,6 +192,12 @@ export default function SectorProjections() {
   const tScoresValid = tData.length > 0 && (
     new Set(tData.map(s => Math.round(s.score_total))).size > 1
   );
+  const divergenceTimestamps = divergenceHistory.map((point) => point.timestampNum);
+  const divergenceMinTime = divergenceTimestamps.length ? Math.min(...divergenceTimestamps) : 0;
+  const divergenceMaxTime = divergenceTimestamps.length ? Math.max(...divergenceTimestamps) : 0;
+  const divergenceTicks = divergenceTimestamps.length > 1
+    ? Array.from({ length: 5 }, (_, i) => divergenceMinTime + ((divergenceMaxTime - divergenceMinTime) * (i / 4)))
+    : divergenceTimestamps;
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto text-gray-100">
@@ -149,6 +223,69 @@ export default function SectorProjections() {
       
       {loading && <div>Loading...</div>}
       {error && <div className="text-red-400">Error: {error.message}</div>}
+      
+      {/* Defensive vs Cyclical Spread - Historical Trend */}
+      {!loading && !error && (
+        <div className="mb-8 bg-gray-800 rounded-lg p-4 sm:p-6 shadow">
+          <h2 className="text-base sm:text-lg font-semibold mb-2">Defensive vs Cyclical Spread</h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Rolling history of the defensive minus cyclical average (3M projection scores).
+          </p>
+          {divergenceHistory.length > 0 ? (
+            <div className="bg-gray-900 rounded-lg p-2 sm:p-4">
+              <div className="h-44 sm:h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={divergenceHistory} margin={CHART_MARGIN}>
+                    <CartesianGrid {...commonGridProps} />
+                    <XAxis
+                      dataKey="timestampNum"
+                      type="number"
+                      domain={[divergenceMinTime, divergenceMaxTime]}
+                      ticks={divergenceTicks}
+                      tick={{ fill: "#9ca3af", fontSize: 10 }}
+                      stroke="#4b5563"
+                      tickFormatter={(value: number) =>
+                        new Date(value).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                    />
+                    <YAxis
+                      tick={{ fill: "#9ca3af", fontSize: 10 }}
+                      stroke="#4b5563"
+                      domain={["dataMin - 5", "dataMax + 5"]}
+                    />
+                    <Tooltip
+                      contentStyle={commonTooltipStyle}
+                      labelFormatter={(label: number) =>
+                        new Date(label).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      }
+                      formatter={(value: number) => [`${value.toFixed(2)}`, "Spread"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="spread"
+                      stroke="#60a5fa"
+                      strokeWidth={2}
+                      dot={false}
+                      animationDuration={300}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-900 rounded-lg p-6 text-xs text-gray-400 text-center">
+              No history available yet.
+            </div>
+          )}
+        </div>
+      )}
       
       
       {/* Overview Chart - Sector Score Trends Across Horizons */}

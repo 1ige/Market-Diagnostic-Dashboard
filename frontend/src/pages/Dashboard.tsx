@@ -156,7 +156,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6 mb-3 md:mb-6">
         <SystemOverviewWidget trendPeriod={trendPeriod} />
         <DowTheoryWidget trendPeriod={trendPeriod} />
-        <SectorDivergenceWidget />
+        <SectorDivergenceWidget trendPeriod={trendPeriod} />
         <AASWidget timeframe={trendPeriod === 90 ? '90d' : trendPeriod === 180 ? '180d' : '365d'} />
       </div>
 

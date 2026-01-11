@@ -20,8 +20,18 @@
  */
 
 import { useEffect, useState } from "react";
-import { getLegacyApiUrl } from "../../utils/apiUtils";
 import { Link } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { getLegacyApiUrl } from "../../utils/apiUtils";
+import { CHART_MARGIN, commonGridProps, commonTooltipStyle } from "../../utils/chartUtils";
 
 interface SectorSummary {
   as_of_date: string;
@@ -39,12 +49,12 @@ interface SectorSummary {
   top_cyclical: Array<{ symbol: string; name: string; score: number }>;
 }
 
-interface SectorProjections {
-  "T": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
-  "3m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
-  "6m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
-  "12m": Array<{ sector_symbol: string; sector_name: string; score_total: number }>;
+interface SectorHistoryEntry {
+  as_of_date: string;
+  score_total: number;
 }
+
+type SectorProjectionHistory = Record<string, Record<string, SectorHistoryEntry[]>>;
 
 interface SectorAlert {
   type: string;
@@ -59,36 +69,95 @@ interface Props {
   trendPeriod?: 90 | 180 | 365;
 }
 
+interface SectorHistoryPoint {
+  as_of_date: string;
+  timestampNum: number;
+  defensive_avg: number;
+  cyclical_avg: number;
+  spread: number;
+}
+
+const DEFENSIVE_SECTORS = new Set(["XLU", "XLP", "XLV"]);
+const CYCLICAL_SECTORS = new Set(["XLE", "XLF", "XLK", "XLY"]);
+
 export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
   const [data, setData] = useState<SectorSummary | null>(null);
-  const [projections, setProjections] = useState<SectorProjections | null>(null);
+  const [history, setHistory] = useState<SectorHistoryPoint[]>([]);
   const [alerts, setAlerts] = useState<SectorAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedSector, setExpandedSector] = useState<string | null>(null);
+
+  const buildHistorySeries = (historyData: SectorProjectionHistory | null): SectorHistoryPoint[] => {
+    if (!historyData) return [];
+    const buckets = new Map<string, { defensive: number[]; cyclical: number[] }>();
+
+    Object.entries(historyData).forEach(([symbol, horizons]) => {
+      const entries = horizons?.["3m"];
+      if (!entries) return;
+      const isDefensive = DEFENSIVE_SECTORS.has(symbol);
+      const isCyclical = CYCLICAL_SECTORS.has(symbol);
+      if (!isDefensive && !isCyclical) return;
+
+      entries.forEach((entry) => {
+        if (!Number.isFinite(entry.score_total)) return;
+        const dateKey = entry.as_of_date;
+        if (!buckets.has(dateKey)) {
+          buckets.set(dateKey, { defensive: [], cyclical: [] });
+        }
+        const bucket = buckets.get(dateKey)!;
+        if (isDefensive) bucket.defensive.push(entry.score_total);
+        if (isCyclical) bucket.cyclical.push(entry.score_total);
+      });
+    });
+
+    const points: SectorHistoryPoint[] = [];
+    for (const [dateKey, bucket] of buckets.entries()) {
+      if (!bucket.defensive.length || !bucket.cyclical.length) continue;
+      const defensiveAvg = bucket.defensive.reduce((sum, val) => sum + val, 0) / bucket.defensive.length;
+      const cyclicalAvg = bucket.cyclical.reduce((sum, val) => sum + val, 0) / bucket.cyclical.length;
+      points.push({
+        as_of_date: dateKey,
+        timestampNum: new Date(`${dateKey}T00:00:00Z`).getTime(),
+        defensive_avg: Number(defensiveAvg.toFixed(2)),
+        cyclical_avg: Number(cyclicalAvg.toFixed(2)),
+        spread: Number((defensiveAvg - cyclicalAvg).toFixed(2)),
+      });
+    }
+
+    return points.sort((a, b) => a.timestampNum - b.timestampNum);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const apiUrl = getLegacyApiUrl();
-        const [summaryRes, projectionsRes, alertsRes] = await Promise.all([
+        const historyUrl = `${apiUrl}/sectors/projections/history?days=${trendPeriod}`;
+        const [summaryRes, historyRes, alertsRes] = await Promise.all([
           fetch(`${apiUrl}/sectors/summary`),
-          fetch(`${apiUrl}/sectors/projections/latest`),
+          fetch(historyUrl),
           fetch(`${apiUrl}/sectors/alerts`)
         ]);
+        if (!summaryRes.ok) throw new Error("Failed to fetch sector summary");
         const summaryData = await summaryRes.json();
-        const projectionsData = await projectionsRes.json();
-        const alertsData = await alertsRes.json();
         setData(summaryData);
-        setProjections(projectionsData.projections);
+
+        if (historyRes.ok) {
+          const historyData: SectorProjectionHistory = await historyRes.json();
+          setHistory(buildHistorySeries(historyData));
+        } else {
+          setHistory([]);
+        }
+
+        const alertsData = alertsRes.ok ? await alertsRes.json() : { alerts: [] };
         setAlerts(alertsData.alerts || []);
       } catch (error) {
         console.error("Failed to fetch sector data:", error);
+        setHistory([]);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [trendPeriod]);
 
   if (loading) {
     return (
@@ -99,41 +168,15 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
     );
   }
 
-  if (!data || !projections) {
+  if (!data) {
     return null;
   }
-
-  const getStateColor = (state: string) => {
-    if (state === "RED") return "text-red-400";
-    if (state === "GREEN") return "text-green-400";
-    return "text-yellow-400";
-  };
 
   const getAlignmentColor = (score: number) => {
     if (score >= 65) return "text-green-400";
     if (score >= 45) return "text-yellow-400";
     return "text-red-400";
   };
-
-  // Prepare chart data with trend analysis
-  const chartData = projections["T"]?.map(sector => {
-    const scoreT = sector.score_total;
-    const score3m = projections["3m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
-    const score6m = projections["6m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
-    const score12m = projections["12m"].find(s => s.sector_symbol === sector.sector_symbol)?.score_total || 50;
-    return {
-      name: sector.sector_name,
-      symbol: sector.sector_symbol,
-      scores: { "T": scoreT, "3m": score3m, "6m": score6m, "12m": score12m },
-      trend: score12m - scoreT, // positive = improving over time
-      volatility: Math.abs(score3m - scoreT) + Math.abs(score6m - score3m) + Math.abs(score12m - score6m)
-    };
-  }) || [];
-
-  // Sort by 12m score to identify leaders/laggards
-  const sortedByScore = [...chartData].sort((a, b) => b.scores["12m"] - a.scores["12m"]);
-  const topPerformers = sortedByScore.slice(0, 3);
-  const bottomPerformers = sortedByScore.slice(-3);
 
   // Interpret the defensive vs cyclical spread
   const getMarketInterpretation = () => {
@@ -155,6 +198,14 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
   };
 
   const interpretation = getMarketInterpretation();
+  const periodLabel = trendPeriod === 365 ? "1yr" : trendPeriod === 180 ? "6mo" : "90d";
+  const chartData = history;
+  const timestamps = chartData.map((point) => point.timestampNum);
+  const minTime = timestamps.length ? Math.min(...timestamps) : 0;
+  const maxTime = timestamps.length ? Math.max(...timestamps) : 0;
+  const tickPositions = timestamps.length > 1
+    ? Array.from({ length: 5 }, (_, i) => minTime + ((maxTime - minTime) * (i / 4)))
+    : timestamps;
 
   return (
     <div className="bg-stealth-800 rounded-lg p-6 shadow-lg border border-stealth-700">
@@ -164,7 +215,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           to="/sector-projections" 
           className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
         >
-          View Details →
+          View Details >
         </Link>
       </div>
 
@@ -227,113 +278,60 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
       {/* Trend Chart */}
       <div className="bg-stealth-900 rounded-lg p-4 border border-stealth-700">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold text-stealth-200">Score Trends (3M → 12M)</div>
+          <div className="text-sm font-semibold text-stealth-200">Defensive vs Cyclical Spread</div>
+          <div className="text-xs text-stealth-500">{periodLabel}</div>
         </div>
-        <svg width="100%" height="150" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid meet" className="w-full">
-          {/* Gradient definitions for uncertainty cones */}
-          <defs>
-            {chartData.map((sector, idx) => {
-              // Distinct color palette for each sector
-              const sectorColors: {[key: string]: string} = {
-                "XLE": "#ef5350",   // Energy - red
-                "XLF": "#42a5f5",   // Financials - blue
-                "XLK": "#ab47bc",   // Technology - purple
-                "XLY": "#ec407a",   // Consumer Discretionary - pink
-                "XLP": "#29b6f6",   // Consumer Staples - cyan
-                "XLV": "#66bb6a",   // Healthcare - green
-                "XLI": "#ffa726",   // Industrials - orange
-                "XLU": "#78909c",   // Utilities - blue-grey
-                "XLB": "#d4af37",   // Materials - gold
-                "XLRE": "#a1887f",  // Real Estate - brown
-                "XLC": "#26a69a"    // Communication - teal
-              };
-              
-              const color = sectorColors[sector.symbol] || "#6b7280";
-              const gradientId = `grad_${idx}`;
-              return (
-                <linearGradient key={gradientId} id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={color} stopOpacity="0" />
-                  <stop offset="50%" stopColor={color} stopOpacity="0.05" />
-                  <stop offset="100%" stopColor={color} stopOpacity="0.1" />
-                </linearGradient>
-              );
-            })}
-          </defs>
-          
-          {/* Grid lines */}
-          {[0, 25, 50, 75, 100].map((y) => (
-            <g key={y}>
-              <line x1="30" y1={125 - (y * 1.25)} x2="380" y2={125 - (y * 1.25)} stroke="#374151" strokeWidth="0.5" strokeDasharray="2 2" />
-              <text x="20" y={128 - (y * 1.25)} fill="#9ca3af" fontSize="8" textAnchor="end">{y}</text>
-            </g>
-          ))}
-          
-          {/* X-axis labels */}
-          <text x="50" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">Today</text>
-          <text x="120" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">3M</text>
-          <text x="210" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">6M</text>
-          <text x="360" y="143" fill="#9ca3af" fontSize="9" textAnchor="middle">12M</text>
-          
-          {/* Draw uncertainty cones and lines */}
-          {chartData.map((sector, idx) => {
-            // Distinct color palette for each sector
-            const sectorColors: {[key: string]: string} = {
-              "XLE": "#ef5350",   // Energy - red
-              "XLF": "#42a5f5",   // Financials - blue
-              "XLK": "#ab47bc",   // Technology - purple
-              "XLY": "#ec407a",   // Consumer Discretionary - pink
-              "XLP": "#29b6f6",   // Consumer Staples - cyan
-              "XLV": "#66bb6a",   // Healthcare - green
-              "XLI": "#ffa726",   // Industrials - orange
-              "XLU": "#78909c",   // Utilities - blue-grey
-              "XLB": "#d4af37",   // Materials - gold
-              "XLRE": "#a1887f",  // Real Estate - brown
-              "XLC": "#26a69a"    // Communication - teal
-            };
-            
-            const color = sectorColors[sector.symbol] || "#6b7280";
-            const isTop = topPerformers.some(p => p.symbol === sector.symbol);
-            const isBottom = bottomPerformers.some(p => p.symbol === sector.symbol);
-            const opacity = isTop || isBottom ? 0.85 : 0.15;
-            const strokeWidth = isTop || isBottom ? 2.5 : 1;
-            
-            const x1 = 50;  // Today
-            const y1 = 125 - (sector.scores["T"] * 1.25);  // Use T (today) score
-            const x2 = 120;  // 3M
-            const y2 = 125 - (sector.scores["3m"] * 1.25);
-            const x3 = 210;  // 6M
-            const y3 = 125 - (sector.scores["6m"] * 1.25);
-            const x4 = 360;  // 12M
-            const y4 = 125 - (sector.scores["12m"] * 1.25);
-            
-            // Calculate uncertainty cone (expanding triangle from 6M to 12M)
-            // Variance increases as we move further into the future
-            const sigma = Math.abs(sector.scores["12m"] - sector.scores["6m"]) * 0.5 + 5; // Base uncertainty
-            const upperBound = y4 - sigma * 1.25;
-            const lowerBound = y4 + sigma * 1.25;
-            
-            // Cone polygon points
-            const conePoints = `${x3},${y3} ${x4},${upperBound} ${x4},${lowerBound}`;
-            
-            const mainPathData = `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${(y1 + y2) / 2}, ${x2} ${y2} Q ${(x2 + x3) / 2} ${(y2 + y3) / 2}, ${x3} ${y3} Q ${(x3 + x4) / 2} ${(y3 + y4) / 2}, ${x4} ${y4}`;
-            
-            return (
-              <g key={sector.symbol}>
-                {/* Uncertainty cone (only for top/bottom performers) */}
-                {(isTop || isBottom) && (
-                  <polygon points={conePoints} fill={`url(#grad_${idx})`} opacity={opacity * 0.5} />
-                )}
-                {/* Main trend line */}
-                <path d={mainPathData} stroke={color} strokeWidth={strokeWidth} fill="none" opacity={opacity} strokeLinecap="round" strokeLinejoin="round" />
-                {(isTop || isBottom) && (
-                  <text x="368" y={y4 + 3} fill={color} fontSize="9" fontWeight="600" opacity={opacity}>
-                    {sector.symbol}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+        {chartData.length > 0 ? (
+          <div className="h-40 sm:h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={CHART_MARGIN}>
+                <CartesianGrid {...commonGridProps} />
+                <XAxis
+                  dataKey="timestampNum"
+                  type="number"
+                  domain={[minTime, maxTime]}
+                  ticks={tickPositions}
+                  tick={{ fill: "#6b7280", fontSize: 10 }}
+                  stroke="#555560"
+                  tickFormatter={(value: number) =>
+                    new Date(value).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  }
+                />
+                <YAxis
+                  tick={{ fill: "#6b7280", fontSize: 10 }}
+                  stroke="#555560"
+                  domain={["dataMin - 5", "dataMax + 5"]}
+                />
+                <Tooltip
+                  contentStyle={commonTooltipStyle}
+                  labelFormatter={(label: number) =>
+                    new Date(label).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  }
+                  formatter={(value: number) => [`${value.toFixed(2)}`, "Spread"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="spread"
+                  stroke="#60a5fa"
+                  strokeWidth={2}
+                  dot={false}
+                  animationDuration={300}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-40 sm:h-44 flex items-center justify-center text-xs text-stealth-400">
+            No history available yet.
+          </div>
+        )}
       </div>
 
       {/* Sector Divergence Alerts */}
@@ -404,112 +402,6 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Expandable Sector Details - HIDDEN */}
-      {false && (
-      <div className="space-y-2">
-        <div className="text-sm font-semibold text-stealth-200 mb-3">All Sectors (12M Outlook)</div>
-        {sortedByScore.map((sector) => (
-          <div 
-            key={sector.symbol}
-            className="bg-stealth-900 rounded-lg border border-stealth-700 overflow-hidden hover:border-stealth-600 transition-colors"
-          >
-            <button
-              onClick={() => setExpandedSector(expandedSector === sector.symbol ? null : sector.symbol)}
-              className="w-full p-4 flex items-center justify-between hover:bg-stealth-850 transition-colors"
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <div className="font-semibold text-stealth-100 w-12">{sector.symbol}</div>
-                <div className="flex-1">
-                  <div className="text-xs text-gray-500">{sector.name}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {(() => {
-                    // Get projection data for this sector
-                    const etfMap: {[key: string]: string} = {
-                      "XLE": "Energy", "XLF": "Financials", "XLK": "Technology", "XLY": "Consumer Discretionary",
-                      "XLP": "Consumer Staples", "XLV": "Health Care", "XLI": "Industrials", "XLU": "Utilities",
-                      "XLB": "Materials", "XLRE": "Real Estate", "XLC": "Communication Services"
-                    };
-                    const sectorName = etfMap[sector.symbol];
-                    const proj3m = projections?.["3m"]?.find((p: any) => p.sector_name === sectorName);
-                    const proj6m = projections?.["6m"]?.find((p: any) => p.sector_name === sectorName);
-                    const proj12m = projections?.["12m"]?.find((p: any) => p.sector_name === sectorName);
-                    
-                    if (!proj3m) return null;
-                    
-                    const score3m = proj3m.score_total;
-                    const score6m = proj6m?.score_total || score3m;
-                    const score12m = proj12m?.score_total || score3m;
-                    
-                    const scores = [score3m, score6m, score12m];
-                    const sparkPoints = scores.map((score) => {
-                      const normalized = Math.max(0, Math.min(100, score));
-                      return 20 - (normalized / 100) * 20;
-                    });
-                    
-                    const trendUp = score12m > score3m;
-                    const trendDown = score12m < score3m;
-                    
-                    return (
-                      <div className="flex flex-col items-end">
-                        <svg width="45" height="20" viewBox="0 0 45 20" className="flex-shrink-0">
-                          <path
-                            d={`M 0,${sparkPoints[0]} Q 7,${(sparkPoints[0] + sparkPoints[1]) / 2} 15,${sparkPoints[1]} Q 22,${(sparkPoints[1] + sparkPoints[2]) / 2} 45,${sparkPoints[2]}`}
-                            fill="none"
-                            stroke={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <circle cx="45" cy={sparkPoints[2]} r="1.5" fill={trendUp ? '#10b981' : trendDown ? '#ef4444' : '#6b7280'} />
-                        </svg>
-                        <div className="text-[9px] text-gray-500">T + 12M</div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-              <div className="text-xl font-bold text-gray-500 transition-transform">
-                {expandedSector === sector.symbol ? '−' : '+'}
-              </div>
-            </button>
-
-            {expandedSector === sector.symbol && (
-              <div className="bg-stealth-950 border-t border-stealth-700 p-4 space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">3-Month</div>
-                    <div className="text-lg font-bold text-stealth-100">{sector.scores["3m"].toFixed(0)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">6-Month</div>
-                    <div className="text-lg font-bold text-stealth-100">{sector.scores["6m"].toFixed(0)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">12-Month</div>
-                    <div className="text-lg font-bold text-stealth-100">{sector.scores["12m"].toFixed(0)}</div>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-stealth-700">
-                  <div className="text-xs text-gray-400 mb-2">Trend Analysis</div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Overall Change:</span>
-                    <span className={sector.trend > 0 ? 'text-green-400' : sector.trend < 0 ? 'text-red-400' : 'text-gray-400'}>
-                      {sector.trend > 0 ? '+' : ''}{sector.trend.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs mt-1">
-                    <span>Volatility:</span>
-                    <span className="text-gray-400">{sector.volatility.toFixed(1)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
       )}
     </div>
   );
