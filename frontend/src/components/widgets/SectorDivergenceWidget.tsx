@@ -215,7 +215,7 @@ export default function SectorDivergenceWidget({ trendPeriod = 90 }: Props) {
           to="/sector-projections" 
           className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
         >
-          View Details >
+          View Details &gt;
         </Link>
       </div>
 
