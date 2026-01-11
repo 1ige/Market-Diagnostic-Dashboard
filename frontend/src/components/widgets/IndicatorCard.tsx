@@ -90,7 +90,7 @@ export default function IndicatorCard({ indicator }: Props) {
           {formatValue(indicator.raw_value, 2)}
         </div>
         
-        {/* State Trend Sparkline - matches indicator detail pages */}
+        {/* Score Trend Sparkline - matches indicator detail pages */}
         <div className="mt-3">
           <StateSparkline history={history} width={200} height={24} />
         </div>
