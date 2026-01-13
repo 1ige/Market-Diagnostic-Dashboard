@@ -14,12 +14,23 @@ export default function MarketLoading({
   variant = "pulse",
 }: MarketLoadingProps) {
   const isPulse = variant === "pulse";
+  const isScan = variant === "scan";
   const iconClass =
     isPulse
       ? "market-loading-pulse-icon"
       : variant === "drift"
         ? "market-loading-drift"
         : "";
+  const lineClass = isPulse
+    ? "market-loading-pulse-path"
+    : isScan
+      ? "market-loading-scan-path"
+      : "";
+  const dotClass = isPulse
+    ? "market-loading-pulse-dot"
+    : isScan
+      ? "market-loading-scan-dot"
+      : "";
 
   return (
     <div
@@ -39,58 +50,45 @@ export default function MarketLoading({
           className={`block select-none ${iconClass}`}
           aria-hidden="true"
         >
-          <rect x="16" y="56" width="10" height="20" rx="2" fill="#1f2937" />
-          <rect x="32" y="48" width="10" height="28" rx="2" fill="#243045" />
-          <rect x="48" y="52" width="10" height="24" rx="2" fill="#1f2937" />
-          <rect x="64" y="40" width="10" height="36" rx="2" fill="#2a374d" />
+          <rect x="18" y="60" width="12" height="16" rx="2" fill="#1c2636" />
+          <rect x="36" y="54" width="12" height="22" rx="2" fill="#243045" />
+          <rect x="54" y="50" width="12" height="26" rx="2" fill="#1f2b3e" />
+          <rect x="72" y="42" width="12" height="34" rx="2" fill="#2a3a52" />
+
+          <circle cx="70" cy="72" r="2" fill="#1f2b3e" opacity="0.6" />
+          <circle cx="78" cy="68" r="2.2" fill="#1f2b3e" opacity="0.55" />
+          <circle cx="86" cy="64" r="2.4" fill="#1f2b3e" opacity="0.5" />
 
           <path
-            d="M18 52 L34 44 L50 48 L66 34 L82 28"
+            d="M14 54 C20 44, 28 62, 34 52 C38 46, 44 46, 50 50 C56 54, 62 48, 68 42 C72 38, 78 34, 86 32"
             stroke="#3b82f6"
             strokeWidth="3"
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.35"
+            opacity="0.32"
           />
           <path
-            d="M18 52 L34 44 L50 48 L66 34 L82 28"
-            stroke="#7dd3fc"
-            strokeWidth="3"
+            d="M14 54 C20 44, 28 62, 34 52 C38 46, 44 46, 50 50 C56 54, 62 48, 68 42 C72 38, 78 34, 86 32"
+            stroke="#93c5fd"
+            strokeWidth="3.2"
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={isPulse ? "market-loading-pulse-path" : ""}
+            className={lineClass}
             pathLength={100}
           />
-          <circle cx="18" cy="52" r="3" fill="#60a5fa" opacity="0.6" />
-          <circle cx="34" cy="44" r="3" fill="#60a5fa" opacity="0.6" />
-          <circle cx="50" cy="48" r="3" fill="#60a5fa" opacity="0.6" />
-          <circle cx="66" cy="34" r="3" fill="#60a5fa" opacity="0.6" />
+          <circle cx="34" cy="52" r="3" fill="#60a5fa" opacity="0.65" />
+          <circle cx="50" cy="50" r="3" fill="#60a5fa" opacity="0.65" />
+          <circle cx="68" cy="42" r="3" fill="#60a5fa" opacity="0.65" />
           <circle
-            cx="82"
-            cy="28"
-            r="3.4"
+            cx="86"
+            cy="32"
+            r="3.6"
             fill="#93c5fd"
-            className={isPulse ? "market-loading-pulse-dot" : ""}
+            className={dotClass}
           />
         </svg>
-
-        {variant === "scan" && (
-          <div
-            className="pointer-events-none absolute left-4 right-4 top-2 h-6 market-loading-scan-line"
-            style={{ mixBlendMode: "screen" }}
-          />
-        )}
-
-        {variant === "pulse" && (
-          <div
-            className="pointer-events-none absolute left-4 right-4 bottom-3 rounded-full bg-stealth-800/70 overflow-hidden"
-            style={{ height: Math.max(3, Math.round(size * 0.04)) }}
-          >
-            <div className="h-full w-1/2 market-loading-pulse-line" />
-          </div>
-        )}
       </div>
 
       {label ? (
@@ -127,6 +125,23 @@ export default function MarketLoading({
           }
         }
 
+        @keyframes market-loading-scan-line {
+          0% {
+            stroke-dashoffset: 120;
+            opacity: 0;
+          }
+          35% {
+            opacity: 0.6;
+          }
+          70% {
+            opacity: 0.9;
+          }
+          100% {
+            stroke-dashoffset: -120;
+            opacity: 0;
+          }
+        }
+
         @keyframes market-loading-pulse-dot {
           0% {
             opacity: 0.45;
@@ -136,6 +151,18 @@ export default function MarketLoading({
           }
           100% {
             opacity: 0.45;
+          }
+        }
+
+        @keyframes market-loading-scan-dot {
+          0% {
+            opacity: 0.4;
+          }
+          45% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0.4;
           }
         }
 
@@ -173,9 +200,9 @@ export default function MarketLoading({
         }
 
         .market-loading-pulse-path {
-          stroke-dasharray: 18 82;
+          stroke-dasharray: 22 78;
           stroke-dashoffset: 100;
-          filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.45));
+          filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.5));
           animation: market-loading-pulse-line 1.8s ease-in-out infinite;
         }
 
@@ -184,20 +211,24 @@ export default function MarketLoading({
           animation: market-loading-pulse-dot 1.8s ease-in-out infinite;
         }
 
+        .market-loading-scan-path {
+          stroke-dasharray: 30 70;
+          stroke-dashoffset: 120;
+          filter: drop-shadow(0 0 10px rgba(147, 197, 253, 0.75));
+          animation: market-loading-scan-line 2.2s ease-in-out infinite;
+        }
+
+        .market-loading-scan-dot {
+          filter: drop-shadow(0 0 10px rgba(147, 197, 253, 0.85));
+          animation: market-loading-scan-dot 2.2s ease-in-out infinite;
+        }
+
         .market-loading-drift {
           animation: market-loading-drift 3s ease-in-out infinite;
         }
 
         .market-loading-scan-line {
-          background: linear-gradient(
-            to bottom,
-            rgba(59, 130, 246, 0) 0%,
-            rgba(96, 165, 250, 0.35) 50%,
-            rgba(59, 130, 246, 0) 100%
-          );
-          filter: blur(0.5px);
-          box-shadow: 0 0 10px rgba(96, 165, 250, 0.25);
-          animation: market-loading-scan 2.2s ease-in-out infinite;
+          display: none;
         }
       `}</style>
     </div>
