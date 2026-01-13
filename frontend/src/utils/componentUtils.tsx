@@ -48,6 +48,33 @@ export function getDaysAgo(date: Date | string): number {
 }
 
 /**
+ * Calculate business days elapsed since a date (excludes weekends).
+ */
+export function getBusinessDaysAgo(date: Date | string): number {
+  const targetDate = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(targetDate.getTime())) return 0;
+
+  const now = new Date();
+  const start = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  if (start >= end) return 0;
+
+  let businessDays = 0;
+  const cursor = new Date(start);
+  cursor.setDate(cursor.getDate() + 1);
+  while (cursor < end) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) {
+      businessDays += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return businessDays;
+}
+
+/**
  * Format date relative to now (Today, Yesterday, or date string)
  */
 export function formatRelativeDate(date: Date | string): string {

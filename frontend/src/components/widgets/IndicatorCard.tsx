@@ -2,7 +2,7 @@ import { IndicatorStatus, IndicatorHistoryPoint } from "../../types";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { buildApiUrl } from "../../utils/apiUtils";
-import { getDaysAgo, formatRelativeDate, isWeekend, formatValue } from "../../utils/componentUtils";
+import { getBusinessDaysAgo, formatRelativeDate, formatValue } from "../../utils/componentUtils";
 import StateSparkline from "./StateSparkline";
 
 interface Props {
@@ -49,15 +49,14 @@ export default function IndicatorCard({ indicator }: Props) {
   }, [indicator.code]);
 
   const lastUpdated = new Date(indicator.timestamp);
-  const daysAgo = getDaysAgo(lastUpdated);
+  const businessDaysAgo = getBusinessDaysAgo(lastUpdated);
   const timeDisplay = formatRelativeDate(lastUpdated);
 
   const metadata = DATA_FREQUENCY[indicator.code] || { frequency: "Daily", description: "Updates on business days", expectedLag: 1 };
   
   // Calculate data freshness with intelligent staleness detection
   // Accounts for publishing delays, weekends, and data source schedules
-  const weekendCheck = isWeekend();
-  const isStale = daysAgo > (metadata.expectedLag + (weekendCheck ? 3 : 0) + 1); // Allow extra buffer for weekends
+  const isStale = businessDaysAgo > (metadata.expectedLag + 1); // Use business-day lag to avoid weekend false positives
   
   // Visual indicators for data freshness status
   const freshnessIcon = isStale ? (
@@ -65,7 +64,7 @@ export default function IndicatorCard({ indicator }: Props) {
     <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" title="Data may be stale">
       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
     </svg>
-  ) : daysAgo > metadata.expectedLag ? (
+  ) : businessDaysAgo > metadata.expectedLag ? (
     // Gray clock: Data is old but this is expected (e.g., monthly indicators, publishing delays)
     <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" title="Waiting for source data">
       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -115,7 +114,7 @@ export default function IndicatorCard({ indicator }: Props) {
               {isStale && (
                 <div className="text-yellow-400 mt-1 font-medium">⚠ Data appears stale</div>
               )}
-              {!isStale && daysAgo > metadata.expectedLag && (
+              {!isStale && businessDaysAgo > metadata.expectedLag && (
                 <div className="text-gray-400 mt-1">Waiting for new source data</div>
               )}
             </div>

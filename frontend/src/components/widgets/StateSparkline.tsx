@@ -88,11 +88,25 @@ export default function StateSparkline({ history, height = 24, width = 200 }: Pr
   const chartHeight = height - (padding * 2);
   const stepX = chartWidth / (smoothedData.length - 1 || 1);
 
+  // Exaggerate small moves by tightening the visible range around the mean
+  const scores = smoothedData.map(point => clampScore(point.score));
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const meanScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+  const rawRange = Math.max(1, maxScore - minScore);
+  const exaggerationFactor = 1.8;
+  const minVisibleRange = 12;
+  const effectiveRange = Math.max(minVisibleRange, rawRange / exaggerationFactor);
+  const rangeMin = Math.max(0, meanScore - (effectiveRange / 2));
+  const rangeMax = Math.min(100, meanScore + (effectiveRange / 2));
+  const safeRange = Math.max(1, rangeMax - rangeMin);
+
   // Generate coordinate points for line chart
   const points = smoothedData.map((point, index) => {
     const x = padding + (index * stepX);
     const value = clampScore(point.score);
-    const y = padding + chartHeight - ((value / 100) * chartHeight);
+    const normalized = (value - rangeMin) / safeRange;
+    const y = padding + chartHeight - (normalized * chartHeight);
     return { x, y, point };
   });
 
