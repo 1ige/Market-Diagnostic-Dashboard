@@ -17,7 +17,7 @@ export default function MarketLoading({
 }: MarketLoadingProps) {
   const iconClass =
     variant === "pulse"
-      ? "market-loading-pulse"
+      ? "market-loading-pulse-icon"
       : variant === "drift"
         ? "market-loading-drift"
         : "";
@@ -47,6 +47,15 @@ export default function MarketLoading({
             style={{ mixBlendMode: "screen" }}
           />
         )}
+
+        {variant === "pulse" && (
+          <div
+            className="pointer-events-none absolute left-4 right-4 bottom-3 rounded-full bg-stealth-800/70 overflow-hidden"
+            style={{ height: Math.max(3, Math.round(size * 0.04)) }}
+          >
+            <div className="h-full w-1/2 market-loading-pulse-line" />
+          </div>
+        )}
       </div>
 
       {label ? (
@@ -54,18 +63,32 @@ export default function MarketLoading({
       ) : null}
 
       <style>{`
-        @keyframes market-loading-pulse {
+        @keyframes market-loading-pulse-icon {
           0% {
-            transform: scale(1);
-            opacity: 0.82;
+            opacity: 0.85;
           }
           50% {
-            transform: scale(1.03);
             opacity: 1;
           }
           100% {
-            transform: scale(1);
-            opacity: 0.82;
+            opacity: 0.85;
+          }
+        }
+
+        @keyframes market-loading-pulse-line {
+          0% {
+            transform: translateX(-70%);
+            opacity: 0;
+          }
+          30% {
+            opacity: 0.35;
+          }
+          70% {
+            opacity: 0.65;
+          }
+          100% {
+            transform: translateX(140%);
+            opacity: 0;
           }
         }
 
@@ -98,8 +121,20 @@ export default function MarketLoading({
           }
         }
 
-        .market-loading-pulse {
-          animation: market-loading-pulse 1.6s ease-in-out infinite;
+        .market-loading-pulse-icon {
+          animation: market-loading-pulse-icon 1.6s ease-in-out infinite;
+        }
+
+        .market-loading-pulse-line {
+          background: linear-gradient(
+            90deg,
+            rgba(59, 130, 246, 0),
+            rgba(96, 165, 250, 0.65),
+            rgba(125, 211, 252, 0.2),
+            rgba(59, 130, 246, 0)
+          );
+          box-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
+          animation: market-loading-pulse-line 1.8s ease-in-out infinite;
         }
 
         .market-loading-drift {
