@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { useApi } from "../hooks/useApi";
 import { OverviewTab } from "../components/aap/OverviewTab";
 import PreciousMetalsDiagnostic from "./PreciousMetalsDiagnostic";
+import MarketLoading from "../components/ui/MarketLoading";
 
 export default function AlternativeAssetStability() {
   const [searchParams] = useSearchParams();
@@ -45,10 +46,7 @@ export default function AlternativeAssetStability() {
   if (loading || !aapData) {
     return (
       <div className="min-h-screen bg-stealth-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <p className="text-stealth-300 text-lg">Loading AAS diagnostic...</p>
-        </div>
+        <MarketLoading size={120} variant="pulse" label="Loading AAS diagnostic..." />
       </div>
     );
   }

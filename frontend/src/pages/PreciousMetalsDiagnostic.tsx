@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "../hooks/useApi";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine } from "recharts";
+import MarketLoading from "../components/ui/MarketLoading";
 
 interface RegimeStatus {
   gold_bias: "MONETARY_HEDGE" | "NEUTRAL" | "FINANCIAL_ASSET";
@@ -182,7 +183,9 @@ export default function PreciousMetalsDiagnostic({ embedded = false }: { embedde
     return (
       <div className={embedded ? "py-8" : "p-6"}>
         {!embedded && <h1 className="text-3xl font-bold mb-6 text-gray-200">Precious Metals Diagnostic</h1>}
-        <div className="text-stealth-400">Loading precious metals analysis...</div>
+        <div className="flex justify-center py-6">
+          <MarketLoading size={110} variant="pulse" label="Loading precious metals analysis..." />
+        </div>
       </div>
     );
   }

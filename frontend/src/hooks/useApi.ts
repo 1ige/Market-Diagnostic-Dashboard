@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { buildApiUrl } from "../utils/apiUtils";
+import { loadingStore } from "../utils/loadingStore";
 
 export function useApi<T>(endpoint: string) {
   const [data, setData] = useState<T | null>(null);
@@ -10,6 +11,7 @@ export function useApi<T>(endpoint: string) {
   const fetchData = () => {
     setLoading(true);
     setError(null);
+    loadingStore.start();
     const url = buildApiUrl(endpoint);
     console.log('Fetching from:', url);
     fetch(url)
@@ -26,7 +28,10 @@ export function useApi<T>(endpoint: string) {
         console.error('Fetch error for', endpoint, ':', err.message);
         setError(err.message);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        loadingStore.stop();
+      });
   };
 
   useEffect(() => {

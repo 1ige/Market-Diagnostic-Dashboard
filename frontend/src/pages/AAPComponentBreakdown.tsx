@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import MarketLoading from '../components/ui/MarketLoading';
 
 // Simple icon components using SVG
 const ArrowLeft = () => (
@@ -122,10 +123,7 @@ const AAPComponentBreakdown: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading AAP component data...</p>
-        </div>
+        <MarketLoading size={110} variant="pulse" label="Loading AAP component data..." />
       </div>
     );
   }

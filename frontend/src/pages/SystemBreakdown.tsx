@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { getLegacyApiUrl } from "../utils/apiUtils";
+import MarketLoading from "../components/ui/MarketLoading";
 import { 
   getStateFromScore, 
   getStateColor, 
@@ -209,9 +210,8 @@ export default function SystemBreakdown() {
     return (
       <div className="p-6 text-gray-200">
         <h2 className="text-2xl font-bold mb-6">System Breakdown</h2>
-        <div className="animate-pulse space-y-4">
-          <div className="h-64 bg-stealth-800 rounded"></div>
-          <div className="h-64 bg-stealth-800 rounded"></div>
+        <div className="flex justify-center py-6">
+          <MarketLoading size={110} variant="scan" label="Loading system overview..." />
         </div>
       </div>
     );

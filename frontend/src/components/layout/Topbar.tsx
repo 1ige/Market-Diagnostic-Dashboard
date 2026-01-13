@@ -72,24 +72,26 @@ export default function Topbar() {
               </svg>
             </button>
             {toolsOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-lg border border-stealth-700 bg-stealth-850 shadow-xl overflow-hidden">
-                {toolsItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setToolsOpen(false)}
-                      className={`block px-4 py-2 text-sm transition-colors ${
-                        isActive
-                          ? "bg-stealth-700 text-pulse-400"
-                          : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+              <div className="absolute right-0 top-full pt-2">
+                <div className="w-56 rounded-lg border border-stealth-700 bg-stealth-850 shadow-xl overflow-hidden">
+                  {toolsItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setToolsOpen(false)}
+                        className={`block px-4 py-2 text-sm transition-colors ${
+                          isActive
+                            ? "bg-stealth-700 text-pulse-400"
+                            : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

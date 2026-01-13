@@ -34,6 +34,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useApi } from "../hooks/useApi";
+import MarketLoading from "../components/ui/MarketLoading";
 import {
   LineChart,
   Line,
@@ -221,7 +222,11 @@ export default function SectorProjections() {
         </div>
       )}
       
-      {loading && <div>Loading...</div>}
+      {loading && (
+        <div className="flex justify-center py-6">
+          <MarketLoading size={110} variant="scan" label="Loading sector projections..." />
+        </div>
+      )}
       {error && <div className="text-red-400">Error: {error.message}</div>}
       
       {/* Defensive vs Cyclical Spread - Historical Trend */}

@@ -3,14 +3,15 @@
  * 
  * Shared logic for common component patterns.
  */
+import MarketLoading from "../components/ui/MarketLoading";
 
 /**
  * Loading state component pattern
  */
 export function LoadingState({ message = "Loading..." }: { message?: string }) {
   return (
-    <div className="p-6 text-gray-200">
-      <p>{message}</p>
+    <div className="p-6 text-gray-200 flex justify-center">
+      <MarketLoading size={80} variant="pulse" label={message} />
     </div>
   );
 }

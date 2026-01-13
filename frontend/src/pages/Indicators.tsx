@@ -3,6 +3,7 @@ import { IndicatorStatus, IndicatorHistoryPoint } from "../types";
 import { Link } from "react-router-dom";
 import StateSparkline from "../components/widgets/StateSparkline";
 import { getStateBadgeClass } from "../utils/styleUtils";
+import MarketLoading from "../components/ui/MarketLoading";
 
 // Data frequency metadata to determine appropriate history fetch period
 const DATA_FREQUENCY: Record<string, { frequency: string }> = {
@@ -34,7 +35,9 @@ export default function Indicators() {
     return (
       <div className="p-3 md:p-6 text-gray-200">
         <h2 className="text-xl sm:text-2xl font-bold mb-3 md:mb-4">All Indicators</h2>
-        <div className="text-stealth-400">Loading indicators...</div>
+        <div className="flex justify-center py-6">
+          <MarketLoading size={96} variant="pulse" label="Loading indicators..." />
+        </div>
       </div>
     );
   }

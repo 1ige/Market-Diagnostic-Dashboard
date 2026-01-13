@@ -36,6 +36,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import MarketLoading from "../components/ui/MarketLoading";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
 import { formatDateTimeWithWeekday } from "../utils/styleUtils";
 import { CHART_MARGIN } from "../utils/chartUtils";
@@ -267,7 +268,7 @@ const MarketMap = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-stealth-400">Loading market map...</div>
+        <MarketLoading size={120} variant="scan" label="Loading market map..." />
       </div>
     );
   }

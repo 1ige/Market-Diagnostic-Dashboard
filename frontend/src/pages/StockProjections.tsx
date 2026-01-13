@@ -17,6 +17,7 @@ import { useState } from "react";
 import { PriceAnalysisChart } from "../components/widgets/PriceAnalysisChart";
 import { ConvictionSnapshot } from "../components/widgets/ConvictionSnapshot";
 import { TechnicalIndicators } from "../components/widgets/TechnicalIndicators.tsx";
+import MarketLoading from "../components/ui/MarketLoading";
 import "../index.css";
 
 interface StockProjection {
@@ -814,6 +815,12 @@ export default function StockProjections() {
             </p>
           </div>
         </>
+      )}
+
+      {loading && (
+        <div className="bg-gray-800 rounded-lg p-12 flex justify-center">
+          <MarketLoading size={110} variant="scan" label="Analyzing projections..." />
+        </div>
       )}
 
       {/* Empty State */}
