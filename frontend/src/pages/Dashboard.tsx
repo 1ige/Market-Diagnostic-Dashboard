@@ -5,6 +5,7 @@ import DowTheoryWidget from "../components/widgets/DowTheoryWidget";
 import SystemOverviewWidget from "../components/widgets/SystemOverviewWidget";
 import SectorDivergenceWidget from "../components/widgets/SectorDivergenceWidget";
 import AASWidget from "../components/widgets/AASWidget";
+import MarketLoading from "../components/ui/MarketLoading";
 import { getLegacyApiUrl } from "../utils/apiUtils";
 
 interface NewsArticle {
@@ -20,17 +21,20 @@ interface NewsArticle {
 export default function Dashboard() {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [indicators, setIndicators] = useState<IndicatorStatus[] | null>(null);
+  const [indicatorsLoading, setIndicatorsLoading] = useState(true);
   const [trendPeriod, setTrendPeriod] = useState<90 | 180 | 365>(90);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const apiUrl = getLegacyApiUrl();
+    setIndicatorsLoading(true);
     // Fetch indicators data from backend
     fetch(`${apiUrl}/indicators`)
       .then(res => res.json())
       .then(data => setIndicators(data))
-      .catch(() => setIndicators(null));
+      .catch(() => setIndicators(null))
+      .finally(() => setIndicatorsLoading(false));
 
     // Fetch cached news from last 24 hours
     fetch(`${apiUrl}/news?hours=24&limit=200`)
@@ -161,6 +165,11 @@ export default function Dashboard() {
       </div>
 
       <h3 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Indicators</h3>
+      {indicatorsLoading && (
+        <div className="flex justify-center mb-4 md:mb-6">
+          <MarketLoading size={96} variant="scan" />
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
         {indicators
           ?.filter((i) => i.code !== 'AAP')

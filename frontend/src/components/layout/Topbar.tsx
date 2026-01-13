@@ -4,17 +4,23 @@ import { useState } from "react";
 export default function Topbar() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const navItems = [
     { path: "/", label: "Dashboard" },
     { path: "/indicators", label: "Indicators" },
+    { path: "/system-breakdown", label: "System Breakdown" },
+  ];
+
+  const toolsItems = [
     { path: "/market-map", label: "Market Map" },
     { path: "/sector-projections", label: "Sector Projections" },
     { path: "/stock-projections", label: "Stock Projections" },
     { path: "/alternative-assets", label: "Alternative Assets" },
     { path: "/news", label: "News" },
-    { path: "/system-breakdown", label: "System Breakdown" },
   ];
+
+  const isToolsActive = toolsItems.some((item) => location.pathname === item.path);
 
   return (
     <div className="sticky top-0 z-50 w-full bg-stealth-800 border-b border-stealth-700 shadow-lg">
@@ -39,6 +45,54 @@ export default function Topbar() {
               </Link>
             );
           })}
+          <div
+            className="relative"
+            onMouseEnter={() => setToolsOpen(true)}
+            onMouseLeave={() => setToolsOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setToolsOpen((prev) => !prev)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                isToolsActive
+                  ? "bg-stealth-700 text-pulse-400"
+                  : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
+              }`}
+              aria-haspopup="true"
+              aria-expanded={toolsOpen}
+            >
+              Tools
+              <svg
+                className={`w-4 h-4 transition-transform ${toolsOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {toolsOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-lg border border-stealth-700 bg-stealth-850 shadow-xl overflow-hidden">
+                {toolsItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setToolsOpen(false)}
+                      className={`block px-4 py-2 text-sm transition-colors ${
+                        isActive
+                          ? "bg-stealth-700 text-pulse-400"
+                          : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -68,6 +122,26 @@ export default function Topbar() {
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-4 py-3 text-sm font-medium transition-colors border-b border-stealth-700 last:border-b-0 ${
+                  isActive
+                    ? "bg-stealth-700 text-pulse-400"
+                    : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+          <div className="px-4 py-3 text-xs uppercase tracking-wide text-stealth-500 border-b border-stealth-700">
+            Tools
+          </div>
+          {toolsItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-6 py-3 text-sm font-medium transition-colors border-b border-stealth-700 last:border-b-0 ${
                   isActive
                     ? "bg-stealth-700 text-pulse-400"
                     : "text-stealth-300 hover:bg-stealth-700 hover:text-stealth-100"
