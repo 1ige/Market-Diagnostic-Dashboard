@@ -113,11 +113,14 @@ export default function MarketLoading({
             stroke-dashoffset: 100;
             opacity: 0;
           }
-          30% {
-            opacity: 0.4;
+          20% {
+            opacity: 0.35;
           }
-          70% {
-            opacity: 0.7;
+          50% {
+            opacity: 0.55;
+          }
+          80% {
+            opacity: 0.35;
           }
           100% {
             stroke-dashoffset: -100;
@@ -130,11 +133,11 @@ export default function MarketLoading({
             stroke-dashoffset: 120;
             opacity: 0;
           }
-          35% {
-            opacity: 0.6;
+          30% {
+            opacity: 0.45;
           }
-          70% {
-            opacity: 0.9;
+          65% {
+            opacity: 0.7;
           }
           100% {
             stroke-dashoffset: -120;
@@ -200,27 +203,27 @@ export default function MarketLoading({
         }
 
         .market-loading-pulse-path {
-          stroke-dasharray: 22 78;
+          stroke-dasharray: 16 84;
           stroke-dashoffset: 100;
-          filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.5));
-          animation: market-loading-pulse-line 1.8s ease-in-out infinite;
+          filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.35));
+          animation: market-loading-pulse-line 1.6s linear infinite;
         }
 
         .market-loading-pulse-dot {
-          filter: drop-shadow(0 0 6px rgba(147, 197, 253, 0.6));
-          animation: market-loading-pulse-dot 1.8s ease-in-out infinite;
+          filter: drop-shadow(0 0 4px rgba(147, 197, 253, 0.45));
+          animation: market-loading-pulse-dot 1.6s ease-in-out infinite;
         }
 
         .market-loading-scan-path {
-          stroke-dasharray: 30 70;
+          stroke-dasharray: 20 80;
           stroke-dashoffset: 120;
-          filter: drop-shadow(0 0 10px rgba(147, 197, 253, 0.75));
-          animation: market-loading-scan-line 2.2s ease-in-out infinite;
+          filter: drop-shadow(0 0 6px rgba(147, 197, 253, 0.5));
+          animation: market-loading-scan-line 2.1s linear infinite;
         }
 
         .market-loading-scan-dot {
-          filter: drop-shadow(0 0 10px rgba(147, 197, 253, 0.85));
-          animation: market-loading-scan-dot 2.2s ease-in-out infinite;
+          filter: drop-shadow(0 0 6px rgba(147, 197, 253, 0.55));
+          animation: market-loading-scan-dot 2.1s ease-in-out infinite;
         }
 
         .market-loading-drift {
