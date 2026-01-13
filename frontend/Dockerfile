@@ -12,6 +12,7 @@ RUN npm install -g pnpm && \
 
 # Copy application files
 COPY src ./src
+COPY public ./public
 COPY index.html tsconfig.json tsconfig.node.json vite.config.ts ./
 COPY tailwind.config.js postcss.config.js ./
 
