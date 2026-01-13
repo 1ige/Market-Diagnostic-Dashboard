@@ -8,15 +8,14 @@ interface MarketLoadingProps {
   variant?: MarketLoadingVariant;
 }
 
-const ICON_SRC = "/assets/marketdiag_icon_loading.png";
-
 export default function MarketLoading({
   size = 96,
   label = "Updating signals...",
   variant = "pulse",
 }: MarketLoadingProps) {
+  const isPulse = variant === "pulse";
   const iconClass =
-    variant === "pulse"
+    isPulse
       ? "market-loading-pulse-icon"
       : variant === "drift"
         ? "market-loading-drift"
@@ -33,13 +32,49 @@ export default function MarketLoading({
         className="relative flex items-center justify-center rounded-2xl border border-stealth-700/70 bg-stealth-900/60 p-4"
         style={{ width: size + 28, height: size + 28 }}
       >
-        <img
-          src={ICON_SRC}
-          alt="Market diagnostic loading"
+        <svg
+          viewBox="0 0 96 96"
+          width={size}
+          height={size}
           className={`block select-none ${iconClass}`}
-          style={{ width: size, height: size }}
-          draggable={false}
-        />
+          aria-hidden="true"
+        >
+          <rect x="16" y="56" width="10" height="20" rx="2" fill="#1f2937" />
+          <rect x="32" y="48" width="10" height="28" rx="2" fill="#243045" />
+          <rect x="48" y="52" width="10" height="24" rx="2" fill="#1f2937" />
+          <rect x="64" y="40" width="10" height="36" rx="2" fill="#2a374d" />
+
+          <path
+            d="M18 52 L34 44 L50 48 L66 34 L82 28"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.35"
+          />
+          <path
+            d="M18 52 L34 44 L50 48 L66 34 L82 28"
+            stroke="#7dd3fc"
+            strokeWidth="3"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={isPulse ? "market-loading-pulse-path" : ""}
+            pathLength={100}
+          />
+          <circle cx="18" cy="52" r="3" fill="#60a5fa" opacity="0.6" />
+          <circle cx="34" cy="44" r="3" fill="#60a5fa" opacity="0.6" />
+          <circle cx="50" cy="48" r="3" fill="#60a5fa" opacity="0.6" />
+          <circle cx="66" cy="34" r="3" fill="#60a5fa" opacity="0.6" />
+          <circle
+            cx="82"
+            cy="28"
+            r="3.4"
+            fill="#93c5fd"
+            className={isPulse ? "market-loading-pulse-dot" : ""}
+          />
+        </svg>
 
         {variant === "scan" && (
           <div
@@ -77,18 +112,30 @@ export default function MarketLoading({
 
         @keyframes market-loading-pulse-line {
           0% {
-            transform: translateX(-70%);
+            stroke-dashoffset: 100;
             opacity: 0;
           }
           30% {
-            opacity: 0.35;
+            opacity: 0.4;
           }
           70% {
-            opacity: 0.65;
+            opacity: 0.7;
           }
           100% {
-            transform: translateX(140%);
+            stroke-dashoffset: -100;
             opacity: 0;
+          }
+        }
+
+        @keyframes market-loading-pulse-dot {
+          0% {
+            opacity: 0.45;
+          }
+          40% {
+            opacity: 0.8;
+          }
+          100% {
+            opacity: 0.45;
           }
         }
 
@@ -125,16 +172,16 @@ export default function MarketLoading({
           animation: market-loading-pulse-icon 1.6s ease-in-out infinite;
         }
 
-        .market-loading-pulse-line {
-          background: linear-gradient(
-            90deg,
-            rgba(59, 130, 246, 0),
-            rgba(96, 165, 250, 0.65),
-            rgba(125, 211, 252, 0.2),
-            rgba(59, 130, 246, 0)
-          );
-          box-shadow: 0 0 8px rgba(96, 165, 250, 0.35);
+        .market-loading-pulse-path {
+          stroke-dasharray: 18 82;
+          stroke-dashoffset: 100;
+          filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.45));
           animation: market-loading-pulse-line 1.8s ease-in-out infinite;
+        }
+
+        .market-loading-pulse-dot {
+          filter: drop-shadow(0 0 6px rgba(147, 197, 253, 0.6));
+          animation: market-loading-pulse-dot 1.8s ease-in-out infinite;
         }
 
         .market-loading-drift {
