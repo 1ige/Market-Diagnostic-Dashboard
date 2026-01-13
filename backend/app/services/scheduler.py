@@ -150,16 +150,6 @@ async def scheduled_etl_job():
                         metrics_json=p["metrics"],
                         rank=p["rank"],
                     ))
-
-                if prev_run:
-                    old_runs = (
-                        db.query(SectorProjectionRun)
-                        .filter(SectorProjectionRun.id != run.id)
-                        .all()
-                    )
-                    for old_run in old_runs:
-                        db.delete(old_run)
-
                 db.commit()
             logger.info(f"✅ Sector projections computed and stored for {as_of_date}")
         else:
