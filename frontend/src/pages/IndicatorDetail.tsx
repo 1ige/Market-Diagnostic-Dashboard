@@ -45,12 +45,12 @@ interface IndicatorDetailResponse {
 
 interface ComponentData {
   date: string;
-  pce: { value: number; mom_pct: number };
-  cpi: { value: number; mom_pct: number };
-  pi: { value: number; mom_pct: number };
+  pce: { value: number; mom_pct: number; is_filled?: boolean; as_of?: string };
+  cpi: { value: number; mom_pct: number; is_filled?: boolean; as_of?: string };
+  pi: { value: number; mom_pct: number; is_filled?: boolean; as_of?: string };
   spreads: {
-    pce_vs_cpi: number;
-    pi_vs_cpi: number;
+    pce_spread: number;
+    pi_spread: number;
     consumer_health: number;
   };
 }
@@ -236,6 +236,19 @@ export default function IndicatorDetail() {
       : ""
   );
 
+  const getLatestComponentEntry = (
+    items: ComponentData[],
+    key: "pce" | "pi" | "cpi"
+  ) => {
+    for (let i = items.length - 1; i >= 0; i -= 1) {
+      const component = items[i][key];
+      if (component && component.is_filled === false) {
+        return items[i];
+      }
+    }
+    return items[items.length - 1];
+  };
+
   const handleClearAndRefetch = async () => {
     if (!apiCode) return;
     
@@ -381,46 +394,67 @@ export default function IndicatorDetail() {
           </div>
           
           {/* Latest Values */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
-            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-              <div className="text-xs text-stealth-400 mb-1">PCE (Spending)</div>
-              <div className="text-lg font-bold text-blue-400">
-                {components[components.length - 1].pce.mom_pct.toFixed(3)}%
+          {(() => {
+            const latestPceEntry = getLatestComponentEntry(components, "pce");
+            const latestPiEntry = getLatestComponentEntry(components, "pi");
+            const latestCpiEntry = getLatestComponentEntry(components, "cpi");
+            const formatAsOf = (date?: string) =>
+              date
+                ? new Date(date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                : "—";
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                  <div className="text-xs text-stealth-400 mb-1">PCE (Spending)</div>
+                  <div className="text-lg font-bold text-blue-400">
+                    {latestPceEntry.pce.mom_pct.toFixed(3)}%
+                  </div>
+                  <div className="text-xs text-stealth-500 mt-1">
+                    MoM Growth
+                  </div>
+                  <div className="text-xs text-stealth-500">
+                    vs CPI: {latestPceEntry.spreads.pce_spread.toFixed(3)}%
+                  </div>
+                  <div className="text-xs text-stealth-600 mt-1">
+                    As of {formatAsOf(latestPceEntry.pce.as_of || latestPceEntry.date)}
+                  </div>
+                </div>
+                
+                <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                  <div className="text-xs text-stealth-400 mb-1">PI (Income)</div>
+                  <div className="text-lg font-bold text-green-400">
+                    {latestPiEntry.pi.mom_pct.toFixed(3)}%
+                  </div>
+                  <div className="text-xs text-stealth-500 mt-1">
+                    MoM Growth
+                  </div>
+                  <div className="text-xs text-stealth-500">
+                    vs CPI: {latestPiEntry.spreads.pi_spread.toFixed(3)}%
+                  </div>
+                  <div className="text-xs text-stealth-600 mt-1">
+                    As of {formatAsOf(latestPiEntry.pi.as_of || latestPiEntry.date)}
+                  </div>
+                </div>
+                
+                <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
+                  <div className="text-xs text-stealth-400 mb-1">CPI (Inflation)</div>
+                  <div className="text-lg font-bold text-red-400">
+                    {latestCpiEntry.cpi.mom_pct.toFixed(3)}%
+                  </div>
+                  <div className="text-xs text-stealth-500 mt-1">
+                    MoM Growth
+                  </div>
+                  <div className="text-xs text-stealth-500">
+                    Baseline
+                  </div>
+                  <div className="text-xs text-stealth-600 mt-1">
+                    As of {formatAsOf(latestCpiEntry.cpi.as_of || latestCpiEntry.date)}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-stealth-500 mt-1">
-                MoM Growth
-              </div>
-              <div className="text-xs text-stealth-500">
-                vs CPI: {components[components.length - 1].spreads.pce_spread.toFixed(3)}%
-              </div>
-            </div>
-            
-            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-              <div className="text-xs text-stealth-400 mb-1">PI (Income)</div>
-              <div className="text-lg font-bold text-green-400">
-                {components[components.length - 1].pi.mom_pct.toFixed(3)}%
-              </div>
-              <div className="text-xs text-stealth-500 mt-1">
-                MoM Growth
-              </div>
-              <div className="text-xs text-stealth-500">
-                vs CPI: {components[components.length - 1].spreads.pi_spread.toFixed(3)}%
-              </div>
-            </div>
-            
-            <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
-              <div className="text-xs text-stealth-400 mb-1">CPI (Inflation)</div>
-              <div className="text-lg font-bold text-red-400">
-                {components[components.length - 1].cpi.mom_pct.toFixed(3)}%
-              </div>
-              <div className="text-xs text-stealth-500 mt-1">
-                MoM Growth
-              </div>
-              <div className="text-xs text-stealth-500">
-                Baseline
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Component MoM Growth Chart */}
           <div className="h-80 mb-6">

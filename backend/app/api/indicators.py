@@ -1018,19 +1018,29 @@ async def get_indicator_components(code: str, days: int = 365):
         pi_spread = pi_mom - cpi_mom
         consumer_health = (pce_spread + pi_spread) / 2  # Average of the two spreads
         
+        pce_is_filled = date not in pce_dict
+        cpi_is_filled = date not in cpi_dict
+        pi_is_filled = date not in pi_dict
+
         result.append({
             "date": date,
             "pce": {
                 "value": last_pce["value"],
                 "mom_pct": pce_mom,
+                "is_filled": pce_is_filled,
+                "as_of": last_pce["date"],
             },
             "cpi": {
                 "value": last_cpi["value"],
                 "mom_pct": cpi_mom,
+                "is_filled": cpi_is_filled,
+                "as_of": last_cpi["date"],
             },
             "pi": {
                 "value": last_pi["value"],
                 "mom_pct": pi_mom,
+                "is_filled": pi_is_filled,
+                "as_of": last_pi["date"],
             },
             "spreads": {
                 "pce_spread": pce_spread,
