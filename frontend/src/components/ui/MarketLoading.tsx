@@ -13,6 +13,92 @@ export default function MarketLoading({
   label = "Updating signals...",
   variant = "pulse",
 }: MarketLoadingProps) {
+  const baseMessages = [
+    "Thanks for hanging tight.",
+    "Lining things up for you.",
+    "Cross-checking the latest reads.",
+    "Pulling one more thread.",
+    "Almost there, just syncing.",
+    "Quick double-check, then we go.",
+    "Appreciate the patience.",
+    "Right on schedule.",
+    "You're in good hands.",
+    "Great things take a beat.",
+    "We are almost dialed in.",
+    "Keeping it steady.",
+    "Just a moment more.",
+  ];
+
+  const contextualMessages: string[] = [];
+  const normalizedLabel = (label ?? "").toLowerCase();
+  if (normalizedLabel.includes("market map")) {
+    contextualMessages.push(
+      "Pinning down market leadership.",
+      "Plotting sector flow."
+    );
+  }
+  if (normalizedLabel.includes("sector")) {
+    contextualMessages.push(
+      "Reading sector leadership.",
+      "Aligning sector momentum."
+    );
+  }
+  if (normalizedLabel.includes("stock")) {
+    contextualMessages.push(
+      "Lining up stock signals.",
+      "Calibrating equity drivers."
+    );
+  }
+  if (normalizedLabel.includes("alternative")) {
+    contextualMessages.push(
+      "Checking alternative shifts.",
+      "Balancing the alt lens."
+    );
+  }
+  if (normalizedLabel.includes("indicator")) {
+    contextualMessages.push(
+      "Refreshing signal set.",
+      "Tuning the indicator stack."
+    );
+  }
+  if (normalizedLabel.includes("system")) {
+    contextualMessages.push(
+      "Mapping systemic pressure.",
+      "Aligning system signals."
+    );
+  }
+  if (normalizedLabel.includes("dashboard")) {
+    contextualMessages.push(
+      "Assembling the overview.",
+      "Bringing the board to life."
+    );
+  }
+  if (normalizedLabel.includes("precious")) {
+    contextualMessages.push(
+      "Polishing the metals read.",
+      "Checking safe-haven flows."
+    );
+  }
+  if (normalizedLabel.includes("component")) {
+    contextualMessages.push(
+      "Breaking down components.",
+      "Aligning component inputs."
+    );
+  }
+  if (normalizedLabel.includes("projection")) {
+    contextualMessages.push(
+      "Running projection checks.",
+      "Pressure-testing the forecast."
+    );
+  }
+
+  const messagePool =
+    contextualMessages.length > 0
+      ? contextualMessages.concat(baseMessages)
+      : baseMessages;
+  const message = React.useMemo(() => {
+    return messagePool[Math.floor(Math.random() * messagePool.length)];
+  }, [messagePool.join("|")]);
   const isPulse = variant === "pulse";
   const isScan = variant === "scan";
   const iconClass =
@@ -40,7 +126,7 @@ export default function MarketLoading({
       aria-label={label}
     >
       <div
-        className="relative flex items-center justify-center rounded-2xl border border-stealth-700/70 bg-stealth-900/60 p-4"
+        className="relative flex items-center justify-center rounded-2xl bg-stealth-900/60 p-4"
         style={{ width: size + 28, height: size + 28 }}
       >
         <svg
@@ -93,6 +179,11 @@ export default function MarketLoading({
 
       {label ? (
         <div className="text-xs text-stealth-400 tracking-wide">{label}</div>
+      ) : null}
+      {message ? (
+        <div className="text-xs text-stealth-500 tracking-wide">
+          {message}
+        </div>
       ) : null}
 
       <style>{`
