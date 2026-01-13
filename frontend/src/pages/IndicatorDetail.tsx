@@ -395,6 +395,7 @@ export default function IndicatorDetail() {
           
           {/* Latest Values */}
           {(() => {
+            const latestDate = components[components.length - 1]?.date;
             const latestPceEntry = getLatestComponentEntry(components, "pce");
             const latestPiEntry = getLatestComponentEntry(components, "pi");
             const latestCpiEntry = getLatestComponentEntry(components, "cpi");
@@ -402,6 +403,8 @@ export default function IndicatorDetail() {
               date
                 ? new Date(date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
                 : "—";
+            const isWaiting = (entryDate?: string) =>
+              Boolean(latestDate && entryDate && entryDate < latestDate);
 
             return (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
@@ -419,6 +422,9 @@ export default function IndicatorDetail() {
                   <div className="text-xs text-stealth-600 mt-1">
                     As of {formatAsOf(latestPceEntry.pce.as_of || latestPceEntry.date)}
                   </div>
+                  {isWaiting(latestPceEntry.pce.as_of || latestPceEntry.date) && (
+                    <div className="text-[11px] text-amber-400 mt-1">Waiting on release</div>
+                  )}
                 </div>
                 
                 <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
@@ -435,6 +441,9 @@ export default function IndicatorDetail() {
                   <div className="text-xs text-stealth-600 mt-1">
                     As of {formatAsOf(latestPiEntry.pi.as_of || latestPiEntry.date)}
                   </div>
+                  {isWaiting(latestPiEntry.pi.as_of || latestPiEntry.date) && (
+                    <div className="text-[11px] text-amber-400 mt-1">Waiting on release</div>
+                  )}
                 </div>
                 
                 <div className="bg-stealth-900 border border-stealth-600 rounded p-4">
@@ -451,6 +460,9 @@ export default function IndicatorDetail() {
                   <div className="text-xs text-stealth-600 mt-1">
                     As of {formatAsOf(latestCpiEntry.cpi.as_of || latestCpiEntry.date)}
                   </div>
+                  {isWaiting(latestCpiEntry.cpi.as_of || latestCpiEntry.date) && (
+                    <div className="text-[11px] text-amber-400 mt-1">Waiting on release</div>
+                  )}
                 </div>
               </div>
             );
